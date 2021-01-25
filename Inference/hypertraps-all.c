@@ -347,7 +347,7 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
 	}
       // initialise start position
       for(j = 0; j < len; j++)
-	startpos[j] = (matrix[2*i*len+len+j]);
+	startpos[j] = (matrix[2*i*len+j]);
       // get log-likelihood contribution from this pair (transition) using HyperTraPS
       tlik = LikelihoodMultiple(&(matrix[2*i*len+len]), ntrans, len, startpos, tau1s[i], tau2s[i]);
       tloglik = log(tlik);
