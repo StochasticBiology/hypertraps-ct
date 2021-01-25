@@ -2,12 +2,16 @@
 # uses model assumptions to label internal nodes
 # outputs transitions and times to new files
 
-from ete3 import Tree
+from ete3 import Tree, TreeStyle, NodeStyle, TextFace
 import sys
+
+arg1 = sys.argv[1]
+arg2 = sys.argv[2]
+arg3 = sys.argv[3]
 
 # open file 1
 # read in Newick tree -- assumes that it's all on one line
-fp = open(str(sys.argv[1]), "r")
+fp = open(str(arg1), "r")
 nw = fp.readline()
 fp.close()
 
@@ -17,7 +21,7 @@ tree = Tree(nw, format=1) # newick subformat 1 to read internal node names
 # open file 2
 # populate a dictionary, labelled by species names, with barcodes of traits
 mydict = {}
-with open(str(sys.argv[2])) as f:
+with open(str(arg2)) as f:
     for line in f:
        elements = line.rstrip("\n").split(",")
        key = elements[0]
@@ -39,15 +43,26 @@ for node in tree.traverse("postorder"):
         mydict[node.name] = "".join(ref)
 
 # output reconstructed nodes and timings
-fp = open(str(sys.argv[1])+"-data.txt", "w")
-fptime = open(str(sys.argv[1])+"-datatime.txt", "w")
+fp = open(str(arg1)+"-data.txt", "w")
+fptime = open(str(arg1)+"-datatime.txt", "w")
 for node in tree.traverse("postorder"):
     # A verbose output
     if not node.is_leaf(): # For all internal nodes
         for childnode in node.children:
-            print(mydict[node.name], "(", node.name, ") -> ", mydict[childnode.name], "(", childnode.name, ")", "=", childnode.dist*float(sys.argv[3]))
+            print(mydict[node.name], "(", node.name, ") -> ", mydict[childnode.name], "(", childnode.name, ")", "=", childnode.dist*float(arg3))
             print(" ".join(str(x) for x in list(mydict[childnode.name])), file=fp)
             print(" ".join(str(x) for x in list(mydict[node.name])), file=fp)
-            print(childnode.dist*float(sys.argv[3]), file=fptime)
+            print(childnode.dist*float(arg3), file=fptime)
+
 fp.close()
 fptime.close()
+
+ts = TreeStyle()
+ts.show_leaf_name = True
+for leaf in tree.iter_leaves():
+  thisleafcontent = TextFace(" ".join(str(x) for x in list(mydict[leaf.name])))
+  leaf.add_face(thisleafcontent, 0, "aligned")
+
+fname = str(arg1)+"-check.png"
+tree.render(str(fname), w=800, tree_style=ts)
+
