@@ -1,38 +1,38 @@
 Organism,CI,CII,CIII,CIV,CV,PDH,DNA,TCA,Fe-S
-Acanthamoeba castellanii,1,1,1,1,1,1,1,1,1
-Ascaris suum,1,1,1,1,1,1,1,1,1
-Blastocystis sp.,1,1,0,0,0,0,1,1,1
-Brevimastigomonas motovehiculus,1,1,1,1,1,1,1,1,1
-Cantina marsupialis,0,1,0,0,0,0,0,1,1
-Chlamydomonas reinhardtii,1,1,1,1,1,1,1,1,1
-Chromera velia,0,1,0,1,1,1,0,1,1
-Cryptosporidium muris,1,1,0,0,1,0,0,1,1
-Cryptosporidium parvum,0,0,0,0,1,0,0,0,1
-Dysnectes brevis,1,0,0,0,0,0,0,0,1
-Encephalitozoon cuniculi,0,0,0,0,0,0,0,0,1
-Entamoeba histolytica,0,0,0,0,0,0,0,0,0
-Euglena gracilis,1,1,1,1,1,1,1,1,1
-Fasciola hepatica,1,1,0,0,1,1,1,0,1
-Giardia intestinalis,0,0,0,0,0,0,0,0,1
-Homo sapiens,1,1,1,1,1,1,1,1,1
-Mastigamoeba balamuthi,0,1,0,0,0,0,0,1,1
-Mikrocytos mackini,0,0,0,0,0,0,0,0,1
+Acanthamoeba_castellanii,1,1,1,1,1,1,1,1,1
+Ascaris_suum,1,1,1,1,1,1,1,1,1
+Blastocystis_sp.,1,1,0,0,0,0,1,1,1
+Brevimastigomonas_motovehiculus,1,1,1,1,1,1,1,1,1
+Cantina_marsupialis,0,1,0,0,0,0,0,1,1
+Chlamydomonas_reinhardtii,1,1,1,1,1,1,1,1,1
+Chromera_velia,0,1,0,1,1,1,0,1,1
+Cryptosporidium_muris,1,1,0,0,1,0,0,1,1
+Cryptosporidium_parvum,0,0,0,0,1,0,0,0,1
+Dysnectes_brevis,1,0,0,0,0,0,0,0,1
+Encephalitozoon_cuniculi,0,0,0,0,0,0,0,0,1
+Entamoeba_histolytica,0,0,0,0,0,0,0,0,0
+Euglena_gracilis,1,1,1,1,1,1,1,1,1
+Fasciola_hepatica,1,1,0,0,1,1,1,0,1
+Giardia_intestinalis,0,0,0,0,0,0,0,0,1
+Homo_sapiens,1,1,1,1,1,1,1,1,1
+Mastigamoeba_balamuthi,0,1,0,0,0,0,0,1,1
+Mikrocytos_mackini,0,0,0,0,0,0,0,0,1
 Mitosporidium,0,1,1,1,1,1,0,1,1
-Naegleria gruberi,1,1,1,1,1,1,1,1,1
-Neocallimastix sp.,1,0,0,0,0,0,0,1,1
-Nyctotherus ovalis,1,1,0,0,0,1,1,0,1
-Orpinomyces sp.,0,0,0,0,1,0,0,1,1
-Piromyces sp.,1,0,0,0,0,0,0,0,1
-Plasmodium falciparum,0,1,1,1,1,1,1,1,1
-Psalteriomonas lanterna,0,0,0,0,0,0,0,0,1
-Pygsuia biforma,1,1,0,0,0,0,0,1,1
+Naegleria_gruberi,1,1,1,1,1,1,1,1,1
+Neocallimastix_sp.,1,0,0,0,0,0,0,1,1
+Nyctotherus_ovalis,1,1,0,0,0,1,1,0,1
+Orpinomyces_sp.,0,0,0,0,1,0,0,1,1
+Piromyces_sp.,1,0,0,0,0,0,0,0,1
+Plasmodium_falciparum,0,1,1,1,1,1,1,1,1
+Psalteriomonas_lanterna,0,0,0,0,0,0,0,0,1
+Pygsuia_biforma,1,1,0,0,0,0,0,1,1
 Rozella,0,1,1,1,1,1,0,1,1
-Saccharomyces cerevisiae,0,1,1,1,1,1,1,1,1
-Sawyeria marylandensis,0,0,0,0,0,0,0,0,1
-Schizosaccharomyces pombe,0,1,1,1,1,1,1,1,1
+Saccharomyces_cerevisiae,0,1,1,1,1,1,1,1,1
+Sawyeria_marylandensis,0,0,0,0,0,0,0,0,1
+Schizosaccharomyces_pombe,0,1,1,1,1,1,1,1,1
 Spironucleus,0,0,0,0,0,0,0,0,1
-Stygiella incarcerata,1,0,0,0,0,0,0,0,1
-Trichomonas vaginalis,1,0,0,0,0,0,0,0,1
-Paratrimastix pyriformis,0,0,0,0,0,0,0,0,1
-Trypanosoma brucei,1,1,1,1,1,1,1,0,1
-Vitrella brassicaformis,0,1,1,1,1,1,0,1,1
+Stygiella_incarcerata,1,0,0,0,0,0,0,0,1
+Trichomonas_vaginalis,1,0,0,0,0,0,0,0,1
+Paratrimastix_pyriformis,0,0,0,0,0,0,0,0,1
+Trypanosoma_brucei,1,1,1,1,1,1,1,0,1
+Vitrella_brassicaformis,0,1,1,1,1,1,0,1,1
