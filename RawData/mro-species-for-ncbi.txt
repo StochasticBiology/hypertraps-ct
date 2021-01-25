@@ -1,0 +1,37 @@
+Acanthamoeba castellanii
+Ascaris suum
+Blastocystis sp.
+Brevimastigomonas motovehiculus
+Cantina marsupialis
+Chlamydomonas reinhardtii
+Chromera velia
+Cryptosporidium muris
+Cryptosporidium parvum
+Dysnectes brevis
+Encephalitozoon cuniculi
+Entamoeba histolytica
+Euglena gracilis
+Fasciola hepatica
+Giardia intestinalis
+Homo sapiens
+Mastigamoeba balamuthi
+Mikrocytos mackini
+Mitosporidium
+Naegleria gruberi
+Neocallimastix sp.
+Nyctotherus ovalis
+Orpinomyces sp.
+Piromyces sp.
+Plasmodium falciparum
+Psalteriomonas lanterna
+Pygsuia biforma
+Rozella
+Saccharomyces cerevisiae
+Sawyeria marylandensis
+Schizosaccharomyces pombe
+Spironucleus
+Stygiella incarcerata
+Trichomonas vaginalis
+Paratrimastix pyriformis
+Trypanosoma brucei
+Vitrella brassicaformis
