@@ -31,8 +31,11 @@ Code for the inference and post hoc analysis.
   
 `Verify/`
 ---------
-  * code to generate cubes; cross studies
-  
+Code to generate synthetic test datasets
+  * `generate-easycube.c` -- C code to generate an easy L=3 case
+  * `generate-hardcube.c` -- C code to generate a more difficult L=3 case
+  * `generate-cross.c` -- C code to generate several L=5 cases supporting competing pathways
+    
 `RawData/`
 ----------
   * Phylogenies and feature lists for MRO and TB
