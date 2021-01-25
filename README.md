@@ -19,7 +19,8 @@ Scripts wrapping the curation, inference, and analysis process for different cas
   * `infer-verify.sh` -- generates verification datasets and runs HyperTraPS
   * `analyse-verify.sh` -- post hoc analysis of outputs from above
   * `plot-verify.sh` -- calls Gnuplot to produce graphical output of this analysis
-
+  * `prepare-all.sh` -- Bash script using the code below in `Process/` to set up TB and MRO datasets. TB, and MRO with NCBI phylogeny, are straightforwardly processed using `cook-data.sh`. MRO with TimeTree phylogeny is a bit more involved and has its own script `mro-timetree-parse.sh`.
+  
 `Inference/`
 ------------
 Code for the inference and post hoc analysis.
@@ -37,7 +38,6 @@ Code for the inference and post hoc analysis.
 `Process/`
 ----------
 Code for (1), distilling transition data suitable for HyperTraPS, for raw MRO and TB data. 
-  * `prepare-all.sh` -- Bash script using the code below to set up TB and MRO datasets. TB, and MRO with NCBI phylogeny, are straightforwardly processed using `cook-data.sh`. MRO with TimeTree phylogeny is a bit more involved and has its own script `mro-timetree-parse.sh`.
   * `prune-tree.py` -- Python code to reduce a raw Newick tree to just those nodes contained a barcode datafile
   * `internal-labels.c` -- C code to introduce dummy internal node labels (for use in followup preparation)
   * `parse-new.py` -- Python code to infer internal node barcodes and produce transition datafiles ready for HyperTraPS (and summary graphic for checking)
