@@ -160,7 +160,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   if(n0 > n1)
     {
       // the target comes before the source
-      printf("Wrong ordering, or some other problem with input file\n");
+      printf("Wrong ordering, or some other problem with input file. Remember that as of 2021, data file rows should be ordered ancestor then descendant!\n");
       exit(0);
     }
 
@@ -408,7 +408,7 @@ int main(int argc, char *argv[])
   int apm_seed, old_apm_seed, apm_step;
   int apm_type;
   
-  printf("\nHyperTraPS(-CT)\n16/04/20\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\n\n");
+  printf("\nHyperTraPS(-CT)\n25/01/21\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\n\n");
   
   // process command-line arguments
   if(argc != 9 && !(argc == 8 && atoi(argv[2]) == 0))
