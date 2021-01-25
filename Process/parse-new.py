@@ -58,8 +58,8 @@ for node in tree.traverse("postorder"):
     if not node.is_leaf(): # For all internal nodes
         for childnode in node.children:
             print(mydict[node.name], "(", node.name, ") -> ", mydict[childnode.name], "(", childnode.name, ")", "=", childnode.dist*float(arg3))
-            print(" ".join(str(x) for x in list(mydict[childnode.name])), file=fp)
             print(" ".join(str(x) for x in list(mydict[node.name])), file=fp)
+            print(" ".join(str(x) for x in list(mydict[childnode.name])), file=fp)
             print(childnode.dist*float(arg3), file=fptime)
 
 fp.close()
