@@ -2,12 +2,12 @@
 # this code addresses this with two approaches -- first, using close relatives; and second, manually adding species with uncertain divergence times
 
 # first, prune the tree to a pre-compiled list of species it does contain
-python prune-tree.py ../Data/Eukaryota_species.nwk ../Data/mro-timetree-species.txt
+python3 prune-tree.py ../Data/Eukaryota_species.nwk ../Data/mro-species-for-timetree.txt
 
 # in some cases we can approximate by relabelling close relatives with our species of interest
-cp Eukaryota_species.nwk-pruned.txt Eukaryota_species_edited.nwk
+cp ../Data/Eukaryota_species.nwk-pruned.txt ../Data/Eukaryota_species_edited.nwk
 sed -i 's/Reclinomonas_americana/Stygiella_incarcerata/g' ../Data/Eukaryota_species_edited.nwk
-sed -i 's/Euglypha_rotunda/Brevimastigomonas_sp\._RG-2016a/g' ../Data/Eukaryota_species_edited.nwk
+sed -i 's/Euglypha_rotunda/Brevimastigomonas_motovehiculus/g' ../Data/Eukaryota_species_edited.nwk
 sed -i 's/Piromyces_communis/Piromyces_sp\./g' ../Data/Eukaryota_species_edited.nwk
 sed -i 's/Neocallimastix_frontalis/Neocallimastix_sp\./g' ../Data/Eukaryota_species_edited.nwk
 sed -i 's/Spironucleus_barkhanus/Spironucleus/g' ../Data/Eukaryota_species_edited.nwk
@@ -17,7 +17,7 @@ gcc internal-labels.c -o internal-labels.ce
 ./internal-labels.ce ../Data/Eukaryota_species_edited.nwk > ../Data/mro-tree-tt-format.phy
 
 # parsing this tree gives us a reduced, but precisely specified, dataset
-python parse-new.py ../Data/mro-tree-tt-format.phy ../Data/mro-barcodes.csv
+python3 parse-new.py ../Data/mro-tree-tt-format.phy ../Data/mro-barcodes.csv 0.001
 
 
 # in other cases we need to manually add species
@@ -43,7 +43,7 @@ sed -i 's/)AS/,Blastocystis_sp.:8)AS/g' ../Data/mro-tree-ttplus-format.phy
 sed -i 's/)AU/,Pygsuia_biforma:9)AU/g' ../Data/mro-tree-ttplus-format.phy
 
 # parsing this tree gives us an expanded dataset for which some timings are uncertain
-python parse-new.py ../Data/mro-tree-ttplus-format.phy ../Data/mro-barcodes.csv
+python3 parse-new.py ../Data/mro-tree-ttplus-format.phy ../Data/mro-barcodes.csv 0.001
 
 # now populate the time ranges for these added entries
 cp ../Data/mro-tree-ttplus-format.phy-datatime.txt ../Data/mro-ttplus-1.txt

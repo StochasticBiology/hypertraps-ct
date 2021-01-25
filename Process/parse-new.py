@@ -1,4 +1,4 @@
-# takes two arguments -- a (pruned) Newick tree (argument 1) and a list of "barcode" observations
+# takes three arguments -- a (pruned) Newick tree (argument 1) and a list of "barcode" observations, and a time scaling factor (argument 3)
 # uses model assumptions to label internal nodes
 # outputs transitions and times to new files
 
@@ -45,9 +45,9 @@ for node in tree.traverse("postorder"):
     # A verbose output
     if not node.is_leaf(): # For all internal nodes
         for childnode in node.children:
-            print mydict[node.name], "(", node.name, ") -> ", mydict[childnode.name], "(", childnode.name, ")", "=", childnode.dist*1000
-            print >>fp, " ".join(str(x) for x in list(mydict[childnode.name]))
-            print >>fp, " ".join(str(x) for x in list(mydict[node.name]))
-            print >>fptime, childnode.dist*1000
+            print(mydict[node.name], "(", node.name, ") -> ", mydict[childnode.name], "(", childnode.name, ")", "=", childnode.dist*float(sys.argv[3]))
+            print(" ".join(str(x) for x in list(mydict[childnode.name])), file=fp)
+            print(" ".join(str(x) for x in list(mydict[node.name])), file=fp)
+            print(childnode.dist*float(sys.argv[3]), file=fptime)
 fp.close()
 fptime.close()
