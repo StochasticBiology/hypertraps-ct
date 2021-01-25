@@ -57,12 +57,14 @@ for node in tree.traverse("postorder"):
 fp.close()
 fptime.close()
 
+# label nodes with barcodes for checking output
 ts = TreeStyle()
 ts.show_leaf_name = True
 for leaf in tree.iter_leaves():
   thisleafcontent = TextFace(" ".join(str(x) for x in list(mydict[leaf.name])))
   leaf.add_face(thisleafcontent, 0, "aligned")
 
+# output check tree to file
 fname = str(arg1)+"-check.png"
 tree.render(str(fname), w=800, tree_style=ts)
 
