@@ -4,7 +4,7 @@ HyperTraPS(-CT)
 
 Inference of evolutionary and progressive pathways, in discrete or continuous time, using combinations of longitudinal, cross-sectional, and phylogenetically-linked observations.
 
-**Requirements:** Bash, Python 3 with ETE3, GCC, Gnuplot
+**Requirements:** Bash, Python 3 with ETE3 http://etetoolkit.org/download/ , GCC, Gnuplot
 
 The general inference process involves several steps:
   1. Distilling transition data suitable for HyperTraPS from the raw data of interest
