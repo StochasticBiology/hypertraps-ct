@@ -20,6 +20,7 @@ Scripts wrapping the curation, inference, and analysis process for different cas
   * `analyse-verify.sh` -- post hoc analysis of outputs from above
   * `plot-verify.sh` -- calls Gnuplot to produce graphical output of this analysis
   * `prepare-all.sh` -- Bash script using the code below in `Process/` to set up TB and MRO datasets. TB, and MRO with NCBI phylogeny, are straightforwardly processed using `cook-data.sh`. MRO with TimeTree phylogeny is a bit more involved and has its own script `mro-timetree-parse.sh`.
+  * `infer-tb.sh` -- runs HyperTraPS for TB data
   
 `Inference/`
 ------------
