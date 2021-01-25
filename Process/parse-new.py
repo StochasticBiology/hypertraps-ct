@@ -1,4 +1,4 @@
-# takes three arguments -- a (pruned) Newick tree (argument 1) and a list of "barcode" observations, and a time scaling factor (argument 3)
+# takes four arguments -- a (pruned) Newick tree (argument 1) and a list of "barcode" observations, and a time scaling factor (argument 3), and whether to consider loss/gain of traits (1/0)
 # uses model assumptions to label internal nodes
 # outputs transitions and times to new files
 
@@ -8,6 +8,7 @@ import sys
 arg1 = sys.argv[1]
 arg2 = sys.argv[2]
 arg3 = sys.argv[3]
+arg4 = sys.argv[4]
 
 # open file 1
 # read in Newick tree -- assumes that it's all on one line
@@ -33,13 +34,20 @@ with open(str(arg2)) as f:
 for node in tree.traverse("postorder"):
     # A verbose output
     if not node.is_leaf() and node.name not in mydict: # that is, for all internal (ancestral) nodes
-        # ones vector
-        ref = ['1']*ntraits
+        # reference (end state) vector
+        if int(arg4) == 0:
+            ref = ['1']*ntraits
+        else:
+            ref = ['0']*ntraits
         # go through children and assign 1s to ancestor if a descendant has them
         for childnode in node.children:
             for i, c in enumerate(mydict[childnode.name]):
-                if c == '0':
-                    ref[i] = '0'
+                if int(arg4) == 0:
+                    if c == '0':
+                        ref[i] = '0'
+                else:
+                    if c == '1':
+                        ref[i] = '1'
         mydict[node.name] = "".join(ref)
 
 # output reconstructed nodes and timings

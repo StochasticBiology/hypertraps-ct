@@ -1,4 +1,4 @@
-# needs three arguments: a tree and a set of barcodes, and a time scaling factor
+# needs four arguments: a tree and a set of barcodes, a time scaling factor, and loss/gain (1/0)
 # the tree should be in Newick format
 # the barcodes should be in CSV format with the sample name as the first column, with one header row
 
@@ -13,7 +13,7 @@ gcc internal-labels.c -o internal-labels.ce
 ./internal-labels.ce $1-cleaned.phy-pruned.txt > $1-cooked.txt
 
 # construct ancestral states and hence transition datafiles
-python3 parse-new.py $1-cooked.txt $2 $3 > $1-output.txt
+python3 parse-new.py $1-cooked.txt $2 $3 $4 > $1-output.txt
 
 
 
