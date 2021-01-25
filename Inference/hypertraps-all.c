@@ -648,7 +648,7 @@ int main(int argc, char *argv[])
 	  apm_seed = seed+t;
 	  for(i = 0; i < NVAL; i++)
 	    ntrans[i] = trans[i];
-	   if(APM_VERBOSE)
+	  if(APM_VERBOSE)
 	    {
 	      printf("step 1 (change u): apm_seed %i, ntrans[0] %f\n", apm_seed, ntrans[0]);
 	    }
@@ -658,11 +658,11 @@ int main(int argc, char *argv[])
       // compute likelihood for the new parameterisation
       if(apm_type == 1)
 	{
-	srand48(apm_seed);
-      if(APM_VERBOSE)
-	{
-	  printf("r seeded with %i, first call is %f\n", apm_seed, RND);
-	}
+	  srand48(apm_seed);
+	  if(APM_VERBOSE)
+	    {
+	      printf("r seeded with %i, first call is %f\n", apm_seed, RND);
+	    }
 	}
       nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s);
 
@@ -706,7 +706,7 @@ int main(int argc, char *argv[])
 	    {
 	      rej++; lrej++;
 	    }
-	  	  if(APM_VERBOSE)
+	  if(APM_VERBOSE)
 	    {
 	      printf("rejected: apm_seed %i trans[0] %f\n\n", apm_seed, trans[0]);
 	    }
