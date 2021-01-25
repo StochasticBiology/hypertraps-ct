@@ -340,16 +340,16 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
       if(VERBOSE)
 	{
 	  printf("Target %i: ", i);
-	  for(j = 0; j < len; j++) printf("%i", matrix[2*i*len+j]);
+	  for(j = 0; j < len; j++) printf("%i", matrix[2*i*len+len+j]);
 	  printf(" parent is: " );
-	  for(j = 0; j < len; j++) {  startpos[j] = matrix[2*i*len+len+j]; printf("%i", startpos[j]); }
+	  for(j = 0; j < len; j++) {  startpos[j] = matrix[2*i*len+j]; printf("%i", startpos[j]); }
 	  printf("\n");
 	}
       // initialise start position
       for(j = 0; j < len; j++)
 	startpos[j] = (matrix[2*i*len+len+j]);
       // get log-likelihood contribution from this pair (transition) using HyperTraPS
-      tlik = LikelihoodMultiple(&(matrix[2*i*len]), ntrans, len, startpos, tau1s[i], tau2s[i]);
+      tlik = LikelihoodMultiple(&(matrix[2*i*len+len]), ntrans, len, startpos, tau1s[i], tau2s[i]);
       tloglik = log(tlik);
       if(tlik < 0)
 	{
