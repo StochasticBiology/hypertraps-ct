@@ -1,6 +1,22 @@
 (
 (
 (
+(
+(
+'Brevimastigomonas motovehiculus':4)
+Brevimastigomonas:4)
+Cercomonadidae:4)
+Cercomonadida:4)
+Cercozoa:4,
+(
+(
+(
+'Stygiella incarcerata':4)
+Stygiella:4)
+Stygiellidae:4)
+Jakobida:4,
+(
+(
 'Pygsuia biforma':4)
 Pygsuia:4)
 Breviatea:4,
@@ -43,13 +59,6 @@ Armophorea:4)
 Ciliophora:4,
 (
 (
-(
-'Reclinomonas americana':4)
-Reclinomonas:4)
-Histionidae:4)
-Jakobida:4,
-(
-(
 'Cantina marsupialis':4)
 Cantina:4,
 (
@@ -60,15 +69,6 @@ Blastocystis:4)
 Blastocystidae:4)
 Opalinata:4
 )Bigyra:4,
-(
-(
-(
-(
-'Euglypha rotunda':4)
-Euglypha:4)
-Euglyphidae:4)
-Euglyphida:4)
-Imbricatea:4,
 (
 (
 (
@@ -169,8 +169,6 @@ Discosea:4,
 Dysnectes:4,
 (
 (
-(
-'Spironucleus barkhanus':4)
 Spironucleus:4,
 (
 'Giardia intestinalis':4)
