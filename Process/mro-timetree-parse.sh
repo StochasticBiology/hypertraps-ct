@@ -17,7 +17,7 @@ gcc internal-labels.c -o internal-labels.ce
 ./internal-labels.ce ../Data/Eukaryota_species_edited.nwk > ../Data/mro-tree-tt-format.phy
 
 # parsing this tree gives us a reduced, but precisely specified, dataset
-python3 parse-new.py ../Data/mro-tree-tt-format.phy ../Data/mro-barcodes.csv 0.001
+python3 parse-new.py ../Data/mro-tree-tt-format.phy ../Data/mro-barcodes.csv 0.001 > ../Data/mro-tree-tt-format.phy-output.txt
 
 
 # in other cases we need to manually add species
@@ -43,7 +43,7 @@ sed -i 's/)AS/,Blastocystis_sp.:8)AS/g' ../Data/mro-tree-ttplus-format.phy
 sed -i 's/)AU/,Pygsuia_biforma:9)AU/g' ../Data/mro-tree-ttplus-format.phy
 
 # parsing this tree gives us an expanded dataset for which some timings are uncertain
-python3 parse-new.py ../Data/mro-tree-ttplus-format.phy ../Data/mro-barcodes.csv 0.001
+python3 parse-new.py ../Data/mro-tree-ttplus-format.phy ../Data/mro-barcodes.csv 0.001 > ../Data/mro-tree-ttplus-format.phy-output.txt
 
 # now populate the time ranges for these added entries
 cp ../Data/mro-tree-ttplus-format.phy-datatime.txt ../Data/mro-ttplus-1.txt

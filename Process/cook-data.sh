@@ -13,6 +13,7 @@ gcc internal-labels.c -o internal-labels.ce
 ./internal-labels.ce $1-cleaned.phy-pruned.txt > $1-cooked.txt
 
 # construct ancestral states and hence transition datafiles
-python3 parse-new.py $1-cooked.txt $2 $3
+python3 parse-new.py $1-cooked.txt $2 $3 > $1-output.txt
+
 
 
