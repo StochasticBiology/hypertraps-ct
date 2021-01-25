@@ -3,8 +3,10 @@ mkdir VerifyData/
 cd Verify
 gcc -o3 generate-easycube.c -lm -o generate-easycube.ce
 gcc -o3 generate-hardcube.c -lm -o generate-hardcube.ce
+gcc -o3 generate-cross.c -lm -o generate-cross.ce
 ./generate-easycube.ce
 ./generate-hardcube.ce
+./generate-cross.ce
 cp synth* ../VerifyData
 
 cd ../Inference
