@@ -154,18 +154,18 @@ int main(int argc, char *argv[])
 			}
 		      printf("\n");
 
-		      // output current state to file, counting trait occurrences
-		      for(j = 0; j < L; j++)
-			{
-			  fprintf(fp1, "%i ", state[j]);
-      			  featured[j] += state[j];
-			}
-		      fprintf(fp1, "\n");
 		      // output previous state to file, counting trait occurrences
 		      for(j = 0; j < L; j++)
 			{
 			  fprintf(fp1, "%i ", prevstate[j]);
 			  featured[j] += prevstate[j];
+			}
+		      fprintf(fp1, "\n");
+		      // output current state to file, counting trait occurrences
+		      for(j = 0; j < L; j++)
+			{
+			  fprintf(fp1, "%i ", state[j]);
+      			  featured[j] += state[j];
 			}
 		      fprintf(fp1, "\n");
 
