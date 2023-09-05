@@ -44,6 +44,177 @@ double gsl_ran_gaussian(const double sigma)
   return sigma * y * sqrt (-2.0 * log (r2) / r2);
 }
 
+int mypow2(int r)
+{
+  int s = 1;
+  int i;
+  for(i = 1; i <= r; i++)
+    s *= 2;
+  return s;
+}
+
+void OutputTransitions(char *besttransstr, double *ntrans, int LEN)
+{
+  FILE *fp;
+  int i, j, k;
+  int statedec;
+  int state[LEN];
+  double rate, totrate;
+  
+  fp = fopen(besttransstr, "w");
+  fprintf(fp, "From To Probability\n");
+  
+  for(i = 0; i < mypow2(LEN); i++)
+    {
+      statedec = i;
+      for(j = LEN-1; j >= 0; j--)
+	{
+	  if(statedec >= mypow2(j))
+	    {
+	      state[LEN-1-j] = 1;
+	      statedec -= mypow2(j);
+	    }
+	  else
+	    state[LEN-1-j] = 0;
+	}
+
+      totrate = 0;
+      for(j = 0; j < LEN; j++)
+	{
+	  /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+	  if(state[j] == 0)
+	    {
+	      rate = ntrans[j*LEN+j];
+	      for(k = 0; k < LEN; k++)
+		rate += state[k]*ntrans[k*LEN+j];
+	      rate = exp(rate);
+	      totrate += rate;
+	    }
+	}
+
+      for(j = 0; j < LEN; j++)
+	{
+	  /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+	  if(state[j] == 0)
+	    {
+	      rate = ntrans[j*LEN+j];
+	      for(k = 0; k < LEN; k++)
+		rate += state[k]*ntrans[k*LEN+j];
+	      rate = exp(rate);
+	      fprintf(fp, "%i %i %e\n", i, i+mypow2(LEN-1-j), rate/totrate);
+	    }
+	}
+    }
+  fclose(fp);
+}
+
+
+void OutputStates(char *beststatesstr, double *ntrans, int LEN)
+{
+  FILE *fp;
+  int i, j, k, a;
+  int statedec;
+  int src, dest;
+  int state[LEN];
+  double rate, totrate;
+  int *active, *newactive;
+  double *probs;
+  int nactive, newnactive;
+  int level;
+  int found;
+  
+  fp = fopen(beststatesstr, "w");
+  fprintf(fp, "State Probability\n");
+
+  probs = (double*)malloc(sizeof(double)*mypow2(LEN));
+  active = (int*)malloc(sizeof(int)*mypow2(LEN));
+  newactive = (int*)malloc(sizeof(int)*mypow2(LEN));
+  for(i = 0; i < mypow2(LEN); i++)
+    probs[i] = 0;
+  level = 0;
+  
+  probs[0] = 1;
+  
+  active[0] = 0;
+  nactive = 1;
+  
+  while(nactive > 0)
+    {
+      newnactive = 0;
+      /*      printf("%i active\n", nactive);
+	      for(a = 0; a < nactive; a++)
+	      printf("%i ", active[a]);
+	      printf("\n\n"); */
+	    
+      for(a = 0; a < nactive; a++)
+	{
+	  src = active[a];
+	  statedec = src;
+	  for(j = LEN-1; j >= 0; j--)
+	    {
+	      if(statedec >= mypow2(j))
+		{
+		  state[LEN-1-j] = 1;
+		  statedec -= mypow2(j);
+		}
+	      else
+		state[LEN-1-j] = 0;
+	    }
+
+	  totrate = 0;
+	  for(j = 0; j < LEN; j++)
+	    {
+	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+	      if(state[j] == 0)
+		{
+		  rate = ntrans[j*LEN+j];
+		  for(k = 0; k < LEN; k++)
+		    rate += state[k]*ntrans[k*LEN+j];
+		  rate = exp(rate);
+		  totrate += rate;
+		}
+	    }
+
+	  for(j = 0; j < LEN; j++)
+	    {
+	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+	      if(state[j] == 0)
+		{
+		  dest = src+mypow2(LEN-1-j);
+		  rate = ntrans[j*LEN+j];
+		  for(k = 0; k < LEN; k++)
+		    rate += state[k]*ntrans[k*LEN+j];
+		  rate = exp(rate);
+		  probs[dest] += probs[src] * rate/totrate;
+		  //		  printf("%i: %i (from %i, %e): %e\n", level, dest, src, probs[src], probs[dest]);
+		
+		  found = 0;
+		  for(k = 0; k < newnactive; k++)
+		    {
+		      if(newactive[k] == dest) { found = 1; break; }
+		    }
+		  if(found == 0)
+		    newactive[newnactive++] = dest;
+		}
+	    }
+	}
+      for(a = 0; a < newnactive; a++)
+	active[a] = newactive[a];
+      nactive = newnactive;
+      level++;
+    }
+  
+  for(dest = 0; dest < mypow2(LEN); dest++)
+    fprintf(fp, "%i %e\n", dest, probs[dest]);
+
+  
+  fclose(fp);
+  free(active);
+  free(newactive);
+  free(probs);
+}
+
+
 // pick a new locus to change in state "state"; return it in "locus" and keep track of the on-course probability in "prob". "ntrans" is the transition matrix
 void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, double *beta, int LEN)
 {
@@ -55,15 +226,15 @@ void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, 
 
   nobiastotrate = 0;
 
-  /* compute the rate of loss of gene i given the current genome */
+  /* compute the rate of loss of gene i given the current genome -- without bias */
   for(i = 0; i < LEN; i++)
     {
-      /* ntrans must be the transition matrix. ntrans[0]-ntrans[LEN] are the bare rates. then ntrans[LEN+j*LEN+i] is the modifier for i from j*/
+       /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
       if(state[i] == 0)
 	{
-	  rate[i] = ntrans[i];
+	  rate[i] = ntrans[i*LEN+i];
 	  for(j = 0; j < LEN; j++)
-	    rate[i] += state[j]*ntrans[LEN+j*LEN+i];
+	    rate[i] += state[j]*ntrans[j*LEN+i];
 	  rate[i] = exp(rate[i]);
 	}
       else /* we've already lost this gene */
@@ -76,15 +247,15 @@ void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, 
 
   totrate = 0;
 
-  /* compute the rate of loss of gene i given the current genome */
+  /* compute the rate of loss of gene i given the current genome -- with bias */
   for(i = 0; i < LEN; i++)
     {
-      /* ntrans must be the transition matrix. ntrans[0]-ntrans[LEN] are the bare rates. then ntrans[LEN+j*LEN+i] is the modifier for i from j*/
+      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
       if(state[i] == 0 && targ[i] != 0)
 	{
-	  rate[i] = ntrans[i];
+	  rate[i] = ntrans[i*LEN+i];
 	  for(j = 0; j < LEN; j++)
-	    rate[i] += state[j]*ntrans[LEN+j*LEN+i];
+	    rate[i] += state[j]*ntrans[j*LEN+i];
 	  rate[i] = exp(rate[i]);
 	}
       else /* we've already lost this gene OR WE DON'T WANT IT*/
@@ -366,7 +537,22 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
   // return total log likelihood
   return loglik;
 }
- 
+
+void GetGradients(int *matrix, int len, int ntarg, double *trans, int *parents, double *tau1s, double *tau2s, double *gradients)
+{
+  double lik, newlik;
+  int i;
+  
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
+  for(i = 0; i < len*len; i++)
+    {
+      trans[i] += 0.1;
+      newlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
+      gradients[i] = (newlik-lik)/0.1;
+      trans[i] -= 0.1;
+    }
+}
+
 // main function processes command-line arguments and run the inference loop
 int main(int argc, char *argv[])
 {
@@ -374,7 +560,7 @@ int main(int argc, char *argv[])
   FILE *fp;
   int *matrix;
   int len, ntarg;
-  double *trans, *ntrans;
+  double *trans, *ntrans, *gradients;
   int t;
   int i, j;
   char ch;
@@ -384,7 +570,7 @@ int main(int argc, char *argv[])
   int seed;
   char str[200];
   char fstr[200];
-  char shotstr[200], bestshotstr[200];
+  char shotstr[200], bestshotstr[200], besttransstr[200], beststatesstr[200];
   double DELTA, MU;
   int NVAL;
   int expt;
@@ -407,6 +593,10 @@ int main(int argc, char *argv[])
   int losses;
   int apm_seed, old_apm_seed, apm_step;
   int apm_type;
+  int csv;
+    char likstr[100];
+  double testval;
+  char header[10000];
   
   printf("\nHyperTraPS(-CT)\n25/01/21\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\n\n");
   
@@ -469,19 +659,29 @@ int main(int argc, char *argv[])
       printf("Couldn't find observations file %s\n", argv[1]);
       return 0;
     }
-  i = 0; len = 0;
+  i = 0; len = 0; csv = 0;
   do{
     ch = fgetc(fp);
+    if((ch != '0' && ch != '1' && ch != '2' && ch != ' ' && ch != '\t' && ch != '\n') && i == 0)
+      {
+	printf("Found non-digit character before any entries: interpreting as CSV file format\n");
+	csv = 1;
+	rewind(fp);
+	do{ch = fgetc(fp); if(ch != '\n') header[i++] = ch; }while(ch != '\n');
+	i = 0;
+	ch = '\n';
+      }
     switch(ch)
       {
       case '0': matrix[i++] = (losses == 1 ? 1 : 0); break;
       case '1': matrix[i++] = (losses == 1 ? 0 : 1); break;
       case '2': matrix[i++] = 2; break;
-      case '\n': if(len == 0) len = i; break;
+      case '\n': if(len == 0) len = i; if(csv) { do{ch=fgetc(fp);}while(!feof(fp) && ch != ','); do{ch=fgetc(fp);}while(!feof(fp) && ch != ','); } break;
       }
   }while(!feof(fp));
+  if(csv) len /= 2;
   ntarg = i/len;
-  NVAL = len*(len+1);
+  NVAL = len*len;
   fclose(fp);
 
   // grab timings from data file provided
@@ -558,6 +758,7 @@ int main(int argc, char *argv[])
   // allocate memory and initialise output file
   trans = (double*)malloc(sizeof(double)*NVAL); 
   ntrans = (double*)malloc(sizeof(double)*NVAL);
+  gradients = (double*)malloc(sizeof(double)*NVAL);
   tmpmat = (double*)malloc(sizeof(double)*NVAL);
 
   // prepare output files
@@ -565,12 +766,17 @@ int main(int argc, char *argv[])
   fp = fopen(shotstr, "w"); fclose(fp);
   sprintf(bestshotstr, "%s-best-%i-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex, apm_type);
   fp = fopen(bestshotstr, "w"); fclose(fp);
+  sprintf(likstr, "%s-lik-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex);
+  fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood\n"); fclose(fp);
 
+  sprintf(besttransstr, "%s-trans-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex);
+  sprintf(beststatesstr, "%s-states-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex);
+  
   // initialise with an agnostic transition matrix
-  for(i = 0; i < len; i++)
-    trans[i] = 1;
-  for(i = len; i < len*(len+1); i++)
+  for(i = 0; i < len*len; i++)
     trans[i] = 0;
+  for(i = 0; i < len; i++)
+    trans[i*len+i] = 1;
 
   // compute initial likelihood given this matrix
   lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
@@ -605,6 +811,9 @@ int main(int argc, char *argv[])
 	    fprintf(fp, "%f ", trans[i]);
 	  fprintf(fp, "\n");
 	  fclose(fp);
+
+	  OutputTransitions(besttransstr, trans, len);
+  	  OutputStates(beststatesstr, trans, len);
 	}
 
       // output some info periodically
@@ -615,8 +824,12 @@ int main(int argc, char *argv[])
 	{
 	  // if we're burnt in, periodically sample the current parameterisation to an output file
 	  fp = fopen(shotstr, "a");
-	  for(i = 0; i < len*(len+1); i++)
+	  for(i = 0; i < len*len; i++)
 	    fprintf(fp, "%f ", trans[i]);
+	  fprintf(fp, "\n");
+	  fclose(fp);
+          fp = fopen(likstr, "a");
+          fprintf(fp, "%i,%f\n", t, lik);
 	  fprintf(fp, "\n");
 	  fclose(fp);
 	}

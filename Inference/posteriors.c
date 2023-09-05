@@ -68,12 +68,12 @@ void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double
 	  // compute the rate for feature i given the current set of features
 	  for(i = 0; i < len; i++)
 	    {
-	      // ntrans stores the transition matrix: ntrans[0]-ntrans[LEN] are the bare rates; ntrans[LEN+j*LEN+i] is the modifier for i from j
+	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
 	      if(state[i] == 0)
 		{
-	          rate[i] = ntrans[i];
+	          rate[i] = ntrans[i*len+i];
 	          for(j = 0; j < len; j++)
-		    rate[i] += state[j]*ntrans[len+j*len+i];
+		    rate[i] += state[j]*ntrans[j*len+i];
 		  rate[i] = exp(rate[i]);
 		}
 	      else // we've already lost this gene
@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
       while(!feof(fp))
 	{
 	  // read in single posterior sample
-	  for(i = 0; i < len*(len+1); i++)
+	  for(i = 0; i < len*len; i++)
 	    fscanf(fp, "%lf", &ntrans[i]);
 
 	  // this if statement controls which samples get processed
