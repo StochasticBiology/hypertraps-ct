@@ -4,9 +4,13 @@ HyperTraPS(-CT)
 
 Fall 2023 work
 -----
-In progress: updating workhorse code to output sensible L2 parameterisations and best state/transition values, retesting with old data
+In progress:
+* updating workhorse code to output sensible L2 parameterisations and best state/transition values
+* retesting with old data
 
-Next: make plots in R to match old document
+Next: 
+* make plots in R to match old document
+* test with direct time comparison
 
 
 Inference of evolutionary and progressive pathways, in discrete or continuous time, using combinations of longitudinal, cross-sectional, and phylogenetically-linked observations.
