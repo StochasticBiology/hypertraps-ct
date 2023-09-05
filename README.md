@@ -11,6 +11,8 @@ In progress:
 Next: 
 * make plots in R to match old document
 * test with direct time comparison
+* SGD
+* better command line interface
 
 
 Inference of evolutionary and progressive pathways, in discrete or continuous time, using combinations of longitudinal, cross-sectional, and phylogenetically-linked observations.
