@@ -402,17 +402,19 @@ int main(int argc, char *argv[])
 
   // this produces the heatmap of acquisition probability by feature and order
   // outputs both the original feature ordering and the above mean-sorted references
-  sprintf(str, "%s.process", argv[3]);
+  sprintf(str, "%s-bubbles.csv", argv[3]);
   fp = fopen(str, "w");
+  fprintf(fp, "t,ref,ordered.ref,name,prob\n");
   for(t = 0; t < len; t++)
     {
       for(i = 0; i < len; i++)
-	fprintf(fp, "%i %i %i %s %.15f\n", t, i, order[i], &names[FLEN*order[i]], drec[t*len+order[i]]);
+	fprintf(fp, "%i,%i,%i,%s,%.15f\n", t, i, order[i], &names[FLEN*order[i]], drec[t*len+order[i]]);
       fprintf(fp, "\n");
     }
 
   // these appended comments give gnuplot commands for axis labels if required: both in original and mean-sorted orderings
-  fprintf(fp, "# set xtics (");
+  // commented here, as we're shifting to csv format
+  /*  fprintf(fp, "# set xtics (");
   for(i = 0; i < len; i++)
     fprintf(fp, "\"%s\" %i%c", &names[FLEN*order[i]], i, (i == len-1 ? ')' : ','));
   fprintf(fp, "\n");
@@ -431,18 +433,19 @@ int main(int argc, char *argv[])
     fprintf(fp, "%s %.4f, ", &names[FLEN*order[i]], mean[i]);
   fprintf(fp, ")\n");
 
-  fclose(fp);
+  fclose(fp);*/
 
   // this stores the time histograms associated with acquisition times for each feature
   // remember here that we've scaled by BINSCALE to store in an integer-referenced array (see GetRoutes())
-  sprintf(str, "%s.ctrec.process", argv[3]);
+  sprintf(str, "%s-timehists.csv", argv[3]);
   fp = fopen(str, "w");
+  fprintf(fp, "ref,t,prob\n");
   for(i = 0; i < len; i++)
     {
       tmp = 0;
       for(j = 0; j < MAXCT; j++)
 	{
-	  fprintf(fp, "%i %f %.6f\n", i, j/BINSCALE, ctrec[MAXCT*i+j]/ctnorm);
+	  fprintf(fp, "%i,%f,%.6f\n", i, j/BINSCALE, ctrec[MAXCT*i+j]/ctnorm);
 	  tmp += ctrec[MAXCT*i+j]*j;
 	}
       printf("%i %.4f\n", i, tmp/ctnorm);
