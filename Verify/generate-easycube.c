@@ -97,8 +97,8 @@ int main(void)
 	    }
 	  if(samp2 != -1 && tc+tau > samp2)
 	    {
+      	      outputstr(fp, oldstate);
 	      outputstr(fp, state);
-	      outputstr(fp, oldstate);
 	      fprintf(fptime, "%f\n", samp2-oldsamp);
 	      samp2 = -1;
 	    }
