@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
   len = 0;
   for(i = 1; i < 200; i++)
     {
-      if(tlen == i*(i+1))
+      if(tlen == i*i)
 	{
 	  len = i;
 	  break;
