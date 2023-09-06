@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
       return 0;
     }
 
-  // figure out if posterior file is presented in L*(L+1) format; get L if so
+  // figure out if posterior file is presented in L*L format; get L if so
   len = 0;
   for(i = 1; i < 200; i++)
     {
@@ -270,8 +270,8 @@ int main(int argc, char *argv[])
   betas = (double*)malloc(sizeof(double)*len);
   route = (int*)malloc(sizeof(int)*len);
 
-  trans = (double*)malloc(sizeof(double)*len*(len+1)); /* transition matrix */
-  ntrans = (double*)malloc(sizeof(double)*len*(len+1));
+  trans = (double*)malloc(sizeof(double)*len*len); /* transition matrix */
+  ntrans = (double*)malloc(sizeof(double)*len*len);
   rec = (int*)malloc(sizeof(int)*len*len); /* stores step ordering, modified by getlikelihood */
   mean = (double*)malloc(sizeof(double)*len);
   meanstore = (double*)malloc(sizeof(double)*len);
@@ -404,7 +404,7 @@ int main(int argc, char *argv[])
   // outputs both the original feature ordering and the above mean-sorted references
   sprintf(str, "%s-bubbles.csv", argv[3]);
   fp = fopen(str, "w");
-  fprintf(fp, "t,ref,ordered.ref,name,prob\n");
+  fprintf(fp, "Time,ReorderedIndex,OriginalIndex,Name,Probability\n");
   for(t = 0; t < len; t++)
     {
       for(i = 0; i < len; i++)
@@ -439,7 +439,7 @@ int main(int argc, char *argv[])
   // remember here that we've scaled by BINSCALE to store in an integer-referenced array (see GetRoutes())
   sprintf(str, "%s-timehists.csv", argv[3]);
   fp = fopen(str, "w");
-  fprintf(fp, "ref,t,prob\n");
+  fprintf(fp, "OriginalIndex,Time,Probability\n");
   for(i = 0; i < len; i++)
     {
       tmp = 0;
