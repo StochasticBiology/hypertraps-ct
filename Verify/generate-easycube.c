@@ -56,9 +56,9 @@ int main(void)
 	  edges[i*_N+j] = 0;
 	}
     }
-  edges[7*_N+6] = 0.1;
-  edges[6*_N+4] = 1;
-  edges[4*_N+0] = 0.1;
+  edges[6*_N+7] = 0.1;
+  edges[4*_N+6] = 1;
+  edges[0*_N+4] = 0.1;
 
   fp = fopen("synth-easycube.txt", "w");
   for(i = 0; i < _N; i++)
@@ -73,7 +73,7 @@ int main(void)
   fptime = fopen("synth-easycube-time.txt", "w");
   for(n = 0; n < 1000; n++)
     {
-      tc = 0; state = 7;
+      tc = 0; state = 0;
       samp1 = RND*20;
       samp2 = samp1+RND*10;
 

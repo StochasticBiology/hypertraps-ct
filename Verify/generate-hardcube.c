@@ -56,18 +56,18 @@ int main(void)
 	  edges[i*_N+j] = 0;
 	}
     }
-  edges[1*_N+0] = RND;
-  edges[2*_N+0] = RND;
-  edges[3*_N+1] = RND;
-  edges[3*_N+2] = RND;
-  edges[4*_N+0] = RND;
-  edges[5*_N+1] = RND;
-  edges[5*_N+4] = RND;
-  edges[6*_N+2] = RND;
-  edges[6*_N+4] = RND;
-  edges[7*_N+3] = RND;
-  edges[7*_N+5] = RND;
-  edges[7*_N+6] = RND;
+  edges[0*_N+1] = RND;
+  edges[0*_N+2] = RND;
+  edges[1*_N+3] = RND;
+  edges[2*_N+3] = RND;
+  edges[0*_N+4] = RND;
+  edges[1*_N+5] = RND;
+  edges[4*_N+5] = RND;
+  edges[2*_N+6] = RND;
+  edges[4*_N+6] = RND;
+  edges[3*_N+7] = RND;
+  edges[5*_N+7] = RND;
+  edges[6*_N+7] = RND;
 
   fp = fopen("synth-hardcube.txt", "w");
   for(i = 0; i < _N; i++)
@@ -82,7 +82,7 @@ int main(void)
   fptime = fopen("synth-hardcube-time.txt", "w");
   for(n = 0; n < 1000; n++)
     {
-      tc = 0; state = 7;
+      tc = 0; state = 0;
       samp1 = RND*2;
       samp2 = samp1+RND*5;
 
