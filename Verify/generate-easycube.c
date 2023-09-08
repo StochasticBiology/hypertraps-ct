@@ -64,7 +64,7 @@ int main(void)
   for(i = 0; i < _N; i++)
     {
       for(j = 0; j < _N; j++)
-	fprintf(fp, "%f\n", edges[i*_N+j]);
+	fprintf(fp, "%i %i %f\n", i, j, edges[i*_N+j]);
     }
   fclose(fp);
 
