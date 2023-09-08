@@ -411,12 +411,12 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   nobiastotrate = 0;
   for(i = 0; i < LEN; i++)
     {
-      /* ntrans must be the transition matrix. ntrans[0]-ntrans[LEN] are the bare rates. then ntrans[LEN+j*LEN+i] is the modifier for i from j*/
+	  /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
       if(targ[i] == 0)
 	{
-	  tmprate = P[i];
+	  tmprate = P[i*LEN+i];
 	  for(j = 0; j < LEN; j++)
-	    tmprate += targ[j]*P[LEN+j*LEN+i];
+	    tmprate += targ[j]*P[j*LEN+i];
 	  tmprate = exp(tmprate);
 	}
       else /* we've already lost this gene */
@@ -766,11 +766,11 @@ int main(int argc, char *argv[])
   fp = fopen(shotstr, "w"); fclose(fp);
   sprintf(bestshotstr, "%s-best-%i-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex, apm_type);
   fp = fopen(bestshotstr, "w"); fclose(fp);
-  sprintf(likstr, "%s-lik-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex);
+  sprintf(likstr, "%s-lik-%i-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex, apm_type);
   fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood\n"); fclose(fp);
 
-  sprintf(besttransstr, "%s-trans-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex);
-  sprintf(beststatesstr, "%s-states-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex);
+  sprintf(besttransstr, "%s-trans-%i-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex, apm_type);
+  sprintf(beststatesstr, "%s-states-%i-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex, apm_type);
   
   // initialise with an agnostic transition matrix
   for(i = 0; i < len*len; i++)
