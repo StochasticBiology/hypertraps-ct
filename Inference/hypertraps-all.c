@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <time.h>
 
@@ -22,6 +23,21 @@
 #define VERBOSE 0
 int SPECTRUM_VERBOSE = 0;
 int APM_VERBOSE = 0;
+
+
+// impose limits on integer val to be between lo and hi
+void limiti(int *val, int lo, int hi)
+{
+  if(*val < lo) *val = lo;
+  if(*val > hi) *val = hi;
+} 
+
+// impose limits on double val to be between lo and hi
+void limitf(double *val, int lo, int hi)
+{
+  if(*val < lo) *val = lo;
+  if(*val > hi) *val = hi;
+}
 
 // produce gaussian random number
 double gsl_ran_gaussian(const double sigma)
@@ -553,6 +569,12 @@ void GetGradients(int *matrix, int len, int ntarg, double *trans, int *parents, 
     }
 }
 
+void helpandquit(void)
+{
+  	  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n\n");
+	  exit(0);
+}
+
 // main function processes command-line arguments and run the inference loop
 int main(int argc, char *argv[])
 {
@@ -597,44 +619,52 @@ int main(int argc, char *argv[])
     char likstr[100];
   double testval;
   char header[10000];
+  char obsfile[1000], timefile[1000], endtimefile[1000];
   
-  printf("\nHyperTraPS(-CT)\n25/01/21\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\n\n");
+  printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\n\n");
+
+  // default values
+  spectrumtype = 0;
+  lengthindex = 3;
+  kernelindex = 5;
+  losses = 0;
+  apm_type = 0;
+  strcpy(obsfile, "");
+  strcpy(timefile, "");
+  strcpy(endtimefile, "");
+
+  // deal with command-line arguments
+  if(argc < 2) helpandquit();
+  for(i = 1; i < argc; i+=2)
+    {
+      if(strcmp(argv[i], "--obs\0") == 0) strcpy(obsfile, argv[i+1]);
+      else if(strcmp(argv[i], "--times\0") == 0) { spectrumtype = 1; strcpy(timefile, argv[i+1]); }
+      else if(strcmp(argv[i], "--endtimes\0") == 0) strcpy(endtimefile, argv[i+1]);
+      else if(strcmp(argv[i], "--seed\0") == 0) seed = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--length\0") == 0) lengthindex = atof(argv[i+1]);
+      else if(strcmp(argv[i], "--kernel\0") == 0) kernelindex = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--losses\0") == 0) { losses = 1; i--;} 
+      else if(strcmp(argv[i], "--apm\0") == 0) {apm_type = 1; i--;}
+      else if(strcmp(argv[i], "--help\0") == 0) helpandquit();
+      else printf("Didn't understand argument %s\n", argv[i]);
+    }
+  limiti(&lengthindex, 0, 7);
+  limiti(&kernelindex, 0, 7);
   
-  // process command-line arguments
-  if(argc != 9 && !(argc == 8 && atoi(argv[2]) == 0))
-    {
-      printf("Usage (HyperTraPS):\n   hypertraps.ce [observations-file] 0 [random number seed] [length index] [kernel index] [considering losses (1) or gains (0)] [APM]\n\nor (HyperTraPS-CT):\n   hypertraps.ce [observations-file] [start-timings-file] [end-timings-file] [random number seed] [length index] [kernel index] [considering losses (1) or gains(0)] [APM]\n\n");
-      return 0;
-    }
-  if(argc == 9)
-    {
-      spectrumtype = 1;
-      seed = atoi(argv[4]);
-      lengthindex = atoi(argv[5]);
-      kernelindex = atoi(argv[6]);
-      losses = atoi(argv[7]);
-      apm_type = atoi(argv[8]);
-    }
-  if(argc == 8)
-    {
-      spectrumtype = 0;
-      seed = atoi(argv[3]);
-      lengthindex = atoi(argv[4]);
-      kernelindex = atoi(argv[5]);
-      losses = atoi(argv[6]);
-      apm_type = atoi(argv[7]);
-    }
-
-  printf("Running with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[continuous time]: %i\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n", argv[1], (argc == 7 ? "(NA)\0" : argv[2]), (argc == 7 ? "(NA)\0" : argv[3]), spectrumtype, seed, lengthindex, kernelindex, losses, apm_type);
-
+  if(spectrumtype == 1) {
+    printf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, losses, apm_type);
+  } else {
+    printf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n", obsfile, seed, lengthindex, kernelindex, losses, apm_type);
+  }
+  
   // initialise and allocate
-  maxt = (lengthindex == 1 ? 1000 : (lengthindex == 2 ? 10000 : lengthindex == 3 ? 100000 : (lengthindex == 4 ? 1000000 : (lengthindex == 5 ? 10000000 : 100))));
+  maxt = pow(10, lengthindex);
   if(maxt <= 10000) SAMPLE = 100; else SAMPLE = 1000;
 
   if(_EVERYITERATION)
     SAMPLE = 1;
 
-  srand48(121+seed);
+  srand48(seed);
   matrix = (int*)malloc(sizeof(int)*100000);
 
   // choose parameterisation based on command line
@@ -653,7 +683,7 @@ int main(int argc, char *argv[])
   
   // read data on changes from input file
   // if we're thinking about losses, we're regarding gene losses as feature acquisitions; and thus inverting the data
-  fp = fopen(argv[1], "r");
+  fp = fopen(obsfile, "r");
   if(fp == NULL)
     {
       printf("Couldn't find observations file %s\n", argv[1]);
@@ -688,7 +718,7 @@ int main(int argc, char *argv[])
   if(spectrumtype != 0)
     {
       ntau = 0;
-      fp = fopen(argv[2], "r");
+      fp = fopen(timefile, "r");
       if(fp == NULL)
 	{
 	  printf("Couldn't find start timings file %s\n", argv[2]);
@@ -706,14 +736,16 @@ int main(int argc, char *argv[])
 	  return 0;
 	}
 
-      ntau = 0;
-      fp = fopen(argv[3], "r");
+      fp = fopen(endtimefile, "r");
       if(fp == NULL)
 	{
-	  printf("Couldn't find end timings file %s\n", argv[3]);
-	  return 0;
+	  printf("Couldn't find end timings file -- I'm assuming that start times *are* end times (i.e. each observation has a precisely specified single time)\n");
+	  for(i = 0; i < ntau; i++) tau2s[i] = tau1s[i];
 	}
-      while(!feof(fp))
+      else
+	{
+        ntau = 0;
+	  while(!feof(fp))
 	{
 	  fscanf(fp, "%lf", &(tau2s[ntau]));
 	  if(tau2s[ntau] < tau1s[ntau])
@@ -723,7 +755,8 @@ int main(int argc, char *argv[])
 	    }
 	  if(!feof(fp)) { ntau++; }
 	}
-      fclose(fp);
+        fclose(fp);
+	}
       if(ntau != ntarg/2) 
 	{
 	  printf("I found %i timings and %i observation pairs -- these numbers should be equal.\n", ntau, ntarg);
@@ -743,7 +776,7 @@ int main(int argc, char *argv[])
   
   if(spectrumtype == 0)
     {
-      printf("Number of features is %i, I found %i observation pairs and made up %i (0-inf) ghost timings\n", len, ntarg/2, ntau);
+      printf("Number of features is %i, I found %i observation pairs\n", len, ntarg/2);
     }
   else
     {
@@ -762,15 +795,15 @@ int main(int argc, char *argv[])
   tmpmat = (double*)malloc(sizeof(double)*NVAL);
 
   // prepare output files
-  sprintf(shotstr, "%s-posterior-%i-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex, apm_type);
+  sprintf(shotstr, "%s-posterior-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, seed, lengthindex, kernelindex, apm_type);
   fp = fopen(shotstr, "w"); fclose(fp);
-  sprintf(bestshotstr, "%s-best-%i-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex, apm_type);
+  sprintf(bestshotstr, "%s-best-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, seed, lengthindex, kernelindex, apm_type);
   fp = fopen(bestshotstr, "w"); fclose(fp);
-  sprintf(likstr, "%s-lik-%i-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex, apm_type);
+  sprintf(likstr, "%s-lik-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, seed, lengthindex, kernelindex, apm_type);
   fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood\n"); fclose(fp);
 
-  sprintf(besttransstr, "%s-trans-%i-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex, apm_type);
-  sprintf(beststatesstr, "%s-states-%i-%i-%i-%i-%i.txt", argv[1], spectrumtype, seed, lengthindex, kernelindex, apm_type);
+  sprintf(besttransstr, "%s-trans-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, seed, lengthindex, kernelindex, apm_type);
+  sprintf(beststatesstr, "%s-states-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, seed, lengthindex, kernelindex, apm_type);
   
   // initialise with an agnostic transition matrix
   for(i = 0; i < len*len; i++)
