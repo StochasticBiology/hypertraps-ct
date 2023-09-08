@@ -4,12 +4,8 @@ HyperTraPS(-CT)
 
 Fall 2023 work
 -----
-In progress:
-* updating workhorse code to output sensible L2 parameterisations and best state/transition values -- DONE
-* retesting with old data -- DONE to some extent. CT really confounds the inference -- simple systems harder to infer -- *not convinced this is working*
-
 Next: 
-* make plots in R to match old document -- in progress
+* make plots in R to match old document -- SI done, main text to do
 * test with direct time comparison -- see above -- CT confounds inference
 * SGD
 * better command line interface -- commandline fork
