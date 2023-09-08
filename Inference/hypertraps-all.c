@@ -245,7 +245,7 @@ void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, 
   /* compute the rate of loss of gene i given the current genome -- without bias */
   for(i = 0; i < LEN; i++)
     {
-       /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
       if(state[i] == 0)
 	{
 	  rate[i] = ntrans[i*LEN+i];
@@ -427,7 +427,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   nobiastotrate = 0;
   for(i = 0; i < LEN; i++)
     {
-	  /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
       if(targ[i] == 0)
 	{
 	  tmprate = P[i*LEN+i];
@@ -571,10 +571,10 @@ void GetGradients(int *matrix, int len, int ntarg, double *trans, int *parents, 
 
 void helpandquit(int debug)
 {
-  	  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--help\t\t\t[show this message]\n--debug\t\t\t[show detailed debugging options]\n\n");
-	  if(debug)
-	    printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n\n");
-	  exit(0);
+  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent\n--sa\t\t\tuse simulated annealing--help\t\t\t[show this message]\n--debug\t\t\t[show detailed debugging options]\n\n");
+  if(debug)
+    printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n\n");
+  exit(0);
 }
 
 // main function processes command-line arguments and run the inference loop
@@ -618,11 +618,12 @@ int main(int argc, char *argv[])
   int apm_seed, old_apm_seed, apm_step;
   int apm_type;
   int csv;
-    char likstr[100];
+  char likstr[100];
   double testval;
   char header[10000];
   char obsfile[1000], timefile[1000], endtimefile[1000];
-  
+  int searchmethod;
+   
   printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\n\n");
 
   // default values
@@ -631,6 +632,7 @@ int main(int argc, char *argv[])
   kernelindex = 5;
   losses = 0;
   apm_type = 0;
+  searchmethod = 0;
   strcpy(obsfile, "");
   strcpy(timefile, "");
   strcpy(endtimefile, "");
@@ -654,6 +656,8 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--apmverbose\0") == 0) { APM_VERBOSE = 1; i--; }
       else if(strcmp(argv[i], "--outputperiod\0") == 0) TMODULE = atoi(argv[i+1]);
       else if(strcmp(argv[i], "--walkers\0") == 0) BANK = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--sgd\0") == 0) { searchmethod = 1; i--; }
+      else if(strcmp(argv[i], "--sa\0") == 0) { searchmethod = 2; i--; }
       
       else printf("Didn't understand argument %s\n", argv[i]);
     }
@@ -666,6 +670,11 @@ int main(int argc, char *argv[])
   } else {
     printf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n", obsfile, seed, lengthindex, kernelindex, BANK, losses, apm_type);
   }
+  switch(searchmethod) {
+  case 0: printf("Using MH MCMC\n"); break;
+  case 1: printf("Using SGD\n"); break;
+  case 2: printf("Using SA\n"); break;
+  } 
   
   // initialise and allocate
   maxt = pow(10, lengthindex);
@@ -724,6 +733,17 @@ int main(int argc, char *argv[])
   NVAL = len*len;
   fclose(fp);
 
+  printf("Observed transitions:\n");
+  for(i = 0; i < ntarg/2; i++)
+    {
+      for(j = 0; j < len; j++) printf("%i", matrix[2*len*i+j]);
+      printf(" -> ");
+      for(j = 0; j < len; j++) printf("%i", matrix[2*len*i+len+j]);
+      printf("\n");
+    }
+  if(losses == 1) printf("(where 1 is absence)\n\n");
+  if(losses == 0) printf("(where 1 is presence)\n\n");
+
   // grab timings from data file provided
   if(spectrumtype != 0)
     {
@@ -754,18 +774,18 @@ int main(int argc, char *argv[])
 	}
       else
 	{
-        ntau = 0;
+	  ntau = 0;
 	  while(!feof(fp))
-	{
-	  fscanf(fp, "%lf", &(tau2s[ntau]));
-	  if(tau2s[ntau] < tau1s[ntau])
 	    {
-	      printf("End time %f was less than start time %f!\n", tau2s[ntau], tau1s[ntau]);
-	      exit(0);
+	      fscanf(fp, "%lf", &(tau2s[ntau]));
+	      if(tau2s[ntau] < tau1s[ntau])
+		{
+		  printf("End time %f was less than start time %f!\n", tau2s[ntau], tau1s[ntau]);
+		  exit(0);
+		}
+	      if(!feof(fp)) { ntau++; }
 	    }
-	  if(!feof(fp)) { ntau++; }
-	}
-        fclose(fp);
+	  fclose(fp);
 	}
       if(ntau != ntarg/2) 
 	{
@@ -805,15 +825,15 @@ int main(int argc, char *argv[])
   tmpmat = (double*)malloc(sizeof(double)*NVAL);
 
   // prepare output files
-  sprintf(shotstr, "%s-posterior-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, seed, lengthindex, kernelindex, apm_type);
+  sprintf(shotstr, "%s-posterior-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, apm_type);
   fp = fopen(shotstr, "w"); fclose(fp);
-  sprintf(bestshotstr, "%s-best-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, seed, lengthindex, kernelindex, apm_type);
+  sprintf(bestshotstr, "%s-best-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, apm_type);
   fp = fopen(bestshotstr, "w"); fclose(fp);
-  sprintf(likstr, "%s-lik-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, seed, lengthindex, kernelindex, apm_type);
+  sprintf(likstr, "%s-lik-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, apm_type);
   fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood\n"); fclose(fp);
 
-  sprintf(besttransstr, "%s-trans-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, seed, lengthindex, kernelindex, apm_type);
-  sprintf(beststatesstr, "%s-states-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, seed, lengthindex, kernelindex, apm_type);
+  sprintf(besttransstr, "%s-trans-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, apm_type);
+  sprintf(beststatesstr, "%s-states-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, apm_type);
   
   // initialise with an agnostic transition matrix
   for(i = 0; i < len*len; i++)
@@ -834,140 +854,160 @@ int main(int argc, char *argv[])
   // run the chain
   for(t = 0; t < maxt; t++)
     {
-      if(t % SAMPLE == 0)
+      if(searchmethod == 0 || searchmethod == 2)
 	{
-	  // periodically output progress to a tracker file
-	  time(&timer);
-	  tm_info = localtime(&timer);
-
-	  strftime(buffer, 25, "%Y:%m:%d %H:%M:%S", tm_info);
-
-	  fp = fopen("alltrackernew.txt", "a");
-	  fprintf(fp, "%s %i %i %i %s\n", shotstr, t, maxt/5, maxt, buffer);
-	  fclose(fp);
-	}
-      if(lik > bestlik || t == 0)
-	{
-	  bestlik = lik;
-	  fp = fopen(bestshotstr, "w");
-	  for(i = 0; i < len*(len+1); i++)
-	    fprintf(fp, "%f ", trans[i]);
-	  fprintf(fp, "\n");
-	  fclose(fp);
-
-	  OutputTransitions(besttransstr, trans, len);
-  	  OutputStates(beststatesstr, trans, len);
-	}
-
-      // output some info periodically
-      if(t % SAMPLE == 0)
-	printf("%i - ", t);
-
-      if(t > maxt/5 && t % SAMPLE == 0)
-	{
-	  // if we're burnt in, periodically sample the current parameterisation to an output file
-	  fp = fopen(shotstr, "a");
-	  for(i = 0; i < len*len; i++)
-	    fprintf(fp, "%f ", trans[i]);
-	  fprintf(fp, "\n");
-	  fclose(fp);
-          fp = fopen(likstr, "a");
-          fprintf(fp, "%i,%f\n", t, lik);
-	  fprintf(fp, "\n");
-	  fclose(fp);
-	}
-
-      if(apm_type == 0 || t%2 == 0)
-	{
-	  // apply a perturbation to the existing parameterisation
-	  // non-uniform priors can be employed here if desired 
-	  for(i = 0; i < NVAL; i++)
+	  if(t % SAMPLE == 0)
 	    {
-	      ntrans[i] = trans[i];
-	      r = RND;
-	      if(r < MU)
-		{
-		  ntrans[i] += gsl_ran_gaussian(DELTA);
-		}
-	      if(ntrans[i] < -10) ntrans[i] = -10;
-	      if(ntrans[i] > 10) ntrans[i] = 10;
+	      // periodically output progress to a tracker file
+	      time(&timer);
+	      tm_info = localtime(&timer);
+
+	      strftime(buffer, 25, "%Y:%m:%d %H:%M:%S", tm_info);
+
+	      fp = fopen("alltrackernew.txt", "a");
+	      fprintf(fp, "%s %i %i %i %s\n", shotstr, t, maxt/5, maxt, buffer);
+	      fclose(fp);
 	    }
-	  if(APM_VERBOSE)
+	  if(lik > bestlik || t == 0)
 	    {
-	      printf("step 0 (change theta): apm_seed %i, ntrans[0] %f\n", apm_seed, ntrans[0]);
-	    }
-	}
-      else
-	{
-	  // change the random number seed and keep the parameterisation the same
-	  old_apm_seed = apm_seed;
-	  apm_seed = seed+t;
-	  for(i = 0; i < NVAL; i++)
-	    ntrans[i] = trans[i];
-	  if(APM_VERBOSE)
-	    {
-	      printf("step 1 (change u): apm_seed %i, ntrans[0] %f\n", apm_seed, ntrans[0]);
+	      bestlik = lik;
+	      fp = fopen(bestshotstr, "w");
+	      for(i = 0; i < len*(len+1); i++)
+		fprintf(fp, "%f ", trans[i]);
+	      fprintf(fp, "\n");
+	      fclose(fp);
+
+	      OutputTransitions(besttransstr, trans, len);
+	      OutputStates(beststatesstr, trans, len);
 	    }
 
-	}
-      
-      // compute likelihood for the new parameterisation
-      if(apm_type == 1)
-	{
-	  srand48(apm_seed);
-	  if(APM_VERBOSE)
+	  // output some info periodically
+	  if(t % SAMPLE == 0)
+	    printf("%i - ", t);
+
+	  if(t > maxt/5 && t % SAMPLE == 0)
 	    {
-	      printf("r seeded with %i, first call is %f\n", apm_seed, RND);
+	      // if we're burnt in, periodically sample the current parameterisation to an output file
+	      fp = fopen(shotstr, "a");
+	      for(i = 0; i < len*len; i++)
+		fprintf(fp, "%f ", trans[i]);
+	      fprintf(fp, "\n");
+	      fclose(fp);
+	      fp = fopen(likstr, "a");
+	      fprintf(fp, "%i,%f\n", t, lik);
+	      fprintf(fp, "\n");
+	      fclose(fp);
 	    }
-	}
-      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s);
 
-      if(APM_VERBOSE)
-	{
-	  printf("likelihood %f\n", nlik);
-	}
-      
-      // keep track of NaNs in calculations
-      if(isnan(nlik))
-	{
-	  nancount++;
-	}
-
-      // compare likelihood to previous
-      if(nlik >= lik || -(lik-nlik) > log(RND))
-	{
-	  // accept this new parameterisation
-	  lik = nlik;
-	  
 	  if(apm_type == 0 || t%2 == 0)
 	    {
-	      acc++; lacc++;
-	      for(i = 0; i < NVAL; i++)
-		trans[i] = ntrans[i];
-	    }
-	  if(APM_VERBOSE)
-	    {
-	      printf("accepted: apm_seed %i trans[0] %f\n\n", apm_seed, trans[0]);
-	    }
-	}
-      else 
-	{
-	  // reject the change
-
-	  if(apm_type == 1 && t%2 == 1)
-	    {
-	      apm_seed = old_apm_seed;
+	      // apply a perturbation to the existing parameterisation
+	      // non-uniform priors can be employed here if desired 
+		for(i = 0; i < NVAL; i++)
+		  {
+		    ntrans[i] = trans[i];
+		    r = RND;
+		    if(r < MU)
+		      {
+			ntrans[i] += gsl_ran_gaussian(DELTA);
+		      }
+		    if(ntrans[i] < -10) ntrans[i] = -10;
+		    if(ntrans[i] > 10) ntrans[i] = 10;
+		  }
+	      if(APM_VERBOSE)
+		{
+		  printf("step 0 (change theta): apm_seed %i, ntrans[0] %f\n", apm_seed, ntrans[0]);
+		}
 	    }
 	  else
 	    {
-	      rej++; lrej++;
+	      // change the random number seed and keep the parameterisation the same
+	      old_apm_seed = apm_seed;
+	      apm_seed = seed+t;
+	      for(i = 0; i < NVAL; i++)
+		ntrans[i] = trans[i];
+	      if(APM_VERBOSE)
+		{
+		  printf("step 1 (change u): apm_seed %i, ntrans[0] %f\n", apm_seed, ntrans[0]);
+		}
+
 	    }
+      
+	  // compute likelihood for the new parameterisation
+	  if(apm_type == 1)
+	    {
+	      srand48(apm_seed);
+	      if(APM_VERBOSE)
+		{
+		  printf("r seeded with %i, first call is %f\n", apm_seed, RND);
+		}
+	    }
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s);
+
 	  if(APM_VERBOSE)
 	    {
-	      printf("rejected: apm_seed %i trans[0] %f\n\n", apm_seed, trans[0]);
+	      printf("likelihood %f\n", nlik);
+	    }
+      
+	  // keep track of NaNs in calculations
+	  if(isnan(nlik))
+	    {
+	      nancount++;
+	    }
+
+	  testval = RND;
+	  if(searchmethod == 2)
+	    {
+	      testval = 0.1*sqrt(sqrt(t));
+	    }
+
+	  // compare likelihood to previous
+	  if(nlik >= lik || -(lik-nlik) > log(testval))
+	    {
+	      // accept this new parameterisation
+	      lik = nlik;
+	  
+	      if(apm_type == 0 || t%2 == 0)
+		{
+		  acc++; lacc++;
+		  for(i = 0; i < NVAL; i++)
+		    trans[i] = ntrans[i];
+		}
+	      if(APM_VERBOSE)
+		{
+		  printf("accepted: apm_seed %i trans[0] %f\n\n", apm_seed, trans[0]);
+		}
+	    }
+	  else 
+	    {
+	      // reject the change
+
+	      if(apm_type == 1 && t%2 == 1)
+		{
+		  apm_seed = old_apm_seed;
+		}
+	      else
+		{
+		  rej++; lrej++;
+		}
+	      if(APM_VERBOSE)
+		{
+		  printf("rejected: apm_seed %i trans[0] %f\n\n", apm_seed, trans[0]);
+		}
 	    }
 	}
-
+      if(searchmethod == 1)
+	{
+	  GetGradients(matrix, len, ntarg, trans, parents, tau1s, tau2s, gradients);
+	  for(i = 0; i < len*len; i++)
+	    {
+	      trans[i] = trans[i]+gradients[i]*0.1;
+	      if(trans[i] < -10) trans[i] = -10;
+	      if(trans[i] > 10) trans[i] = 10;
+	    }
+	  
+	  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
+	}
       //      if(t % SAMPLE == 0) printf("NaN count %i of %i\n", nancount, t);
 
       // output information periodically
