@@ -24,7 +24,6 @@ int VERBOSE = 0;
 int SPECTRUM_VERBOSE = 0;
 int APM_VERBOSE = 0;
 
-
 // impose limits on integer val to be between lo and hi
 void limiti(int *val, int lo, int hi)
 {
@@ -490,8 +489,6 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
       analyticI1 += exp(u*tau1); // just probability of dwelling at start
     }
 
-  
-    
   free(bank);
   free(reject);
   free(hits);
@@ -825,15 +822,15 @@ int main(int argc, char *argv[])
   tmpmat = (double*)malloc(sizeof(double)*NVAL);
 
   // prepare output files
-  sprintf(shotstr, "%s-posterior-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, apm_type);
+  sprintf(shotstr, "%s-posterior-%i-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, BANK, apm_type);
   fp = fopen(shotstr, "w"); fclose(fp);
-  sprintf(bestshotstr, "%s-best-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, apm_type);
+  sprintf(bestshotstr, "%s-best-%i-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, BANK, apm_type);
   fp = fopen(bestshotstr, "w"); fclose(fp);
-  sprintf(likstr, "%s-lik-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, apm_type);
+  sprintf(likstr, "%s-lik-%i-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, BANK, apm_type);
   fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood\n"); fclose(fp);
 
-  sprintf(besttransstr, "%s-trans-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, apm_type);
-  sprintf(beststatesstr, "%s-states-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, apm_type);
+  sprintf(besttransstr, "%s-trans-%i-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, BANK, apm_type);
+  sprintf(beststatesstr, "%s-states-%i-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, BANK, apm_type);
   
   // initialise with an agnostic transition matrix
   for(i = 0; i < len*len; i++)
@@ -854,6 +851,7 @@ int main(int argc, char *argv[])
   // run the chain
   for(t = 0; t < maxt; t++)
     {
+      // MCMC or simulated annealing
       if(searchmethod == 0 || searchmethod == 2)
 	{
 	  if(t % SAMPLE == 0)
@@ -872,7 +870,7 @@ int main(int argc, char *argv[])
 	    {
 	      bestlik = lik;
 	      fp = fopen(bestshotstr, "w");
-	      for(i = 0; i < len*(len+1); i++)
+	      for(i = 0; i < len*len; i++)
 		fprintf(fp, "%f ", trans[i]);
 	      fprintf(fp, "\n");
 	      fclose(fp);
@@ -894,8 +892,10 @@ int main(int argc, char *argv[])
 	      fprintf(fp, "\n");
 	      fclose(fp);
 	      fp = fopen(likstr, "a");
-	      fprintf(fp, "%i,%f\n", t, lik);
-	      fprintf(fp, "\n");
+	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s);
+	      fprintf(fp, "%i,%f,", t, nlik);
+	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s);
+	      fprintf(fp, "%f\n", nlik);
 	      fclose(fp);
 	    }
 
@@ -930,7 +930,6 @@ int main(int argc, char *argv[])
 		{
 		  printf("step 1 (change u): apm_seed %i, ntrans[0] %f\n", apm_seed, ntrans[0]);
 		}
-
 	    }
       
 	  // compute likelihood for the new parameterisation
@@ -981,7 +980,6 @@ int main(int argc, char *argv[])
 	  else 
 	    {
 	      // reject the change
-
 	      if(apm_type == 1 && t%2 == 1)
 		{
 		  apm_seed = old_apm_seed;
@@ -996,6 +994,7 @@ int main(int argc, char *argv[])
 		}
 	    }
 	}
+      // gradient descent
       if(searchmethod == 1)
 	{
 	  GetGradients(matrix, len, ntarg, trans, parents, tau1s, tau2s, gradients);
