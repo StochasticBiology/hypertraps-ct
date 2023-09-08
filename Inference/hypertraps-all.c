@@ -14,13 +14,13 @@
 #define _MAXN 2000
 
 // number of trajectories N_h, and frequencies of sampling for posteriors and for output
-#define BANK 200
-#define TMODULE 100
+int BANK = 200;
+int TMODULE = 100;
 
-#define _EVERYITERATION 0
+int _EVERYITERATION = 0;
 
 // control output
-#define VERBOSE 0
+int VERBOSE = 0;
 int SPECTRUM_VERBOSE = 0;
 int APM_VERBOSE = 0;
 
@@ -569,9 +569,11 @@ void GetGradients(int *matrix, int len, int ntarg, double *trans, int *parents, 
     }
 }
 
-void helpandquit(void)
+void helpandquit(int debug)
 {
-  	  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n\n");
+  	  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--help\t\t\t[show this message]\n--debug\t\t\t[show detailed debugging options]\n\n");
+	  if(debug)
+	    printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n\n");
 	  exit(0);
 }
 
@@ -634,7 +636,7 @@ int main(int argc, char *argv[])
   strcpy(endtimefile, "");
 
   // deal with command-line arguments
-  if(argc < 2) helpandquit();
+  if(argc < 2) helpandquit(0);
   for(i = 1; i < argc; i+=2)
     {
       if(strcmp(argv[i], "--obs\0") == 0) strcpy(obsfile, argv[i+1]);
@@ -645,16 +647,34 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--kernel\0") == 0) kernelindex = atoi(argv[i+1]);
       else if(strcmp(argv[i], "--losses\0") == 0) { losses = 1; i--;} 
       else if(strcmp(argv[i], "--apm\0") == 0) {apm_type = 1; i--;}
-      else if(strcmp(argv[i], "--help\0") == 0) helpandquit();
+      else if(strcmp(argv[i], "--help\0") == 0) helpandquit(0);
+      else if(strcmp(argv[i], "--debug\0") == 0) helpandquit(1);
+      else if(strcmp(argv[i], "--verbose\0") == 0) { VERBOSE = 1; i--; }
+      else if(strcmp(argv[i], "--spectrumverbose\0") == 0) { SPECTRUM_VERBOSE = 1; i--; }
+      else if(strcmp(argv[i], "--apmverbose\0") == 0) { APM_VERBOSE = 1; i--; }
+      else if(strcmp(argv[i], "--outputperiod\0") == 0) TMODULE = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--walkers\0") == 0) BANK = atoi(argv[i+1]);
+      
       else printf("Didn't understand argument %s\n", argv[i]);
     }
   limiti(&lengthindex, 0, 7);
   limiti(&kernelindex, 0, 7);
-  
+
+  // number of trajectories N_h, and frequencies of sampling for posteriors and for output
+int BANK = 200;
+int TMODULE = 100;
+
+int _EVERYITERATION = 0;
+
+// control output
+int VERBOSE = 0;
+int SPECTRUM_VERBOSE = 0;
+int APM_VERBOSE = 0;
+ 
   if(spectrumtype == 1) {
-    printf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, losses, apm_type);
+    printf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type);
   } else {
-    printf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n", obsfile, seed, lengthindex, kernelindex, losses, apm_type);
+    printf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n", obsfile, seed, lengthindex, kernelindex, BANK, losses, apm_type);
   }
   
   // initialise and allocate
@@ -686,7 +706,7 @@ int main(int argc, char *argv[])
   fp = fopen(obsfile, "r");
   if(fp == NULL)
     {
-      printf("Couldn't find observations file %s\n", argv[1]);
+      printf("Couldn't find observations file %s\n", obsfile);
       return 0;
     }
   i = 0; len = 0; csv = 0;
@@ -721,7 +741,7 @@ int main(int argc, char *argv[])
       fp = fopen(timefile, "r");
       if(fp == NULL)
 	{
-	  printf("Couldn't find start timings file %s\n", argv[2]);
+	  printf("Couldn't find start timings file %s\n", timefile);
 	  return 0;
 	}
       while(!feof(fp))
