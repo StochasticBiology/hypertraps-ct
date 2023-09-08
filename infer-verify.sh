@@ -26,8 +26,8 @@ gcc -o3 hypertraps-all.c -lm -o hypertraps-all.ce
 ./hypertraps-all.ce --obs ../VerifyData/synth-2-data.txt --times ../VerifyData/synth-2-times.txt --seed 2 --length 5 --kernel 3 > ../VerifyData/tmp-synth-6 &
 
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-0.txt --times ../VerifyData/synth-cross-times-0.txt --seed 1 --length 4 --kernel 5 > ../VerifyData/cross03125.tmp &
-./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --times ../VerifyData/synth-cross-times-0.txt --seed 1 --length 4 --kernel 5 > ../VerifyData/cross13125.tmp &
-./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-2.txt --times ../VerifyData/synth-cross-times-0.txt --seed 1 --length 4 --kernel 5 > ../VerifyData/cross23125.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --times ../VerifyData/synth-cross-times-1.txt --seed 1 --length 4 --kernel 5 > ../VerifyData/cross13125.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-2.txt --times ../VerifyData/synth-cross-times-2.txt --seed 1 --length 4 --kernel 5 > ../VerifyData/cross23125.tmp &
 
 ./hypertraps-all.ce --obs ../VerifyData/synth-easycube-data.txt --times ../VerifyData/synth-easycube-time.txt --seed 1 --length 4 --kernel 5 > ../VerifyData/hardcube3125.tmp &
 ./hypertraps-all.ce --obs ../VerifyData/synth-hardcube-data.txt --times ../VerifyData/synth-hardcube-time.txt --seed 1 --length 4 --kernel 5 > ../VerifyData/hardcube3125.tmp &
