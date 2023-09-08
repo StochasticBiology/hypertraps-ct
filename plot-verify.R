@@ -1,31 +1,20 @@
 library(ggplot2)
+library(gridExtra)
 source("plot-trans.R")
 
 #### bubble and hypercube plots for test cases
 
-fname = "Test/synth-cross-samples-0.txt"
-bubble.name = paste(c(fname, "-posterior-0-1-2-5-0.txt-bubbles.csv"), collapse="")
-trans.name = paste(c(fname, "-trans-0-1-2-5-0.txt"), collapse="")
-states.name = paste(c(fname, "-states-0-1-2-5-0.txt"), collapse="")
-
-fname = "VerifyData/synth-cross-samples-2.txt"
-bubble.name = paste(c(fname, "-posterior-1-1-2-5-0.txt-bubbles.csv"), collapse="")
-trans.name = paste(c(fname, "-trans-1-1-2-5.txt"), collapse="")
-states.name = paste(c(fname, "-states-1-1-2-5.txt"), collapse="")
-
-fname = "VerifyData/synth-easycube-data.txt"
-bubble.name = paste(c(fname, "-posterior-0-1-1-5-0.txt-bubbles.csv"), collapse="")
-trans.name = paste(c(fname, "-trans-0-1-1-5.txt"), collapse="")
-states.name = paste(c(fname, "-states-0-1-1-5.txt"), collapse="")
-
-
-bubbles.df = read.csv(bubble.name)
-ggplot(bubbles.df, aes(x=Time, y=OriginalIndex, size=Probability)) + geom_point()
-
-trans.df = read.csv(trans.name, sep=" ")
-states.df = read.csv(states.name, sep=" ")
-
-plot.hypercube3(trans.df)
+fname = c("VerifyData/synth-cross-samples-0.txt", "VerifyData/synth-cross-samples-1.txt", "VerifyData/synth-cross-samples-2.txt")
+bdf = data.frame()
+for(i in 1:length(fname)) {
+bubble.name = paste(c(fname[i], "-posterior-1-1-2-5-0.txt-bubbles.csv"), collapse="")
+tmpdf = read.csv(bubble.name)
+tmpdf$Expt=i
+bdf = rbind(bdf, tmpdf)
+}
+g.bubbles = ggplot(bdf, aes(x=Time+Expt/10, y=OriginalIndex, size=Probability, color=factor(Expt))) +
+  geom_point() +
+  theme_light()
 
 #### let's try to reproduce the previous paper figures
 
@@ -153,3 +142,16 @@ for(i in 1:12) {
 g.hard.hist = ggplot(hist.df, aes(x=log(probscale),fill=factor(edge))) + 
   geom_histogram(position="identity", alpha=0.2) + 
   theme_light()
+
+rcdf = read.csv("Verify/randomcubes.txt", header=FALSE, sep=" ")
+g.timehist = ggplot(rcdf[rcdf$V1!=0,]) + 
+  geom_line(aes(x=V2,y=V3, color=factor(V1))) +
+  geom_point(aes(x=V2,y=V4, color=factor(V1)), size=5, alpha=0.2) +
+  geom_point(aes(x=V2,y=V5, color=factor(V1))) +
+  xlim(0,12) + 
+  theme_light()
+
+sf = 2
+png("plot-verify.png", width=800*sf, height=800*sf, res=72*sf)
+grid.arrange(g.timehist, g.easy, g.hard, g.hard.hist, g.bubbles, nrow=3)
+dev.off()
