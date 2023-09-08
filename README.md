@@ -12,7 +12,7 @@ Next:
 * make plots in R to match old document -- in progress
 * test with direct time comparison -- see above -- CT confounds inference
 * SGD
-* better command line interface
+* better command line interface -- commandline fork
 
 
 Inference of evolutionary and progressive pathways, in discrete or continuous time, using combinations of longitudinal, cross-sectional, and phylogenetically-linked observations.
