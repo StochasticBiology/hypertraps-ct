@@ -660,16 +660,6 @@ int main(int argc, char *argv[])
   limiti(&lengthindex, 0, 7);
   limiti(&kernelindex, 0, 7);
 
-  // number of trajectories N_h, and frequencies of sampling for posteriors and for output
-int BANK = 200;
-int TMODULE = 100;
-
-int _EVERYITERATION = 0;
-
-// control output
-int VERBOSE = 0;
-int SPECTRUM_VERBOSE = 0;
-int APM_VERBOSE = 0;
  
   if(spectrumtype == 1) {
     printf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type);
