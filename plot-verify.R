@@ -1,0 +1,155 @@
+library(ggplot2)
+source("plot-trans.R")
+
+#### bubble and hypercube plots for test cases
+
+fname = "Test/synth-cross-samples-0.txt"
+bubble.name = paste(c(fname, "-posterior-0-1-2-5-0.txt-bubbles.csv"), collapse="")
+trans.name = paste(c(fname, "-trans-0-1-2-5-0.txt"), collapse="")
+states.name = paste(c(fname, "-states-0-1-2-5-0.txt"), collapse="")
+
+fname = "VerifyData/synth-cross-samples-2.txt"
+bubble.name = paste(c(fname, "-posterior-1-1-2-5-0.txt-bubbles.csv"), collapse="")
+trans.name = paste(c(fname, "-trans-1-1-2-5.txt"), collapse="")
+states.name = paste(c(fname, "-states-1-1-2-5.txt"), collapse="")
+
+fname = "VerifyData/synth-easycube-data.txt"
+bubble.name = paste(c(fname, "-posterior-0-1-1-5-0.txt-bubbles.csv"), collapse="")
+trans.name = paste(c(fname, "-trans-0-1-1-5.txt"), collapse="")
+states.name = paste(c(fname, "-states-0-1-1-5.txt"), collapse="")
+
+
+bubbles.df = read.csv(bubble.name)
+ggplot(bubbles.df, aes(x=Time, y=OriginalIndex, size=Probability)) + geom_point()
+
+trans.df = read.csv(trans.name, sep=" ")
+states.df = read.csv(states.name, sep=" ")
+
+plot.hypercube3(trans.df)
+
+#### let's try to reproduce the previous paper figures
+
+### easy cube with gains not losses with new code
+
+df = read.csv("VerifyData/synth-easycube-data.txt-posterior-1-1-2-5-0.txt", header=FALSE, sep=" ")
+
+# old parameterisation
+#colnames(df) = c("t0on0", "t1on1", "t2on2", "na0", "t0on1", "t0on2", "t1on0", "na1", "t1on2", "t2on0", "t2on1", "na2")
+# new parameterisation
+colnames(df) = c("t0on0", "t0on1", "t0on2", "t1on0", "t1on1", "t1on2", "t2on0", "t2on1", "t2on2")
+
+df$t0.1 = exp(df$t2on2)
+df$t0.2 = exp(df$t1on1)
+df$t0.4 = exp(df$t0on0)
+df$t1.3 = exp(df$t1on1 + df$t2on1)
+df$t1.5 = exp(df$t0on0 + df$t2on0)
+df$t2.3 = exp(df$t2on2 + df$t1on2)
+df$t2.6 = exp(df$t0on0 + df$t1on0)
+df$t4.5 = exp(df$t2on2 + df$t0on2)
+df$t4.6 = exp(df$t1on1 + df$t0on1)
+df$t3.7 = exp(df$t0on0 + df$t2on0 + df$t1on0)
+df$t5.7 = exp(df$t1on1 + df$t2on1 + df$t0on1)
+df$t6.7 = exp(df$t2on2 + df$t1on2 + df$t0on2)
+
+nodes.df = data.frame(x = c(0, 1, 1, 2, 1, 2, 2, 3),
+                      y = c(0, 1, 0, 1,-1, 0,-1, 0),
+                      label = 0:7)
+edge.src = c(0,0,0,1,1,2,2,4,4,3,5,6)
+edge.dst = c(1,2,4,3,5,3,6,5,6,7,7,7)
+edges.df = data.frame()
+for(i in 1:length(edge.src)) {
+  edges.df = rbind(edges.df, data.frame(x=nodes.df$x[edge.src[i]+1], y=nodes.df$y[edge.src[i]+1],
+                                        xend=nodes.df$x[edge.dst[i]+1], yend=nodes.df$y[edge.dst[i]+1]))
+}
+means = c(mean(df$t0.1), mean(df$t0.2), mean(df$t0.4),
+          mean(df$t1.3), mean(df$t1.5), mean(df$t2.3),
+          mean(df$t2.6), mean(df$t4.5), mean(df$t4.6),
+          mean(df$t3.7), mean(df$t5.7), mean(df$t6.7))
+sds = c(sd(df$t0.1), sd(df$t0.2), sd(df$t0.4),
+        sd(df$t1.3), sd(df$t1.5), sd(df$t2.3),
+        sd(df$t2.5), sd(df$t4.5), sd(df$t4.6),
+        sd(df$t3.7), sd(df$t5.7), sd(df$t6.7))
+edges.df$label = ""
+for(i in 1:nrow(edges.df)) {
+  edges.df$label[i] = paste(c(signif(means[i], digits=2), "+-", signif(sds[i], digits=2)), collapse="")
+}
+true.df = read.csv("VerifyData/synth-easycube.txt", header=FALSE, sep=" ")
+edges.df$truelabel = ""
+for(i in 1:nrow(edges.df)) {
+  edges.df$truelabel[i] = true.df$V3[true.df$V1==edge.src[i] & true.df$V2==edge.dst[i]]
+}
+
+g.easy = ggplot() + geom_segment(data=edges.df, aes(x=x,y=y,xend=xend,yend=yend), color="#AAAAAA") +
+  geom_point(data=nodes.df, aes(x=x,y=y), size=6) + 
+  geom_text(data=nodes.df, aes(x=x,y=y,label=label), color="white") + 
+  geom_text(data=edges.df, aes(x=(x+2*xend)/3, y=(y+2*yend)/3+0.05, label=label), color="red") +
+  geom_text(data=edges.df, aes(x=(x+2*xend)/3, y=(y+2*yend)/3-0.05, label=truelabel), color="blue") +
+  theme_void()
+
+
+### hard cube with gains not losses with new code
+
+df = read.csv("VerifyData/synth-hardcube-data.txt-posterior-1-1-2-5-0.txt", header=FALSE, sep=" ")
+
+# old parameterisation
+#colnames(df) = c("t0on0", "t1on1", "t2on2", "na0", "t0on1", "t0on2", "t1on0", "na1", "t1on2", "t2on0", "t2on1", "na2")
+# new parameterisation
+colnames(df) = c("t0on0", "t0on1", "t0on2", "t1on0", "t1on1", "t1on2", "t2on0", "t2on1", "t2on2")
+
+df$t0.1 = exp(df$t2on2)
+df$t0.2 = exp(df$t1on1)
+df$t0.4 = exp(df$t0on0)
+df$t1.3 = exp(df$t1on1 + df$t2on1)
+df$t1.5 = exp(df$t0on0 + df$t2on0)
+df$t2.3 = exp(df$t2on2 + df$t1on2)
+df$t2.6 = exp(df$t0on0 + df$t1on0)
+df$t4.5 = exp(df$t2on2 + df$t0on2)
+df$t4.6 = exp(df$t1on1 + df$t0on1)
+df$t3.7 = exp(df$t0on0 + df$t2on0 + df$t1on0)
+df$t5.7 = exp(df$t1on1 + df$t2on1 + df$t0on1)
+df$t6.7 = exp(df$t2on2 + df$t1on2 + df$t0on2)
+
+nodes.df = data.frame(x = c(0, 1, 1, 2, 1, 2, 2, 3),
+                      y = c(0, 1, 0, 1,-1, 0,-1, 0),
+                      label = 0:7)
+edge.src = c(0,0,0,1,1,2,2,4,4,3,5,6)
+edge.dst = c(1,2,4,3,5,3,6,5,6,7,7,7)
+edges.df = data.frame()
+for(i in 1:length(edge.src)) {
+  edges.df = rbind(edges.df, data.frame(x=nodes.df$x[edge.src[i]+1], y=nodes.df$y[edge.src[i]+1],
+                                        xend=nodes.df$x[edge.dst[i]+1], yend=nodes.df$y[edge.dst[i]+1]))
+}
+means = c(mean(df$t0.1), mean(df$t0.2), mean(df$t0.4),
+          mean(df$t1.3), mean(df$t1.5), mean(df$t2.3),
+          mean(df$t2.6), mean(df$t4.5), mean(df$t4.6),
+          mean(df$t3.7), mean(df$t5.7), mean(df$t6.7))
+sds = c(sd(df$t0.1), sd(df$t0.2), sd(df$t0.4),
+        sd(df$t1.3), sd(df$t1.5), sd(df$t2.3),
+        sd(df$t2.5), sd(df$t4.5), sd(df$t4.6),
+        sd(df$t3.7), sd(df$t5.7), sd(df$t6.7))
+edges.df$label = ""
+for(i in 1:nrow(edges.df)) {
+  edges.df$label[i] = paste(c(signif(means[i], digits=2), "+-", signif(sds[i], digits=2)), collapse="")
+}
+true.df = read.csv("VerifyData/synth-hardcube.txt", header=FALSE, sep=" ")
+edges.df$truelabel = ""
+for(i in 1:nrow(edges.df)) {
+  edges.df$truelabel[i] = signif(true.df$V3[true.df$V1==edge.src[i] & true.df$V2==edge.dst[i]], digits=3)
+}
+
+g.hard = ggplot() + geom_segment(data=edges.df, aes(x=x,y=y,xend=xend,yend=yend), color="#AAAAAA") +
+  geom_point(data=nodes.df, aes(x=x,y=y), size=6) + 
+  geom_text(data=nodes.df, aes(x=x,y=y,label=label), color="white") + 
+  geom_text(data=edges.df, aes(x=(x+2*xend)/3, y=(y+2*yend)/3+0.05, label=label), color="red") +
+  geom_text(data=edges.df, aes(x=(x+2*xend)/3, y=(y+2*yend)/3-0.05, label=truelabel), color="blue") +
+  theme_void()
+
+hist.df = data.frame()
+for(i in 1:12) {
+  colref = 10+i
+  trueval = as.numeric(edges.df$truelabel[i])
+  hist.df = rbind(hist.df, data.frame(edge=i, probscale=df[,colref]/trueval))
+}
+g.hard.hist = ggplot(hist.df, aes(x=log(probscale),fill=factor(edge))) + 
+  geom_histogram(position="identity", alpha=0.2) + 
+  theme_light()
