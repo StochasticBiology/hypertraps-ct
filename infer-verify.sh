@@ -16,18 +16,19 @@ cd ../Inference
 # compile and run hypertraps code
 gcc -o3 hypertraps-all.c -lm -o hypertraps-all.ce
 
-./hypertraps-all.ce ../VerifyData/synth-0-data.txt ../VerifyData/synth-0-times.txt ../VerifyData/synth-0-times.txt 1 3 3 0 0 > ../VerifyData/tmp-synth-1 &
-./hypertraps-all.ce ../VerifyData/synth-0-data.txt ../VerifyData/synth-0-times.txt ../VerifyData/synth-0-times.txt 2 3 3 0 0 > ../VerifyData/tmp-synth-2 &
+./hypertraps-all.ce --obs ../VerifyData/synth-0-data.txt --times ../VerifyData/synth-0-times.txt --seed 1 --length 5 --kernel 3 > ../VerifyData/tmp-synth-1 &
+./hypertraps-all.ce --obs ../VerifyData/synth-0-data.txt --times ../VerifyData/synth-0-times.txt --seed 2 --length 5 --kernel 3 > ../VerifyData/tmp-synth-2 &
 
-./hypertraps-all.ce ../VerifyData/synth-1-data.txt ../VerifyData/synth-1-times.txt ../VerifyData/synth-1-times.txt 1 3 3 0 0 > ../VerifyData/tmp-synth-3 &
-./hypertraps-all.ce ../VerifyData/synth-1-data.txt ../VerifyData/synth-1-times.txt ../VerifyData/synth-1-times.txt 2 3 3 0 0 > ../VerifyData/tmp-synth-4 &
+./hypertraps-all.ce --obs ../VerifyData/synth-1-data.txt --times ../VerifyData/synth-1-times.txt --seed 1 --length 5 --kernel 3 > ../VerifyData/tmp-synth-3 &
+./hypertraps-all.ce --obs ../VerifyData/synth-1-data.txt --times ../VerifyData/synth-1-times.txt --seed 2 --length 5 --kernel 3 > ../VerifyData/tmp-synth-4 &
 
-./hypertraps-all.ce ../VerifyData/synth-2-data.txt ../VerifyData/synth-2-times.txt ../VerifyData/synth-2-times.txt 1 3 3 0 0 > ../VerifyData/tmp-synth-5 &
-./hypertraps-all.ce ../VerifyData/synth-2-data.txt ../VerifyData/synth-2-times.txt ../VerifyData/synth-2-times.txt 2 3 3 0 0 > ../VerifyData/tmp-synth-6 &
+./hypertraps-all.ce --obs ../VerifyData/synth-2-data.txt --times ../VerifyData/synth-2-times.txt --seed 1 --length 5 --kernel 3 > ../VerifyData/tmp-synth-5 &
+./hypertraps-all.ce --obs ../VerifyData/synth-2-data.txt --times ../VerifyData/synth-2-times.txt --seed 2 --length 5 --kernel 3 > ../VerifyData/tmp-synth-6 &
 
+./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-0.txt --times ../VerifyData/synth-cross-times-0.txt --seed 1 --length 4 --kernel 5 > ../VerifyData/cross03125.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --times ../VerifyData/synth-cross-times-0.txt --seed 1 --length 4 --kernel 5 > ../VerifyData/cross13125.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-2.txt --times ../VerifyData/synth-cross-times-0.txt --seed 1 --length 4 --kernel 5 > ../VerifyData/cross23125.tmp &
 
-./hypertraps-all.ce ../VerifyData/synth-cross-samples-0.txt ../VerifyData/synth-cross-times-0.txt ../VerifyData/synth-cross-times-0.txt 1 2 5 0 0 > ../VerifyData/cross03125.tmp &
-./hypertraps-all.ce ../VerifyData/synth-cross-samples-1.txt ../VerifyData/synth-cross-times-1.txt ../VerifyData/synth-cross-times-1.txt 1 2 5 0 0 > ../VerifyData/cross13125.tmp &
-./hypertraps-all.ce ../VerifyData/synth-cross-samples-2.txt ../VerifyData/synth-cross-times-2.txt ../VerifyData/synth-cross-times-2.txt 1 2 5 0 0 > ../VerifyData/cross23125.tmp &
-./hypertraps-all.ce ../VerifyData/synth-hardcube-data.txt ../VerifyData/synth-hardcube-time.txt ../VerifyData/synth-hardcube-time.txt 1 2 5 0 0 > ../VerifyData/hardcube3125.tmp &
-./hypertraps-all.ce ../VerifyData/synth-easycube-data.txt ../VerifyData/synth-easycube-time.txt ../VerifyData/synth-easycube-time.txt 1 2 5 0 0 > ../VerifyData/easycube3125.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-easycube-data.txt --times ../VerifyData/synth-easycube-time.txt --seed 1 --length 4 --kernel 5 > ../VerifyData/hardcube3125.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-hardcube-data.txt --times ../VerifyData/synth-hardcube-time.txt --seed 1 --length 4 --kernel 5 > ../VerifyData/hardcube3125.tmp &
+
