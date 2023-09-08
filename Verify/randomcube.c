@@ -54,16 +54,16 @@ int main(void)
 	    {
 	      // edge going from i to j
 	      edges[i*_N+j] = 0;
-	      if((i == 7 && (j == 3 || j == 5 || j == 6)) || (i == 3 && (j == 2 || j == 1)) || (i == 5 && (j == 1 || j == 4)) || (i == 6 && (j == 2 || j == 4)) || (i == 1 && j == 0) || (i == 2 && j == 0) || (i == 4 && j == 0))
+	      if((i == 0 && (j == 4 || j == 2 || j == 1)) || (i == 4 && (j == 5 || j == 6)) || (i == 2 && (j == 6 || j == 3)) || (i == 1 && (j == 5 || j == 3)) || (i == 6 && j == 7) || (i == 5 && j == 7) || (i == 3 && j == 7))
 		edges[i*_N+j] = 0.1+RND;
 	    }
 	}
       if(run == 0)
 	{
-	  edges[7*_N+5] = 1;
-	  edges[7*_N+3] = 0.1;
-	  edges[5*_N+1] = 0.03;
-	  edges[3*_N+1] = 10;
+	  edges[0*_N+2] = 1;
+	  edges[0*_N+4] = 0.1;
+	  edges[2*_N+6] = 0.03;
+	  edges[4*_N+6] = 10;
 	}
 
       // first get probability of being in state 1 at time t by sampling trajectories
@@ -73,9 +73,9 @@ int main(void)
 
       for(n = 0; n < 100000; n++)
 	{
-	  tc = 0; state = 7;
+	  tc = 0; state = 0;
 	  // loop until we get to the opposite corner
-	  for(;state != 0;)
+	  for(;state != 7;)
 	    {
 	      // build propensities
 	      total = 0; cumsum[0] = 0;
@@ -87,7 +87,7 @@ int main(void)
 		}
 	      // sample dt
 	      tau = expsample(total);
-	      if(state == 1 && tc+tau < 100)
+	      if(state == 6 && tc+tau < 100)
 		{
 		  for(tmpt = ((int)tc)+1; tmpt < tc+tau; tmpt++)
 		    sampled[tmpt]++;
@@ -112,20 +112,20 @@ int main(void)
 	    beta[i] += edges[i*_N+j];
 	}
 
-      // path1 = 111-011-001 7-3-1
-      // path2 = 111-101-001 7-5-1
+      // path1 = 000-100-110 0-4-6
+      // path2 = 000-010-110 0-2-6
       // easy to compute the explicit probabilities
-      prob_path1 = edges[7*_N+3]/beta[7] * edges[3*_N+1]/beta[3];
-      prob_path2 = edges[7*_N+5]/beta[7] * edges[5*_N+1]/beta[5];
-      v1_path1 = beta[7]*beta[3] * (1./(beta[3]-beta[7]));
-      v2_path1 = beta[7]*beta[3] * (1./(beta[7]-beta[3]));
-      v1_path2 = beta[7]*beta[5] * (1./(beta[5]-beta[7])); 
-      v2_path2 = beta[7]*beta[5] * (1./(beta[7]-beta[5]));
-      w1_path1 = beta[7];
-      w2_path1 = beta[3];
-      w1_path2 = beta[7];
-      w2_path2 = beta[5];
-      u = -beta[1];
+      prob_path1 = edges[0*_N+4]/beta[0] * edges[4*_N+6]/beta[4];
+      prob_path2 = edges[0*_N+2]/beta[0] * edges[2*_N+6]/beta[2];
+      v1_path1 = beta[0]*beta[4] * (1./(beta[4]-beta[0]));
+      v2_path1 = beta[0]*beta[4] * (1./(beta[0]-beta[4]));
+      v1_path2 = beta[0]*beta[2] * (1./(beta[2]-beta[0])); 
+      v2_path2 = beta[0]*beta[2] * (1./(beta[0]-beta[2]));
+      w1_path1 = beta[0];
+      w2_path1 = beta[4];
+      w1_path2 = beta[0];
+      w2_path2 = beta[2];
+      u = -beta[6];
 
       for(t = 0; t < 100; t ++)
 	{
@@ -141,18 +141,18 @@ int main(void)
 
       for(n = 0; n < _NH; n++)
 	{
-	  t = 0; state = 7; step = 0; alpha[n] = 1;
-	  for(;state != 1;)
+	  t = 0; state = 0; step = 0; alpha[n] = 1;
+	  for(;state != 6;)
 	    {
-	      tmpalpha = edges[state*_N+5]/beta[state] + edges[state*_N+3]/beta[state] + edges[state*_N+1]/beta[state];
+	      tmpalpha = edges[state*_N+2]/beta[state] + edges[state*_N+4]/beta[state] + edges[state*_N+6]/beta[state];
 	      recbeta[10*n+step] = beta[state];
 	      alpha[n] *= tmpalpha;
 
 	      total = 0; cumsum[0] = 0;
 	      for(j = 0; j < _N; j++)
 		{
-		  chance[j] = (j == 5 || j == 3 || j == 1)*edges[state*_N+j];
-		  cumsum[j] = (j == 0 ? 0 : cumsum[j-1])+chance[j];
+		  chance[j] = (j == 2 || j == 4 || j == 6)*edges[state*_N+j];
+		  cumsum[j] = (j == 7 ? 0 : cumsum[j-1])+chance[j];
 		  total += chance[j];
 		}
 	      r = RND;
@@ -171,7 +171,7 @@ int main(void)
 	      v2 = recbeta[10*n+0]*recbeta[10*n+1] * (1./(recbeta[10*n+0]-recbeta[10*n+1]));
 	      w1 = recbeta[10*n+0];
 	      w2 = recbeta[10*n+1];
-	      u = -beta[1]; 
+	      u = -beta[6]; 
 	      analytic += exp(u*t)*(prob_path*(v1*(1.-exp(-t*(w1 + u)))/(w1 + u) + v2*(1.-exp(-t*(w2 + u)))/(w2 + u)));
 	    }
 	  scores[200+t] = analytic;
