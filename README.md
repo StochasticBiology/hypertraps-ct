@@ -7,7 +7,8 @@ Fall 2023 work
 Next: 
 * make plots in R to match old document -- SI done, main text to do
 * test with direct time comparison -- *doing this for crosses, inserted into infer script but not analyse or plot scripts -- to do*
-* SGD
+* also scripts for comparing effect of bank, SA, SGD
+* SGD -- done not tested
 
 Inference of evolutionary and progressive pathways, in discrete or continuous time, using combinations of longitudinal, cross-sectional, and phylogenetically-linked observations.
 
