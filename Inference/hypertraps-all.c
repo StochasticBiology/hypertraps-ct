@@ -568,7 +568,7 @@ void GetGradients(int *matrix, int len, int ntarg, double *trans, int *parents, 
 
 void helpandquit(int debug)
 {
-  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent\n--sa\t\t\tuse simulated annealing--help\t\t\t[show this message]\n--debug\t\t\t[show detailed debugging options]\n\n");
+  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent\n--sa\t\t\tuse simulated annealing\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--help\t\t\t[show this message]\n--debug\t\t\t[show detailed debugging options]\n\n");
   if(debug)
     printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n\n");
   exit(0);
@@ -620,7 +620,9 @@ int main(int argc, char *argv[])
   char header[10000];
   char obsfile[1000], timefile[1000], endtimefile[1000];
   int searchmethod;
-   
+  int filelabel;
+  char labelstr[1000];
+  
   printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\n\n");
 
   // default values
@@ -629,6 +631,7 @@ int main(int argc, char *argv[])
   kernelindex = 5;
   losses = 0;
   apm_type = 0;
+  filelabel = 0;
   searchmethod = 0;
   strcpy(obsfile, "");
   strcpy(timefile, "");
@@ -639,6 +642,7 @@ int main(int argc, char *argv[])
   for(i = 1; i < argc; i+=2)
     {
       if(strcmp(argv[i], "--obs\0") == 0) strcpy(obsfile, argv[i+1]);
+      else if(strcmp(argv[i], "--label\0") == 0) { filelabel = 1; strcpy(labelstr, argv[i+1]); }
       else if(strcmp(argv[i], "--times\0") == 0) { spectrumtype = 1; strcpy(timefile, argv[i+1]); }
       else if(strcmp(argv[i], "--endtimes\0") == 0) strcpy(endtimefile, argv[i+1]);
       else if(strcmp(argv[i], "--seed\0") == 0) seed = atoi(argv[i+1]);
@@ -821,16 +825,20 @@ int main(int argc, char *argv[])
   gradients = (double*)malloc(sizeof(double)*NVAL);
   tmpmat = (double*)malloc(sizeof(double)*NVAL);
 
+  if(filelabel == 0)
+    {
+      sprintf(labelstr, "%s-%i-%i-%i-%i-%i-%i-%i", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, BANK, apm_type);
+    }
   // prepare output files
-  sprintf(shotstr, "%s-posterior-%i-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, BANK, apm_type);
+  sprintf(shotstr, "%s-posterior.txt", labelstr);
   fp = fopen(shotstr, "w"); fclose(fp);
-  sprintf(bestshotstr, "%s-best-%i-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, BANK, apm_type);
+  sprintf(bestshotstr, "%s-best.txt", labelstr);
   fp = fopen(bestshotstr, "w"); fclose(fp);
-  sprintf(likstr, "%s-lik-%i-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, BANK, apm_type);
+  sprintf(likstr, "%s-lik.txt", labelstr);
   fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood\n"); fclose(fp);
 
-  sprintf(besttransstr, "%s-trans-%i-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, BANK, apm_type);
-  sprintf(beststatesstr, "%s-states-%i-%i-%i-%i-%i-%i-%i.txt", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, BANK, apm_type);
+  sprintf(besttransstr, "%s-trans.txt", labelstr);
+  sprintf(beststatesstr, "%s-states.txt", labelstr);
   
   // initialise with an agnostic transition matrix
   for(i = 0; i < len*len; i++)
