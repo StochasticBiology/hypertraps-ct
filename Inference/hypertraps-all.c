@@ -633,6 +633,7 @@ int main(int argc, char *argv[])
   losses = 0;
   apm_type = 0;
   filelabel = 0;
+  crosssectional = 0;
   searchmethod = 0;
   crosssectional = 0;
   strcpy(obsfile, "");
