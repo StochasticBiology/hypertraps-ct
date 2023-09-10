@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #define RND drand48()
 
@@ -174,6 +175,13 @@ void Label(char *names, int len)
     }
 }
 
+void helpandquit(int debug)
+{
+  printf("Options [defaults]:\n\n--posterior file.txt\tposteriors file [NA]\n--seed N\t\trandom seed [0]\n--binscale X\t\tscale for time bins [10]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--verbose\t\tverbose file output\n--help\t\t\t[show this message]\n\n");
+  exit(0);
+}
+
+
 int main(int argc, char *argv[])
 {
   FILE *fp;
@@ -206,24 +214,38 @@ int main(int argc, char *argv[])
   int verbose;
   int fref;
   double BINSCALE;
+  char postfile[1000];
+  int filelabel;
+  char labelstr[1000];
   
-  // process command-line arguments
-  if(argc < 4)
-    {
-      printf("Usage:\n posteriors.ce [verbose flag] [bin scale] [posterior sample file(s)]\n");
-      return 0;
-    }
-  verbose = atoi(argv[1]);
-  printf("Verbose flag is %i\n", verbose);
+  // default values
+  BINSCALE = 10;
+  verbose = 0;
+  filelabel = 0;
+  seed = 0;
 
-  BINSCALE = atof(argv[2]);
+    printf("HyperTraPS(-CT) posterior analysis\n");
+
+    // deal with command-line arguments
+  if(argc < 2) helpandquit(0);
+  for(i = 1; i < argc; i+=2)
+    {
+      if(strcmp(argv[i], "--posterior\0") == 0) strcpy(postfile, argv[i+1]);
+      else if(strcmp(argv[i], "--label\0") == 0) { filelabel = 1; strcpy(labelstr, argv[i+1]); }
+      else if(strcmp(argv[i], "--seed\0") == 0) seed = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--binscale\0") == 0) BINSCALE = atof(argv[i+1]);
+      else if(strcmp(argv[i], "--verbose\0") == 0) { verbose = 1; i--; }
+      else if(strcmp(argv[i], "--help\0") == 0) helpandquit(0);
+    }
+
+  printf("Verbose flag is %i\n", verbose);
   printf("Bin scale is %f\n", BINSCALE);
   
   // open posterior file to assess format
-  fp = fopen(argv[3], "r");
+  fp = fopen(postfile, "r");
   if(fp == NULL)
     {
-      printf("Couldn't open file %i: %s\n", 1, argv[3]);
+      printf("Couldn't open posterior file %s\n", postfile);
       return 0;
     }
   tlen = 0;
@@ -235,7 +257,7 @@ int main(int argc, char *argv[])
 
   if(ch == EOF)
     {
-      printf("Couldn't find appropriate samples in file %s\n", argv[3]);
+      printf("Couldn't find appropriate samples in file %s\n", postfile);
       return 0;
     }
 
@@ -251,15 +273,15 @@ int main(int argc, char *argv[])
     }
   if(len == 0)
     {
-      printf("Couldn't determine number of features from %s\n", argv[3]);
+      printf("Couldn't determine number of features from %s\n", postfile);
       return 0;
     }
 
-  printf("Based on %s , there are %i features\n", argv[3], len);
+  printf("Based on %s , there are %i features\n", postfile, len);
 
 
   // initialise and allocate a lot of different arrays to compute and store statistics
-  srand48(121+seed);
+  srand48(seed);
   allruns  =0;
   ntarg = 0;
   Label(names, len);
@@ -291,30 +313,26 @@ int main(int argc, char *argv[])
   for(i = 0; i < len; i++)
     fmeanstore[i] = 0;
 
+  if(filelabel == 0)
+    sprintf(labelstr, "%s", postfile);
+
+  printf("Output label is %s\n", labelstr);
+  
   // set up file outputs
   if(verbose)
     {
-      sprintf(fstr, "%s-routes.txt", argv[3]);
+      sprintf(fstr, "%s-routes.txt", labelstr);
       fp1 = fopen(fstr, "w");
-      sprintf(fstr, "%s-betas.txt", argv[3]);
+      sprintf(fstr, "%s-betas.txt", labelstr);
       fp2 = fopen(fstr, "w");
-      sprintf(fstr, "%s-times.txt", argv[3]);
+      sprintf(fstr, "%s-times.txt", labelstr);
       fp3 = fopen(fstr, "w");
     }
-
-  // loop through specified posterior files
-  printf("Trying %i files\n", argc-3);
-  for(fref = 3; fref < argc; fref++)
-    {
+  
       // try to open this file
-      fp = fopen(argv[fref], "r");
-      if(fp == NULL)
-	{
-	  printf("Couldn't open file %i: %s\n", fref, argv[fref]);
-	  return 0;
-	}
+      fp = fopen(postfile, "r");
       count = 0;
-      printf("Working on file %i: %s\n", fref-1, argv[fref]);
+      printf("Working on file %s\n", postfile);
 
       // loop through posterior samples in this file
       while(!feof(fp))
@@ -325,7 +343,7 @@ int main(int argc, char *argv[])
 
 	  // this if statement controls which samples get processed
 	  // if we want to include burn-in or subsampling, can put it here
-	  if(!feof(fp))// && count % 5 == 0)// && count > 100 && count % 5 == 0)
+	  if(!feof(fp) && count > 50)// && count % 5 == 0)// && count > 100 && count % 5 == 0)
 	    {
 	      // loop through iterations
 	      for(j = 0; j< NSAMP; j++)
@@ -362,7 +380,7 @@ int main(int argc, char *argv[])
 	  fclose(fp2);
 	  fclose(fp3);
 	} 
-    }
+	 
 
   // output various summaries
   for(i = 0; i < len; i++)
@@ -402,7 +420,7 @@ int main(int argc, char *argv[])
 
   // this produces the heatmap of acquisition probability by feature and order
   // outputs both the original feature ordering and the above mean-sorted references
-  sprintf(str, "%s-bubbles.csv", argv[3]);
+  sprintf(str, "%s-bubbles.csv", labelstr);
   fp = fopen(str, "w");
   fprintf(fp, "Time,ReorderedIndex,OriginalIndex,Name,Probability\n");
   for(t = 0; t < len; t++)
@@ -437,7 +455,7 @@ int main(int argc, char *argv[])
 
   // this stores the time histograms associated with acquisition times for each feature
   // remember here that we've scaled by BINSCALE to store in an integer-referenced array (see GetRoutes())
-  sprintf(str, "%s-timehists.csv", argv[3]);
+  sprintf(str, "%s-timehists.csv", labelstr);
   fp = fopen(str, "w");
   fprintf(fp, "OriginalIndex,Time,Probability\n");
   for(i = 0; i < len; i++)

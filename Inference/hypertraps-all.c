@@ -622,6 +622,7 @@ int main(int argc, char *argv[])
   int searchmethod;
   int filelabel;
   char labelstr[1000];
+  int crosssectional;
   
   printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\n\n");
 
@@ -633,6 +634,7 @@ int main(int argc, char *argv[])
   apm_type = 0;
   filelabel = 0;
   searchmethod = 0;
+  crosssectional = 0;
   strcpy(obsfile, "");
   strcpy(timefile, "");
   strcpy(endtimefile, "");
@@ -653,6 +655,7 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--help\0") == 0) helpandquit(0);
       else if(strcmp(argv[i], "--debug\0") == 0) helpandquit(1);
       else if(strcmp(argv[i], "--verbose\0") == 0) { VERBOSE = 1; i--; }
+      else if(strcmp(argv[i], "--crosssectional\0") == 0) { crosssectional = 1; i--; }
       else if(strcmp(argv[i], "--spectrumverbose\0") == 0) { SPECTRUM_VERBOSE = 1; i--; }
       else if(strcmp(argv[i], "--apmverbose\0") == 0) { APM_VERBOSE = 1; i--; }
       else if(strcmp(argv[i], "--outputperiod\0") == 0) TMODULE = atoi(argv[i+1]);
@@ -835,7 +838,7 @@ int main(int argc, char *argv[])
   sprintf(bestshotstr, "%s-best.txt", labelstr);
   fp = fopen(bestshotstr, "w"); fclose(fp);
   sprintf(likstr, "%s-lik.txt", labelstr);
-  fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood\n"); fclose(fp);
+  fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); fclose(fp);
 
   sprintf(besttransstr, "%s-trans.txt", labelstr);
   sprintf(beststatesstr, "%s-states.txt", labelstr);
@@ -859,53 +862,56 @@ int main(int argc, char *argv[])
   // run the chain
   for(t = 0; t < maxt; t++)
     {
+      if(t % SAMPLE == 0)
+	{
+	  // periodically output progress to a tracker file
+	  time(&timer);
+	  tm_info = localtime(&timer);
+
+	  strftime(buffer, 25, "%Y:%m:%d %H:%M:%S", tm_info);
+
+	  fp = fopen("alltrackernew.txt", "a");
+	  fprintf(fp, "%s %i %i %i %s\n", shotstr, t, maxt/5, maxt, buffer);
+	  fclose(fp);
+	}
+      // if we've got a new best likelihood, store it
+      if(lik > bestlik || t == 0)
+	{
+	  bestlik = lik;
+	  fp = fopen(bestshotstr, "w");
+	  for(i = 0; i < len*len; i++)
+	    fprintf(fp, "%f ", trans[i]);
+	  fprintf(fp, "\n");
+	  fclose(fp);
+
+	  OutputTransitions(besttransstr, trans, len);
+	  OutputStates(beststatesstr, trans, len);
+	}
+
+      // output some info periodically
+      if(t % SAMPLE == 0)
+	printf("%i - ", t);
+
+      if(t > maxt/5 && t % SAMPLE == 0)
+	{
+	  // if we're burnt in, periodically sample the current parameterisation to an output file
+	  // most appropriate for Bayesian MCMC but useful for all
+	  fp = fopen(shotstr, "a");
+	  for(i = 0; i < len*len; i++)
+	    fprintf(fp, "%f ", trans[i]);
+	  fprintf(fp, "\n");
+	  fclose(fp);
+	  fp = fopen(likstr, "a");
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
+	  fprintf(fp, "%i,%f,", t, nlik);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
+	  fprintf(fp, "%f\n", nlik);
+	  fclose(fp);
+	}
+
       // MCMC or simulated annealing
       if(searchmethod == 0 || searchmethod == 2)
 	{
-	  if(t % SAMPLE == 0)
-	    {
-	      // periodically output progress to a tracker file
-	      time(&timer);
-	      tm_info = localtime(&timer);
-
-	      strftime(buffer, 25, "%Y:%m:%d %H:%M:%S", tm_info);
-
-	      fp = fopen("alltrackernew.txt", "a");
-	      fprintf(fp, "%s %i %i %i %s\n", shotstr, t, maxt/5, maxt, buffer);
-	      fclose(fp);
-	    }
-	  if(lik > bestlik || t == 0)
-	    {
-	      bestlik = lik;
-	      fp = fopen(bestshotstr, "w");
-	      for(i = 0; i < len*len; i++)
-		fprintf(fp, "%f ", trans[i]);
-	      fprintf(fp, "\n");
-	      fclose(fp);
-
-	      OutputTransitions(besttransstr, trans, len);
-	      OutputStates(beststatesstr, trans, len);
-	    }
-
-	  // output some info periodically
-	  if(t % SAMPLE == 0)
-	    printf("%i - ", t);
-
-	  if(t > maxt/5 && t % SAMPLE == 0)
-	    {
-	      // if we're burnt in, periodically sample the current parameterisation to an output file
-	      fp = fopen(shotstr, "a");
-	      for(i = 0; i < len*len; i++)
-		fprintf(fp, "%f ", trans[i]);
-	      fprintf(fp, "\n");
-	      fclose(fp);
-	      fp = fopen(likstr, "a");
-	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s);
-	      fprintf(fp, "%i,%f,", t, nlik);
-	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s);
-	      fprintf(fp, "%f\n", nlik);
-	      fclose(fp);
-	    }
 
 	  if(apm_type == 0 || t%2 == 0)
 	    {
