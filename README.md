@@ -10,10 +10,11 @@ Next:
 * also scripts for comparing effect of bank, SA, SGD
 * SGD -- done not tested
 * allow data to be included as cross-sectional only; include CLI option for CSV format
+* also label infer-verify content
 * To compare:
-* Bank 20 vs Bank 200 vs Bank 2000 lik profiles (check lik profiles work) and posterior outputs
-* SA vs SGD vs MCMC output
-* Continuous time vs discrete time
+* Bank 20 vs Bank 200 vs Bank 2000 lik profiles (check lik profiles work) and posterior outputs -- included
+* SA vs SGD vs MCMC output -- included
+* Continuous time vs discrete time -- included
 * To do: output time series of goodness for SA, SGD -- done
 
 Inference of evolutionary and progressive pathways, in discrete or continuous time, using combinations of longitudinal, cross-sectional, and phylogenetically-linked observations.
