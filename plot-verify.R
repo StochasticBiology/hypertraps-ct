@@ -142,6 +142,8 @@ g.hard.hist = ggplot(hist.df, aes(x=log(probscale),fill=factor(edge))) +
   geom_histogram(position="identity", alpha=0.2) + 
   theme_light()
 
+#### analytic vs sampling simulation
+
 rcdf = read.csv("Verify/randomcubes.txt", header=FALSE, sep=" ")
 g.timehist = ggplot(rcdf[rcdf$V1!=0,]) + 
   geom_line(aes(x=V2,y=V3, color=factor(V1))) +
@@ -150,7 +152,21 @@ g.timehist = ggplot(rcdf[rcdf$V1!=0,]) +
   xlim(0,12) + 
   theme_light()
 
+#### time histograms for inferred cross case
+h1.df = read.csv("VerifyData/test-cross-ct-1-posterior.txt-timehists.csv")
+h1.df$expt=1
+h2.df = read.csv("VerifyData/test-cross-ct-2-posterior.txt-timehists.csv")
+h2.df$expt=2
+h3.df = read.csv("VerifyData/test-cross-ct-3-posterior.txt-timehists.csv")
+h3.df$expt=3
+h.df = rbind(h1.df, h2.df, h3.df)
+
+g.thist = ggplot(h.df, aes(x=Time, y=Probability, fill=factor(OriginalIndex))) + 
+  geom_col(position="dodge") + xlim(-0.1,1.05) + facet_wrap(~expt, nrow=3) +
+  theme_light() #+ scale_x_continuous(trans="log10")
+
+#### overall plot
 sf = 2
 png("plot-verify.png", width=800*sf, height=800*sf, res=72*sf)
-grid.arrange(g.timehist, g.easy, g.hard, g.hard.hist, g.bubbles, nrow=3)
+grid.arrange(g.timehist, g.easy, g.hard, g.hard.hist, g.bubbles, g.thist, nrow=3)
 dev.off()
