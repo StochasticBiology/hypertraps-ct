@@ -622,6 +622,7 @@ int main(int argc, char *argv[])
   int searchmethod;
   int filelabel;
   char labelstr[1000];
+  int crosssectional;
   
   printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\n\n");
 
@@ -632,6 +633,7 @@ int main(int argc, char *argv[])
   losses = 0;
   apm_type = 0;
   filelabel = 0;
+  crosssectional = 0;
   searchmethod = 0;
   strcpy(obsfile, "");
   strcpy(timefile, "");
@@ -653,6 +655,7 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--help\0") == 0) helpandquit(0);
       else if(strcmp(argv[i], "--debug\0") == 0) helpandquit(1);
       else if(strcmp(argv[i], "--verbose\0") == 0) { VERBOSE = 1; i--; }
+      else if(strcmp(argv[i], "--crosssectional\0") == 0) { crosssectional = 1; i--; }
       else if(strcmp(argv[i], "--spectrumverbose\0") == 0) { SPECTRUM_VERBOSE = 1; i--; }
       else if(strcmp(argv[i], "--apmverbose\0") == 0) { APM_VERBOSE = 1; i--; }
       else if(strcmp(argv[i], "--outputperiod\0") == 0) TMODULE = atoi(argv[i+1]);
