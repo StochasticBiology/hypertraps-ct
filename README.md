@@ -6,12 +6,13 @@ Fall 2023 work
 -----
 Next: 
 * make plots in R to match old document -- SI done, main text to do
-* test with direct time comparison -- *doing this for crosses, inserted into infer script but not analyse or plot scripts -- to do*
-* also scripts for comparing effect of bank, SA, SGD
-* SGD -- done not tested
 * allow data to be included as cross-sectional only; include CLI option for CSV format
-* also label infer-verify content
-* To compare:
+
+To be tested:
+* test with direct time comparison -- done
+* also scripts for comparing effect of bank, SA, SGD -- done
+* SGD -- done not tested
+* also label infer-verify content -- done
 * Bank 20 vs Bank 200 vs Bank 2000 lik profiles (check lik profiles work) and posterior outputs -- included
 * SA vs SGD vs MCMC output -- included
 * Continuous time vs discrete time -- included
