@@ -6,10 +6,17 @@ Fall 2023 work
 -----
 Next: 
 * make plots in R to match old document -- SI done, main text to do
-* test with direct time comparison -- see above -- CT confounds inference
-* SGD
-* better command line interface -- commandline fork
+* allow data to be included as cross-sectional only; include CLI option for CSV format
 
+To be tested:
+* test with direct time comparison -- done
+* also scripts for comparing effect of bank, SA, SGD -- done
+* SGD -- done not tested
+* also label infer-verify content -- done
+* Bank 20 vs Bank 200 vs Bank 2000 lik profiles (check lik profiles work) and posterior outputs -- included
+* SA vs SGD vs MCMC output -- included
+* Continuous time vs discrete time -- included
+* To do: output time series of goodness for SA, SGD -- done
 
 Inference of evolutionary and progressive pathways, in discrete or continuous time, using combinations of longitudinal, cross-sectional, and phylogenetically-linked observations.
 
