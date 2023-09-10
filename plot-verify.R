@@ -4,10 +4,10 @@ source("plot-trans.R")
 
 #### bubble and hypercube plots for test cases
 
-fname = c("VerifyData/synth-cross-samples-0.txt", "VerifyData/synth-cross-samples-1.txt", "VerifyData/synth-cross-samples-2.txt")
+fname = c("cross-0", "cross-1", "cross-2")
 bdf = data.frame()
 for(i in 1:length(fname)) {
-bubble.name = paste(c(fname[i], "-posterior-1-1-2-5-0.txt-bubbles.csv"), collapse="")
+bubble.name = paste(c("VerifyData/", fname[i], "-posterior.txt-bubbles.csv"), collapse="")
 tmpdf = read.csv(bubble.name)
 tmpdf$Expt=i
 bdf = rbind(bdf, tmpdf)
@@ -20,7 +20,7 @@ g.bubbles = ggplot(bdf, aes(x=Time+Expt/10, y=OriginalIndex, size=Probability, c
 
 ### easy cube with gains not losses with new code
 
-df = read.csv("VerifyData/synth-easycube-data.txt-posterior-1-1-2-5-0.txt", header=FALSE, sep=" ")
+df = read.csv("VerifyData/easycube-posterior.txt", header=FALSE, sep=" ")
 
 # old parameterisation
 #colnames(df) = c("t0on0", "t1on1", "t2on2", "na0", "t0on1", "t0on2", "t1on0", "na1", "t1on2", "t2on0", "t2on1", "na2")
@@ -78,7 +78,7 @@ g.easy = ggplot() + geom_segment(data=edges.df, aes(x=x,y=y,xend=xend,yend=yend)
 
 ### hard cube with gains not losses with new code
 
-df = read.csv("VerifyData/synth-hardcube-data.txt-posterior-1-1-2-5-0.txt", header=FALSE, sep=" ")
+df = read.csv("VerifyData/hardcube-posterior.txt", header=FALSE, sep=" ")
 
 # old parameterisation
 #colnames(df) = c("t0on0", "t1on1", "t2on2", "na0", "t0on1", "t0on2", "t1on0", "na1", "t1on2", "t2on0", "t2on1", "na2")

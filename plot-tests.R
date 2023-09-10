@@ -67,6 +67,7 @@ g.ct.lik = ggplot(lik.ts.df, aes(x=Step, y=LogLikelihood1, color=expt)) +
   geom_line() + ylab("log L") + theme_light()
 
 g.liks = grid.arrange(g.dt.lik, g.ct.lik, nrow=1)
+
 sf = 2
 png("plot-tests.png", width=800*sf, height=600*sf, res=72*sf)
 grid.arrange(g.bubbles, g.liks, nrow=2)
