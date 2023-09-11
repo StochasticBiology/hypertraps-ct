@@ -1,5 +1,5 @@
 cd Inference
-gcc -o3 posteriors.c -lm 0o posteriors.ce
+gcc -o3 posteriors.c -lm -o posteriors.ce
 
 # direct time
 ./posteriors.ce --posterior ../Data/mro-1-posterior.txt > ../Data/mro-1-a.tmp &
