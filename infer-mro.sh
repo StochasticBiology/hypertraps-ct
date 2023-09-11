@@ -20,3 +20,16 @@ gcc -o3 hypertraps-all.c -lm -o hypertraps-all.ce
 ### TimeTree+, continuous time
 ./hypertraps-all.ce --obs ../Data/mro-tree-ttplus-format.phy-data.txt --times ../Data/mro-ttplus-1.txt --endtimes ../Data/mro-ttplus-2.txt --seed 1 --length 6 --kernel 7 --losses --label ../Data/mro-9 > ../Data/mro-expt-9.txt &
 ./hypertraps-all.ce --obs ../Data/mro-tree-ttplus-format.phy-data.txt --times ../Data/mro-ttplus-1.txt --endtimes ../Data/mro-ttplus-2.txt --seed 2 --length 6 --kernel 7 --losses --label ../Data/mro-10 > ../Data/mro-expt-10.txt &
+
+# non-MCMC -- just SGD here
+### NCBI, discrete time
+./hypertraps-all.ce --obs ../Data/mro-ncbi-tree.phy-cooked.txt-data.txt --seed 1 --length 4 --kernel 7 --losses --label ../Data/mro-1-sgd --sgd > ../Data/mro-expt-1-sgd.txt &
+### TimeTree, discrete time
+./hypertraps-all.ce --obs ../Data/mro-tree-tt-format.phy-data.txt --seed 1 --length 4 --kernel 7 --losses --label ../Data/mro-3-sgd --sgd > ../Data/mro-expt-3-sgd.txt &
+### TimeTree, continuous time
+./hypertraps-all.ce --obs ../Data/mro-tree-tt-format.phy-data.txt --times ../Data/mro-tree-tt-format.phy-datatime.txt --seed 1 --length 4 --kernel 7 --losses --label ../Data/mro-5-sgd --sgd > ../Data/mro-expt-5-sgd.txt &
+### TimeTree+, discrete time
+./hypertraps-all.ce --obs ../Data/mro-tree-ttplus-format.phy-data.txt --seed 1 --length 4 --kernel 7 --losses --label ../Data/mro-7-sgd --sgd > ../Data/mro-expt-7-sgd.txt &
+### TimeTree+, continuous time
+./hypertraps-all.ce --obs ../Data/mro-tree-ttplus-format.phy-data.txt --times ../Data/mro-ttplus-1.txt --endtimes ../Data/mro-ttplus-2.txt --seed 1 --length 4 --kernel 7 --losses --label ../Data/mro-9-sgd --sgd > ../Data/mro-expt-9-sgd.txt &
+
