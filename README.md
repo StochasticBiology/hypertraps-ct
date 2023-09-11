@@ -5,10 +5,10 @@ HyperTraPS(-CT)
 Fall 2023 work
 -----
 Next: 
-* make plots in R to match old document -- SI done, main text to do
 * allow data to be included as cross-sectional only; include CLI option for CSV format
 
 To be tested:
+* make plots in R to match old document -- SI done, main text to do -- doneish
 * test with direct time comparison -- done
 * also scripts for comparing effect of bank, SA, SGD -- done
 * SGD -- done not tested
