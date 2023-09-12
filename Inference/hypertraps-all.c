@@ -7,6 +7,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <sys/time.h>
 
 #define RND drand48()
 
@@ -624,6 +625,9 @@ int main(int argc, char *argv[])
   char labelstr[1000];
   int crosssectional;
   int tmprow[1000];
+  time_t start_t, end_t;
+  double diff_t;
+  struct timeval t_stop, t_start;
   
   printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
@@ -867,8 +871,20 @@ int main(int argc, char *argv[])
     trans[i*len+i] = 1;
 
   // compute initial likelihood given this matrix
+  time(&start_t);
+  gettimeofday(&t_start, NULL);
   lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
-
+  time(&end_t);
+  gettimeofday(&t_stop, NULL);
+  diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
+  //  diff_t = difftime(end_t, start_t);
+  printf("One likelihood estimation took %e seconds.\n", diff_t);
+        // MCMC or simulated annealing
+      if(searchmethod == 0 || searchmethod == 2)
+	{
+	  printf("This code (%i steps) will probably take around %.3f seconds (%.3f hours) to complete.\n\n", maxt, diff_t*maxt, diff_t*maxt/3600.);
+	}
+      
   // initialise counters for acceptance ratio
   acc = rej = 0;
   lacc = lrej = 0;
