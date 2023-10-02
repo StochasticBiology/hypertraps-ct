@@ -69,7 +69,109 @@ int mypow2(int r)
   return s;
 }
 
-void OutputTransitions(char *besttransstr, double *ntrans, int LEN)
+int BinToDec(int *state, int LEN)
+{
+  int v = 1;
+  int i;
+  int val = 0;
+  
+  for(i = LEN-1; i >= 0; i--)
+    {
+      val += state[i]*v;
+      v *= 2;
+    }
+  return val;
+}
+
+int nparams(int model, int LEN)
+{
+  switch(model)
+    {
+    case 0: return 0;
+    case 1: return LEN;
+    case 2: return LEN*LEN;
+    case 3: return LEN*LEN*LEN;
+    case 4: return LEN*LEN*LEN*LEN;
+    case -1: return mypow2(LEN);
+    default: return 0;
+    }
+}
+
+double RetrieveEdge(int *state, int locus, double *ntrans, int LEN, int model)
+{
+  double rate;
+  int i, j, k;
+  
+  if(model == 0)
+    return 0;
+  if(model == 1) // pi[locus] = rate of locus
+    return ntrans[locus];
+  if(model == 2) // pi[i*LEN + locus] = influence of i on locus
+    {
+      	      rate = ntrans[locus*LEN+locus];
+	      for(i = 0; i < LEN; i++)
+		rate += state[i]*ntrans[i*LEN+locus];
+    }
+  if(model == 3) // pi[j*LEN*LEN + i*LEN + locus] = influence of ij on locus, j>=i (j==i is influence of i on locus)
+    {
+      rate = ntrans[locus*LEN*LEN+locus*LEN+locus];
+      for(i = 0; i < LEN; i++)
+	{
+	for(j = i; j < LEN; j++)
+	  {
+	    rate += state[i]*state[j]*ntrans[j*LEN*LEN+i*LEN+locus];
+	  }
+	}
+    }
+  if(model == 4) // pi[k*LEN*LEN*LEN + j*LEN*LEN + i*LEN + i] = influence of ijk on i, k>=j>=i (j==i is influence of ik, k==j==i is influence of i); what does k==j,i mean
+    {
+      rate = ntrans[locus*LEN*LEN*LEN+locus*LEN*LEN+locus*LEN+locus];
+      for(i = 0; i < LEN; i++)
+	{
+	for(j = i; j < LEN; j++)
+	  {
+	    for(k = j; k < LEN; k++)
+	      {
+	    rate += state[i]*state[j]*state[k]*ntrans[k*LEN*LEN*LEN+j*LEN*LEN+i*LEN+locus];
+	  }
+	}
+    }
+    }
+  if(model == -1)
+    {
+      rate = ntrans[BinToDec(state, LEN)*LEN+locus];
+    }
+  return exp(rate);
+}
+
+// redundancy in these params for model 4:
+// 111, 112, 113, 121, 122, 123, 131, 132, 133, 211, 212, 213, 221, 222, 223, 231, 232, 233, 311, 312, 313, 321, 322, 323, 331, 332, 333
+// 111, 112, 113,      122, 123,           133,                     222, 223,           233,                                         333
+// 1     12   13        12  123            13                        2   23              23                                           3
+
+void InitialMatrix(double *trans, int len, int model)
+{
+  int NVAL;
+  int i;
+  
+  NVAL = nparams(len, model);
+  
+  for(i = 0; i < NVAL; i++)
+    trans[i] = 0;
+  for(i = 0; i < len; i++)
+    {
+      switch(model)
+	{
+	case 1: trans[i] = 1; break;
+	case 2: trans[i*len+i] = 1; break;
+	case 3: trans[i*len*len + i*len + i] = 1; break;
+	case 4: trans[i*len*len*len + i*len*len + i*len + i] = 1; break;
+	}
+    }
+}
+
+  
+void OutputTransitions(char *besttransstr, double *ntrans, int LEN, int model)
 {
   FILE *fp;
   int i, j, k;
@@ -100,10 +202,7 @@ void OutputTransitions(char *besttransstr, double *ntrans, int LEN)
 	  /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
 	  if(state[j] == 0)
 	    {
-	      rate = ntrans[j*LEN+j];
-	      for(k = 0; k < LEN; k++)
-		rate += state[k]*ntrans[k*LEN+j];
-	      rate = exp(rate);
+	      rate = RetrieveEdge(state, j, ntrans, LEN, model);
 	      totrate += rate;
 	    }
 	}
@@ -113,10 +212,7 @@ void OutputTransitions(char *besttransstr, double *ntrans, int LEN)
 	  /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
 	  if(state[j] == 0)
 	    {
-	      rate = ntrans[j*LEN+j];
-	      for(k = 0; k < LEN; k++)
-		rate += state[k]*ntrans[k*LEN+j];
-	      rate = exp(rate);
+	      rate = RetrieveEdge(state, j, ntrans, LEN, model);
 	      fprintf(fp, "%i %i %e\n", i, i+mypow2(LEN-1-j), rate/totrate);
 	    }
 	}
@@ -125,7 +221,7 @@ void OutputTransitions(char *besttransstr, double *ntrans, int LEN)
 }
 
 
-void OutputStates(char *beststatesstr, double *ntrans, int LEN)
+void OutputStates(char *beststatesstr, double *ntrans, int LEN, int model)
 {
   FILE *fp;
   int i, j, k, a;
@@ -183,10 +279,7 @@ void OutputStates(char *beststatesstr, double *ntrans, int LEN)
 	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
 	      if(state[j] == 0)
 		{
-		  rate = ntrans[j*LEN+j];
-		  for(k = 0; k < LEN; k++)
-		    rate += state[k]*ntrans[k*LEN+j];
-		  rate = exp(rate);
+		  rate = RetrieveEdge(state, j, ntrans, LEN, model);
 		  totrate += rate;
 		}
 	    }
@@ -197,10 +290,7 @@ void OutputStates(char *beststatesstr, double *ntrans, int LEN)
 	      if(state[j] == 0)
 		{
 		  dest = src+mypow2(LEN-1-j);
-		  rate = ntrans[j*LEN+j];
-		  for(k = 0; k < LEN; k++)
-		    rate += state[k]*ntrans[k*LEN+j];
-		  rate = exp(rate);
+		  rate = RetrieveEdge(state, j, ntrans, LEN, model);
 		  probs[dest] += probs[src] * rate/totrate;
 		  //		  printf("%i: %i (from %i, %e): %e\n", level, dest, src, probs[src], probs[dest]);
 		
@@ -232,7 +322,7 @@ void OutputStates(char *beststatesstr, double *ntrans, int LEN)
 
 
 // pick a new locus to change in state "state"; return it in "locus" and keep track of the on-course probability in "prob". "ntrans" is the transition matrix
-void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, double *beta, int LEN)
+void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, double *beta, int LEN, int model)
 {
   int i, j;
   double rate[LEN];
@@ -248,10 +338,7 @@ void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, 
       /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
       if(state[i] == 0)
 	{
-	  rate[i] = ntrans[i*LEN+i];
-	  for(j = 0; j < LEN; j++)
-	    rate[i] += state[j]*ntrans[j*LEN+i];
-	  rate[i] = exp(rate[i]);
+	  rate[i] = RetrieveEdge(state, i, ntrans, LEN, model);
 	}
       else /* we've already lost this gene */
 	rate[i] = 0;
@@ -269,10 +356,7 @@ void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, 
       /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
       if(state[i] == 0 && targ[i] != 0)
 	{
-	  rate[i] = ntrans[i*LEN+i];
-	  for(j = 0; j < LEN; j++)
-	    rate[i] += state[j]*ntrans[j*LEN+i];
-	  rate[i] = exp(rate[i]);
+	  rate[i] = RetrieveEdge(state, i, ntrans, LEN, model);
 	}
       else /* we've already lost this gene OR WE DON'T WANT IT*/
 	rate[i] = 0;
@@ -300,7 +384,7 @@ void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, 
 
 
 // compute HyperTraPS probability of a transition from "startpos" to "targ" given transition matrix "P"
-double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double tau1, double tau2)
+double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double tau1, double tau2, int model)
 {
   int *bank;
   int n0, n1;
@@ -375,7 +459,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 	  for(j = 0; j < LEN; j++)
 	    attempt[j] = bank[LEN*i+j];
 	  // pick the locus to change at this step, and record the probability that we stay on track to the target
-	  PickLocus(&bank[LEN*i], P, targ, &locus, &reject[i], &recbeta[LEN*i + (r-n0)], LEN);
+	  PickLocus(&bank[LEN*i], P, targ, &locus, &reject[i], &recbeta[LEN*i + (r-n0)], LEN, model);
 	  bank[LEN*i+locus] = 1;
 
 	  fail = 0;
@@ -506,7 +590,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 }
 
 // get total likelihood for a set of changes
-double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s)
+double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model)
 {
   double loglik, tloglik, tlik;
   int i, j;
@@ -534,7 +618,7 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
       for(j = 0; j < len; j++)
 	startpos[j] = (matrix[2*i*len+j]);
       // get log-likelihood contribution from this pair (transition) using HyperTraPS
-      tlik = LikelihoodMultiple(&(matrix[2*i*len+len]), ntrans, len, startpos, tau1s[i], tau2s[i]);
+      tlik = LikelihoodMultiple(&(matrix[2*i*len+len]), ntrans, len, startpos, tau1s[i], tau2s[i], model);
       tloglik = log(tlik);
       if(tlik < 0)
 	{
@@ -552,26 +636,26 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
   return loglik;
 }
 
-void GetGradients(int *matrix, int len, int ntarg, double *trans, int *parents, double *tau1s, double *tau2s, double *gradients)
+void GetGradients(int *matrix, int len, int ntarg, double *trans, int *parents, double *tau1s, double *tau2s, double *gradients, double scale, int model)
 {
   double lik, newlik;
   int i;
   
-  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
-  for(i = 0; i < len*len; i++)
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model);
+  for(i = 0; i < nparams(model, len); i++)
     {
-      trans[i] += 0.1;
-      newlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
-      gradients[i] = (newlik-lik)/0.1;
-      trans[i] -= 0.1;
+      trans[i] += scale;
+      newlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model);
+      gradients[i] = (newlik-lik)/scale;
+      trans[i] -= scale;
     }
 }
 
 void helpandquit(int debug)
 {
-  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sa\t\t\tuse simulated annealing [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
+  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
   if(debug)
-    printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n(note: an undocumented option exists to pass CSV data as the observations file: file should have a header, and a column of (ignored) sample IDs, before subsequent columns with all \"before\" features followed by all \"after\" features on the same row.  \n\n");
+    printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n--outputinput\t\toutput the data we read in(note: an undocumented option exists to pass CSV data as the observations file: file should have a header, and a column of (ignored) sample IDs, before subsequent columns with all \"before\" features followed by all \"after\" features on the same row.  \n\n");
   exit(0);
 }
 
@@ -628,6 +712,9 @@ int main(int argc, char *argv[])
   time_t start_t, end_t;
   double diff_t;
   struct timeval t_stop, t_start;
+  int outputinput;
+  double sgdscale;
+  int model;
   
   printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
@@ -637,17 +724,19 @@ int main(int argc, char *argv[])
   kernelindex = 5;
   losses = 0;
   apm_type = 0;
+  sgdscale = 0.01;
   filelabel = 0;
   crosssectional = 0;
   searchmethod = 0;
   crosssectional = 0;
+  outputinput = 0;
+  model = 2;
   strcpy(obsfile, "");
   strcpy(timefile, "");
   strcpy(endtimefile, "");
 
   // deal with command-line arguments
-  if(argc < 2) helpandquit(0);
-  for(i = 1; i < argc; i+=2)
+   for(i = 1; i < argc; i+=2)
     {
       if(strcmp(argv[i], "--obs\0") == 0) strcpy(obsfile, argv[i+1]);
       else if(strcmp(argv[i], "--label\0") == 0) { filelabel = 1; strcpy(labelstr, argv[i+1]); }
@@ -664,21 +753,30 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--crosssectional\0") == 0) { crosssectional = 1; i--; }
       else if(strcmp(argv[i], "--spectrumverbose\0") == 0) { SPECTRUM_VERBOSE = 1; i--; }
       else if(strcmp(argv[i], "--apmverbose\0") == 0) { APM_VERBOSE = 1; i--; }
+      else if(strcmp(argv[i], "--outputinput\0") == 0) { outputinput = 1; i--; }      
       else if(strcmp(argv[i], "--outputperiod\0") == 0) TMODULE = atoi(argv[i+1]);
       else if(strcmp(argv[i], "--walkers\0") == 0) BANK = atoi(argv[i+1]);
       else if(strcmp(argv[i], "--sgd\0") == 0) { searchmethod = 1; i--; }
+      else if(strcmp(argv[i], "--sgdscale\0") == 0) sgdscale = atof(argv[i+1]);
       else if(strcmp(argv[i], "--sa\0") == 0) { searchmethod = 2; i--; }
+      else if(strcmp(argv[i], "--model\0") == 0) { model = atoi(argv[i+1]); }
       
       else printf("Didn't understand argument %s\n", argv[i]);
     }
   limiti(&lengthindex, 0, 7);
   limiti(&kernelindex, 0, 7);
+  limiti(&model, -1, 4);
 
- 
+  if(strcmp(obsfile, "") == 0)
+    {
+      printf("*** I need at least an observations file! ***\n\n");
+      helpandquit(0);
+    }
+  
   if(spectrumtype == 1) {
-    printf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type);
+    printf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
   } else {
-    printf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n", obsfile, seed, lengthindex, kernelindex, BANK, losses, apm_type);
+    printf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
   }
   switch(searchmethod) {
   case 0: printf("Using MH MCMC\n"); break;
@@ -755,9 +853,11 @@ int main(int argc, char *argv[])
   }while(!feof(fp));
   if(csv) len /= 2;
   ntarg = i/len;
-  NVAL = len*len;
+  NVAL = nparams(model, len);
   fclose(fp);
 
+  if(outputinput)
+    {
   printf("Observed transitions:\n");
   for(i = 0; i < ntarg/2; i++)
     {
@@ -768,7 +868,8 @@ int main(int argc, char *argv[])
     }
   if(losses == 1) printf("(where 1 is absence)\n\n");
   if(losses == 0) printf("(where 1 is presence)\n\n");
-
+    }
+  
   // grab timings from data file provided
   if(spectrumtype != 0)
     {
@@ -865,25 +966,22 @@ int main(int argc, char *argv[])
   sprintf(beststatesstr, "%s-states.txt", labelstr);
   
   // initialise with an agnostic transition matrix
-  for(i = 0; i < len*len; i++)
-    trans[i] = 0;
-  for(i = 0; i < len; i++)
-    trans[i*len+i] = 1;
+  InitialMatrix(trans, len, model);
 
   // compute initial likelihood given this matrix
   time(&start_t);
   gettimeofday(&t_start, NULL);
-  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model);
   time(&end_t);
   gettimeofday(&t_stop, NULL);
   diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
   //  diff_t = difftime(end_t, start_t);
   printf("One likelihood estimation took %e seconds.\n", diff_t);
-        // MCMC or simulated annealing
-      if(searchmethod == 0 || searchmethod == 2)
-	{
-	  printf("This code (%i steps) will probably take around %.3f seconds (%.3f hours) to complete.\n\n", maxt, diff_t*maxt, diff_t*maxt/3600.);
-	}
+  // MCMC or simulated annealing
+  if(searchmethod == 0 || searchmethod == 2)
+    {
+      printf("This code (%i steps) will probably take around %.3f seconds (%.3f hours) to complete.\n\n", maxt, diff_t*maxt, diff_t*maxt/3600.);
+    }
       
   // initialise counters for acceptance ratio
   acc = rej = 0;
@@ -912,13 +1010,13 @@ int main(int argc, char *argv[])
 	{
 	  bestlik = lik;
 	  fp = fopen(bestshotstr, "w");
-	  for(i = 0; i < len*len; i++)
+	  for(i = 0; i < NVAL; i++)
 	    fprintf(fp, "%f ", trans[i]);
 	  fprintf(fp, "\n");
 	  fclose(fp);
 
-	  OutputTransitions(besttransstr, trans, len);
-	  OutputStates(beststatesstr, trans, len);
+	  OutputTransitions(besttransstr, trans, len, model);
+	  OutputStates(beststatesstr, trans, len, model);
 	}
 
       // output some info periodically
@@ -930,14 +1028,14 @@ int main(int argc, char *argv[])
 	  // if we're burnt in, periodically sample the current parameterisation to an output file
 	  // most appropriate for Bayesian MCMC but useful for all
 	  fp = fopen(shotstr, "a");
-	  for(i = 0; i < len*len; i++)
+	  for(i = 0; i < NVAL; i++)
 	    fprintf(fp, "%f ", trans[i]);
 	  fprintf(fp, "\n");
 	  fclose(fp);
 	  fp = fopen(likstr, "a");
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model);
 	  fprintf(fp, "%i,%f,", t, nlik);
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model);
 	  fprintf(fp, "%f\n", nlik);
 	  fclose(fp);
 	}
@@ -988,7 +1086,7 @@ int main(int argc, char *argv[])
 		  printf("r seeded with %i, first call is %f\n", apm_seed, RND);
 		}
 	    }
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model);
 
 	  if(APM_VERBOSE)
 	    {
@@ -1044,20 +1142,30 @@ int main(int argc, char *argv[])
       // gradient descent
       if(searchmethod == 1)
 	{
-	  GetGradients(matrix, len, ntarg, trans, parents, tau1s, tau2s, gradients);
-	  for(i = 0; i < len*len; i++)
+	   time(&start_t);
+  gettimeofday(&t_start, NULL);
+  GetGradients(matrix, len, ntarg, trans, parents, tau1s, tau2s, gradients, sgdscale, model);
+  time(&end_t);
+  gettimeofday(&t_stop, NULL);
+  diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
+  if(t == 0)
+    printf("Using SGD: one gradient calculation took %e seconds\n\n", diff_t);
+  
+	  for(i = 0; i < NVAL; i++)
 	    {
-	      trans[i] = trans[i]+gradients[i]*0.1;
+	      trans[i] = trans[i]+gradients[i]*sgdscale;
 	      if(trans[i] < -10) trans[i] = -10;
 	      if(trans[i] > 10) trans[i] = 10;
 	    }
 	  
-	  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model);
+	  printf("Iteration %i likelihood %f previous-likelihood %f\n", t, nlik, lik);
+	  lik = nlik;
 	}
       //      if(t % SAMPLE == 0) printf("NaN count %i of %i\n", nancount, t);
 
       // output information periodically
-      if(t % TMODULE == 0)
+      if(t % TMODULE == 0 && searchmethod != 1)
 	{
 	  printf("Iteration %i likelihood %f total-acceptance %f recent-acceptance %f trial-likelihood %f\n", t, lik, acc/(acc+rej), lacc/(lacc+lrej), nlik);
 	  lacc = lrej = 0;
