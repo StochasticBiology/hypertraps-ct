@@ -10,10 +10,10 @@
 #define RND drand48()
 
 // number of trajectories to simulate for each parameterisation
-#define NTRAJ 100
+int NTRAJ = 100;
 
 // number of times to call GetRoutes. each call runs NSAMP trajectories and records one sampled route, so the balance of the two controls the number of explicit recorded routes vs the number of sampled trajectories.
-#define NSAMP 10
+int NSAMP = 10;
 
 // maximum continuous-time value above which results are truncated
 #define MAXCT 1000
@@ -258,7 +258,7 @@ void Label(char *names, int len)
 
 void helpandquit(int debug)
 {
-  printf("Options [defaults]:\n\n--posterior file.txt\tposteriors file [NA]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--seed N\t\trandom seed [0]\n--binscale X\t\tscale for time bins [10]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--verbose\t\tverbose file output\n--help\t\t\t[show this message]\n\n");
+  printf("Options [defaults]:\n\n--posterior file.txt\tposteriors file [NA]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--seed N\t\trandom seed [0]\n--sims N\t\tsimulations per posterior sample [10]\n--trajs N\t\ttrajectories per simulation [100]\n--burnin N\t\tnumber of samples to skip as burn-in [0]\n--period N\t\tnumber of samples to \"thin\" between sims [0]\n--binscale X\t\tscale for time bins [10]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--verbose\t\tverbose file output\n--help\t\t\t[show this message]\n\n");
   exit(0);
 }
 
@@ -300,6 +300,7 @@ int main(int argc, char *argv[])
   char labelstr[1000];
   int NVAL;
   int model;
+  int burnin, sampleperiod;
   
   // default values
   BINSCALE = 10;
@@ -307,6 +308,8 @@ int main(int argc, char *argv[])
   filelabel = 0;
   seed = 0;
   model = 2;
+  burnin = 0;
+  sampleperiod = 0;
   sprintf(postfile, "");
   
     printf("\nHyperTraPS(-CT) posterior analysis\n\n");
@@ -318,6 +321,10 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--label\0") == 0) { filelabel = 1; strcpy(labelstr, argv[i+1]); }
       else if(strcmp(argv[i], "--seed\0") == 0) seed = atoi(argv[i+1]);
       else if(strcmp(argv[i], "--model\0") == 0) model = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--sims\0") == 0) NSAMP = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--trajs\0") == 0) NTRAJ = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--burnin\0") == 0) burnin = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--period\0") == 0) sampleperiod = atoi(argv[i+1]);      
       else if(strcmp(argv[i], "--binscale\0") == 0) BINSCALE = atof(argv[i+1]);
       else if(strcmp(argv[i], "--verbose\0") == 0) { verbose = 1; i--; }
       else if(strcmp(argv[i], "--help\0") == 0) helpandquit(0);
@@ -440,7 +447,7 @@ int main(int argc, char *argv[])
 
 	  // this if statement controls which samples get processed
 	  // if we want to include burn-in or subsampling, can put it here
-	  if(!feof(fp))
+	  if(!feof(fp) && count > burnin && count % (sampleperiod+1) == 0)
 	    {
 	      // loop through iterations
 	      for(j = 0; j< NSAMP; j++)
