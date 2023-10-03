@@ -440,7 +440,7 @@ int main(int argc, char *argv[])
 
 	  // this if statement controls which samples get processed
 	  // if we want to include burn-in or subsampling, can put it here
-	  if(!feof(fp) && count > 50)// && count % 5 == 0)// && count > 100 && count % 5 == 0)
+	  if(!feof(fp))
 	    {
 	      // loop through iterations
 	      for(j = 0; j< NSAMP; j++)
