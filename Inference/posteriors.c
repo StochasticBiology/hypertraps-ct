@@ -443,11 +443,11 @@ int main(int argc, char *argv[])
 	{
 	  // read in single posterior sample
 	  for(i = 0; i < NVAL; i++)
-	    fscanf(fp, "%lf", &ntrans[i]);
-
+      	    fscanf(fp, "%lf", &ntrans[i]);
+	  
 	  // this if statement controls which samples get processed
 	  // if we want to include burn-in or subsampling, can put it here
-	  if(!feof(fp) && count > burnin && count % (sampleperiod+1) == 0)
+	  if(!feof(fp) && count >= burnin && count % (sampleperiod+1) == 0)
 	    {
 	      // loop through iterations
 	      for(j = 0; j< NSAMP; j++)
@@ -484,7 +484,9 @@ int main(int argc, char *argv[])
 	  fclose(fp2);
 	  fclose(fp3);
 	} 
-	 
+
+
+      printf("allruns is %i\n", allruns);
 
   // output various summaries
   for(i = 0; i < len; i++)
