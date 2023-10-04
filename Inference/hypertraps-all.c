@@ -92,7 +92,7 @@ int nparams(int model, int LEN)
     case 2: return LEN*LEN;
     case 3: return LEN*LEN*LEN;
     case 4: return LEN*LEN*LEN*LEN;
-    case -1: return mypow2(LEN);
+    case -1: return mypow2(LEN)*LEN;
     default: return 0;
     }
 }

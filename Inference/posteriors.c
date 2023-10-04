@@ -53,7 +53,7 @@ int nparams(int model, int LEN)
     case 2: return LEN*LEN;
     case 3: return LEN*LEN*LEN;
     case 4: return LEN*LEN*LEN*LEN;
-    case -1: return mypow2(LEN);
+    case -1: return mypow2(LEN)*LEN;
     default: return 0;
     }
 }
@@ -368,11 +368,11 @@ int main(int argc, char *argv[])
   len = 0;
   for(i = 1; i < 200; i++)
     {
-      if(model == 1 && tlen == i) { len = i; break; }
-      if(model == 2 && tlen == i*i) { len = i; break; }
-      if(model == 3 && tlen == i*i*i) { len = i; break; }
-      if(model == 4 && tlen == i*i*i*i) { len = i; break; }
-      if(model == -1 && tlen == mypow2(i)) { len = i; break; }
+      if(tlen == nparams(model, i))
+      {
+	len = i;
+	break;
+      }
     }
   if(len == 0)
     {
