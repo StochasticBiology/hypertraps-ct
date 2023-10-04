@@ -13,22 +13,27 @@ for(expt in 1:4) {
   # cross
   if(expt == 1) {
     fname = c("test-cross-mod-1", "test-cross-mod-2", "test-cross-mod-3"); 
-    oneshot=FALSE; bigL=5
+    oneshot="no"; bigL=5
   }
   # hi-order logic (normal inference)
   if(expt == 2) {
     fname = c("test-ho-mod--1", "test-ho-mod-2", "test-ho-mod-3"); 
-    oneshot=FALSE; bigL=4
+    oneshot="no"; bigL=5
   }
   # hi-order logic (longer MCMC chain)
   if(expt == 3) {
     fname = c("test-ho-mod--1-l", "test-ho-mod-2-l", "test-ho-mod-3-l"); 
-    oneshot=FALSE; bigL=4
+    oneshot="no"; bigL=5
   }
   # hi-order logic (simulated annealing)
   if(expt == 4) {
     fname = c("test-ho-mod--1-sa", "test-ho-mod-2-sa", "test-ho-mod-3-sa"); 
-    oneshot=TRUE; bigL=4
+    oneshot="yes"; bigL=5
+  }
+  # hi-order logic (simulated annealing, regularised)
+  if(expt == 5) {
+    fname = c("test-ho-mod--1-sa", "test-ho-mod-2-sa", "test-ho-mod-3-sa"); 
+    oneshot="regularised"; bigL=4
   }
   
   # initialise plot list
@@ -37,19 +42,23 @@ for(expt in 1:4) {
   for(i in 1:length(fname)) {
     bdf = thdf = data.frame()
     # set up filenames for input
-    lik.name = paste(c("VerifyData/", fname[i], "-lik.txt"), collapse="")
-    trans.name = paste(c("VerifyData/", fname[i], "-trans.txt"), collapse="")
-    states.name = paste(c("VerifyData/", fname[i], "-states.txt"), collapse="")
-    if(oneshot==FALSE){
-      bubble.name = paste(c("VerifyData/", fname[i], "-posterior.txt-bubbles.csv"), collapse="")
-      thist.name = paste(c("VerifyData/", fname[i], "-posterior.txt-timehists.csv"), collapse="")
-      routes.name = paste(c("VerifyData/", fname[i], "-posterior.txt-routes.txt"), collapse="")
+    if(oneshot=="regularised") {
+      base.name = paste(c(fname[i], "-regularised"))
+      post.name = paste(c(fname[i], "-regularised.txt"))
+    } else if(oneshot == "yes") {
+      base.name = fname[i]
+      post.name = paste(c(fname[i], "-best.txt"))
     } else {
-      bubble.name = paste(c("VerifyData/", fname[i], "-best.txt-bubbles.csv"), collapse="")
-      thist.name = paste(c("VerifyData/", fname[i], "-best.txt-timehists.csv"), collapse="")
-      routes.name = paste(c("VerifyData/", fname[i], "-best.txt-routes.txt"), collapse="")
+      base.name = fname[i]
+      post.name = paste(c(fname[i], "-posterior.txt"))
     }
-    
+      lik.name = paste(c("VerifyData/", base.name, "-lik.txt"), collapse="")
+      trans.name = paste(c("VerifyData/", base.name, "-trans.txt"), collapse="")
+      states.name = paste(c("VerifyData/", base.name, "-states.txt"), collapse="")
+      bubble.name = paste(c("VerifyData/", post.name, "-bubbles.csv"), collapse="")
+      thist.name = paste(c("VerifyData/", post.name, "-timehists.csv"), collapse="")
+      routes.name = paste(c("VerifyData/", post.name, "-routes.txt"), collapse="")
+   
     # read likelihood trace and produce plot
     lik.df = read.csv(lik.name)
     g.lik[[i]] = ggplot(lik.df) + 
@@ -81,13 +90,15 @@ for(expt in 1:4) {
     # set up metadata for ggraph plot
     trans.1$Flux = trans.1$Probability*trans.s.1$Probability[trans.1$From+1]
     
-    trans.p = trans.1[trans.1$Flux > 1e-4,]
+    trans.p = trans.1[trans.1$Flux > 1e-2,]
     trans.g = graph_from_data_frame(trans.p)
     bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
     V(trans.g)$binname = bs
     layers = str_count(bs, "1")
     g.gcube[[i]] = ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
-      geom_node_point() + geom_node_label(aes(label=binname),size=2) + theme_graph() #aes(label=bs)) + theme_graph() 
+      geom_node_point() + geom_node_label(aes(label=binname),size=2) +
+      scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
+      theme_graph() #aes(label=bs)) + theme_graph() 
     
     # read individual routes
     routes = read.table(routes.name)
@@ -119,7 +130,7 @@ for(expt in 1:4) {
   }
   
   # produce summary output
-  out.name = paste(c("plot-sandbox-", fname[1], ".png"), collapse="")
+  out.name = paste(c("plot-sandbox-", expt, ".png"), collapse="")
   sf = 2
   png(out.name, width=2000*sf, height=800*sf, res=72*sf)
   grid.arrange(g.lik[[1]], g.bubbles[[1]], g.gcube[[1]], g.motif[[1]], g.pheatmap[[1]], 
