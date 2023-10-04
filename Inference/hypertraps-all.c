@@ -20,6 +20,8 @@ int TMODULE = 100;
 
 int _EVERYITERATION = 0;
 
+double lscale = 10;
+
 // control output
 int VERBOSE = 0;
 int SPECTRUM_VERBOSE = 0;
@@ -618,7 +620,7 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
       for(j = 0; j < len; j++)
 	startpos[j] = (matrix[2*i*len+j]);
       // get log-likelihood contribution from this pair (transition) using HyperTraPS
-      tlik = LikelihoodMultiple(&(matrix[2*i*len+len]), ntrans, len, startpos, tau1s[i], tau2s[i], model);
+      tlik = lscale*LikelihoodMultiple(&(matrix[2*i*len+len]), ntrans, len, startpos, tau1s[i], tau2s[i], model);
       tloglik = log(tlik);
       if(tlik < 0)
 	{
@@ -849,6 +851,7 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--sgd\0") == 0) { searchmethod = 1; i--; }
       else if(strcmp(argv[i], "--sgdscale\0") == 0) sgdscale = atof(argv[i+1]);
       else if(strcmp(argv[i], "--sa\0") == 0) { searchmethod = 2; i--; }
+      else if(strcmp(argv[i], "--lscale\0") == 0) { lscale = atof(argv[i+1]); }
       else if(strcmp(argv[i], "--regularise\0") == 0) { regularise = 1; i--; }
       else if(strcmp(argv[i], "--model\0") == 0) { model = atoi(argv[i+1]); }
       
