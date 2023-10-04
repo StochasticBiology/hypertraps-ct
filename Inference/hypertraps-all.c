@@ -651,9 +651,97 @@ void GetGradients(int *matrix, int len, int ntarg, double *trans, int *parents, 
     }
 }
 
+void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, char *labelstr)
+{
+  int i, j;
+  int NVAL;
+  double lik, nlik;
+  double oldval;
+  int biggestindex;
+  double biggest;
+  int pcount;
+  FILE *fp, *fp1;
+  char fstr[200], fstr1[200];
+  double AIC, BIC, bestBIC;
+  double *best;
+  
+  NVAL = nparams(model, len);
+  best = (double*)malloc(sizeof(double)*NVAL);
+  
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model);
+
+  AIC = 2*NVAL-2*lik;
+  BIC = log(ntarg)*NVAL-2*lik;
+  bestBIC = BIC;
+  for(i = 0; i < NVAL; i++)
+    best[i] = ntrans[i];
+
+  sprintf(fstr, "%s-regularising.csv", labelstr);
+  fp = fopen(fstr, "w");
+  fprintf(fp, "nparam,log.lik,AIC,BIC\n");
+  fprintf(fp, "%i,%e,%e,%e\n", NVAL, lik, AIC, BIC);
+
+  printf("Regularising...\npruning ");
+  // remove parameters stepwise
+  for(j = 0; j < NVAL; j++)
+    {
+      printf("%i of %i\n", j+1, NVAL); 
+      // find parameter that retains highest likelihood when removed
+      biggest = 0;
+      for(i = 0; i < NVAL; i++)
+	{
+	  oldval = ntrans[i];
+	  ntrans[i] = 0;
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model);
+	  ntrans[i] = oldval;
+	  if((biggest == 0 || nlik > biggest) && ntrans[i] != 0)
+	    {
+	      biggest = nlik;
+	      biggestindex = i;
+	    }
+	}
+      // set this param to zero and count new param set
+      ntrans[biggestindex] = 0;
+      pcount = 0;
+      for(i = 0; i < NVAL; i++)
+	{
+	  if(ntrans[i] != 0) pcount++;
+	}
+      // output
+      AIC = 2*pcount-2*biggest;
+      BIC = log(ntarg)*pcount-2*biggest;
+      fprintf(fp, "%i,%e,%e,%e\n", pcount, biggest, AIC, BIC);
+      if(BIC < bestBIC)
+	{
+	  bestBIC = BIC;
+	  for(i = 0; i < NVAL; i++)
+	    best[i] = ntrans[i];
+	}
+    }
+  sprintf(fstr, "%s-regularised.txt", labelstr);
+  fp = fopen(fstr, "w");
+  for(i = 0; i < NVAL; i++)
+    fprintf(fp, "%e ", best[i]);
+  fprintf(fp, "\n");
+  fclose(fp);
+
+    sprintf(fstr, "%s-regularised-lik.txt", labelstr);
+ fp = fopen(fstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); 
+ fprintf(fp, "0,%e,%e\n", GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model), GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model));
+  fclose(fp);
+
+   sprintf(fstr, "%s-regularised-trans.txt", labelstr);
+  	  OutputTransitions(fstr, ntrans, len, model);
+	     sprintf(fstr, "%s-regularised-states.txt", labelstr);
+	  OutputStates(fstr, ntrans, len, model);
+
+  free(best);
+
+}
+
 void helpandquit(int debug)
 {
-  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
+  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
   if(debug)
     printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n--outputinput\t\toutput the data we read in(note: an undocumented option exists to pass CSV data as the observations file: file should have a header, and a column of (ignored) sample IDs, before subsequent columns with all \"before\" features followed by all \"after\" features on the same row.  \n\n");
   exit(0);
@@ -715,6 +803,7 @@ int main(int argc, char *argv[])
   int outputinput;
   double sgdscale;
   int model;
+  int regularise;
   
   printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
@@ -730,6 +819,7 @@ int main(int argc, char *argv[])
   searchmethod = 0;
   crosssectional = 0;
   outputinput = 0;
+  regularise = 0;
   model = 2;
   strcpy(obsfile, "");
   strcpy(timefile, "");
@@ -759,6 +849,7 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--sgd\0") == 0) { searchmethod = 1; i--; }
       else if(strcmp(argv[i], "--sgdscale\0") == 0) sgdscale = atof(argv[i+1]);
       else if(strcmp(argv[i], "--sa\0") == 0) { searchmethod = 2; i--; }
+      else if(strcmp(argv[i], "--regularise\0") == 0) { regularise = 1; i--; }
       else if(strcmp(argv[i], "--model\0") == 0) { model = atoi(argv[i+1]); }
       
       else printf("Didn't understand argument %s\n", argv[i]);
@@ -961,7 +1052,7 @@ int main(int argc, char *argv[])
   fp = fopen(bestshotstr, "w"); fclose(fp);
   sprintf(likstr, "%s-lik.txt", labelstr);
   fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); fclose(fp);
-
+  
   sprintf(besttransstr, "%s-trans.txt", labelstr);
   sprintf(beststatesstr, "%s-states.txt", labelstr);
   
@@ -1171,8 +1262,11 @@ int main(int argc, char *argv[])
 	  lacc = lrej = 0;
 	}
     }
+  if(regularise)
+    {
+      Regularise(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, labelstr);
+    }
 
   return 0;
 }
- 
 
