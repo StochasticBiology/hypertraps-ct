@@ -15,6 +15,11 @@ gcc -o3 posteriors.c -lm -o posteriors.ce
 ./posteriors.ce --posterior ../VerifyData/test-cross-mod-3-posterior.txt --model 3 --verbose > ../VerifyData/t-sample-mod-3-a.tmp &
 ./posteriors.ce --posterior ../VerifyData/test-cross-mod-4-posterior.txt --model 4 --verbose > ../VerifyData/t-sample-mod-4-a.tmp &
 
+# regularisation demo
+./posteriors.ce --posterior ../VerifyData/test-cross-mod--1-sa-regularised.txt --model -1 --sims 1000 --verbose > ../VerifyData/t-cross-mod--1-sa-a.tmp &
+./posteriors.ce --posterior ../VerifyData/test-cross-mod-2-sa-regularised.txt --model 2 --sims 1000 --verbose > ../VerifyData/t-cross-mod-2-sa-a.tmp &
+./posteriors.ce --posterior ../VerifyData/test-cross-mod-3-sa-regularised.txt --model 3 --sims 1000 --verbose > ../VerifyData/t-cross-mod-3-sa-a.tmp &
+
 ### discrete time hi-order logic problem
 ./posteriors.ce --posterior ../VerifyData/test-ho-mod--1-posterior.txt --model -1 --verbose > ../VerifyData/t-ho-mod--1-a.tmp &
 ./posteriors.ce --posterior ../VerifyData/test-ho-mod-2-posterior.txt --model 2 --verbose > ../VerifyData/t-ho-mod-2-a.tmp &
@@ -25,9 +30,7 @@ gcc -o3 posteriors.c -lm -o posteriors.ce
 ./posteriors.ce --posterior ../VerifyData/test-ho-mod--1-sa-best.txt --model -1 --sims 1000 --verbose > ../VerifyData/t-ho-mod--1-sa-a.tmp &
 ./posteriors.ce --posterior ../VerifyData/test-ho-mod-2-sa-best.txt --model 2 --sims 1000 --verbose > ../VerifyData/t-ho-mod-2-sa-a.tmp &
 ./posteriors.ce --posterior ../VerifyData/test-ho-mod-3-sa-best.txt --model 3 --sims 1000 --verbose > ../VerifyData/t-ho-mod-3-sa-a.tmp &
-./posteriors.ce --posterior ../VerifyData/test-ho-mod--1-sa-regularised.txt --model -1 --sims 1000 --verbose > ../VerifyData/t-ho-mod--1-sa-r-a.tmp &
-./posteriors.ce --posterior ../VerifyData/test-ho-mod-2-sa-regularised.txt --model 2 --sims 1000 --verbose > ../VerifyData/t-ho-mod-2-sa-r-a.tmp &
-./posteriors.ce --posterior ../VerifyData/test-ho-mod-3-sa-regularised.txt --model 3 --sims 1000 --verbose > ../VerifyData/t-ho-mod-3-sa-r-a.tmp &
+
 
 ## continuous time
 # different sampling walkers

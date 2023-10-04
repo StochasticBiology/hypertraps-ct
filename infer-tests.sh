@@ -27,7 +27,11 @@ gcc -o3 hypertraps-all.c -lm -o hypertraps-all.ce
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --length 4 --label ../VerifyData/test-cross-mod-2 --model 2 > ../VerifyData/t-simple-mod-2.tmp &
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --length 4 --label ../VerifyData/test-cross-mod-3 --model 3 > ../VerifyData/t-simple-mod-3.tmp &
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --length 4 --label ../VerifyData/test-cross-mod-4 --model 4 > ../VerifyData/t-simple-mod-4.tmp &
-### TO DO REGULARISE HERE
+
+### regularisation demo
+./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt -lscale 100 --sa --length 4 --label ../VerifyData/test-cross-mod--1-sa --model -1 --regularise > ../VerifyData/t-simple-mod--1-sa.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt -lscale 100 --sa --length 4 --label ../VerifyData/test-cross-mod-2-sa --model 2 --regularise > ../VerifyData/t-simple-mod-2-sa.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt -lscale 100 --sa --length 4 --label ../VerifyData/test-cross-mod-3-sa --model 3 --regularise > ../VerifyData/t-simple-mod-3-sa.tmp &
 
 ### discrete time hi-order logic problem
 ./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --lscale 10 --length 4 --label ../VerifyData/test-ho-mod--1 --model -1 > ../VerifyData/t-ho-mod--1.tmp &

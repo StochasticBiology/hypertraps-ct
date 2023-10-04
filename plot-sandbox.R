@@ -9,7 +9,7 @@ library(ggplotify)
 
 #### various test bed experiments
 
-for(expt in 1:4) {
+for(expt in 1:5) {
   # cross
   if(expt == 1) {
     fname = c("test-cross-mod-1", "test-cross-mod-2", "test-cross-mod-3"); 
@@ -30,14 +30,14 @@ for(expt in 1:4) {
     fname = c("test-ho-mod--1-sa", "test-ho-mod-2-sa", "test-ho-mod-3-sa"); 
     oneshot="yes"; bigL=5
   }
-  # hi-order logic (simulated annealing, regularised)
+  # cross (simulated annealing, regularised)
   if(expt == 5) {
-    fname = c("test-ho-mod--1-sa", "test-ho-mod-2-sa", "test-ho-mod-3-sa"); 
-    oneshot="regularised"; bigL=4
+    fname = c("test-cross-mod--1-sa", "test-cross-mod-2-sa", "test-cross-mod-3-sa"); 
+    oneshot="regularised"; bigL=5
   }
   
   # initialise plot list
-  g.bubbles = g.lik = g.cube = g.gcube = g.motif = g.pheatmap = list()
+  g.bubbles = g.lik = g.cube = g.gcube = g.motif = g.pheatmap = g.reglik = g.regBIC = list()
   # loop over files in output
   for(i in 1:length(fname)) {
     bdf = thdf = data.frame()
@@ -126,17 +126,35 @@ for(expt in 1:4) {
     rownames(sdm) = routes.str.uniq
     colnames(sdm) = routes.str.uniq
     g.pheatmap[[i]] = as.ggplot(pheatmap(sdm))
-    
+ 
+    # get trajectories from regularisation, if appropriate
+   if(oneshot=="regularised") {
+      reg.name = paste(c("VerifyData/", fname[i], "-regularising.csv"), collapse="")
+      reg.df = read.csv(reg.name)
+      g.reglik[[i]] = ggplot(reg.df) + geom_line(aes(x=nparam, y=log.lik)) + theme_light()
+        g.regBIC[[i]] = ggplot(reg.df) + geom_line(aes(x=nparam, y=BIC)) + theme_light() 
+    }    
   }
   
   # produce summary output
   out.name = paste(c("plot-sandbox-", expt, ".png"), collapse="")
   sf = 2
   png(out.name, width=2000*sf, height=800*sf, res=72*sf)
-  grid.arrange(g.lik[[1]], g.bubbles[[1]], g.gcube[[1]], g.motif[[1]], g.pheatmap[[1]], 
-               g.lik[[2]], g.bubbles[[2]], g.gcube[[2]], g.motif[[2]], g.pheatmap[[2]],
-               g.lik[[3]], g.bubbles[[3]], g.gcube[[3]], g.motif[[3]], g.pheatmap[[3]], 
+  if(oneshot == "regularised") {
+  grid.arrange(g.reglik[[1]], g.regBIC[[1]], g.bubbles[[1]], g.gcube[[1]], g.motif[[1]], g.pheatmap[[1]], 
+               g.reglik[[2]], g.regBIC[[2]], g.bubbles[[2]], g.gcube[[2]], g.motif[[2]], g.pheatmap[[2]],
+               g.reglik[[3]], g.regBIC[[3]], g.bubbles[[3]], g.gcube[[3]], g.motif[[3]], g.pheatmap[[3]], 
                #           g.lik[[4]], g.bubbles[[4]], g.gcube[[4]], g.motif[[4]], g.pheatmap[[4]], 
                nrow=3)
+  } else {
+    grid.arrange(g.lik[[1]], g.bubbles[[1]], g.gcube[[1]], g.motif[[1]], g.pheatmap[[1]], 
+                 g.lik[[2]], g.bubbles[[2]], g.gcube[[2]], g.motif[[2]], g.pheatmap[[2]],
+                 g.lik[[3]], g.bubbles[[3]], g.gcube[[3]], g.motif[[3]], g.pheatmap[[3]], 
+                 #           g.lik[[4]], g.bubbles[[4]], g.gcube[[4]], g.motif[[4]], g.pheatmap[[4]], 
+                 nrow=3)
+  }
   dev.off()
 }
+
+
+
