@@ -27,17 +27,18 @@ gcc -o3 hypertraps-all.c -lm -o hypertraps-all.ce
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --length 4 --label ../VerifyData/test-cross-mod-2 --model 2 > ../VerifyData/t-simple-mod-2.tmp &
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --length 4 --label ../VerifyData/test-cross-mod-3 --model 3 > ../VerifyData/t-simple-mod-3.tmp &
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --length 4 --label ../VerifyData/test-cross-mod-4 --model 4 > ../VerifyData/t-simple-mod-4.tmp &
+### TO DO REGULARISE HERE
 
 ### discrete time hi-order logic problem
-./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --length 4 --label ../VerifyData/test-ho-mod--1 --model -1 > ../VerifyData/t-ho-mod--1.tmp &
-./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --length 4 --label ../VerifyData/test-ho-mod-2 --model 2 > ../VerifyData/t-ho-mod-2.tmp &
-./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --length 4 --label ../VerifyData/test-ho-mod-3 --model 3 > ../VerifyData/t-ho-mod-3.tmp &
-./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --length 5 --label ../VerifyData/test-ho-mod--1-l --model -1 > ../VerifyData/t-ho-mod--1-l.tmp &
-./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --length 5 --label ../VerifyData/test-ho-mod-2-l --model 2 > ../VerifyData/t-ho-mod-2-l.tmp &
-./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --length 5 --label ../VerifyData/test-ho-mod-3-l --model 3 > ../VerifyData/t-ho-mod-3-l.tmp &
-./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --length 4 --sa --label ../VerifyData/test-ho-mod--1-sa --model -1 > ../VerifyData/t-ho-mod--1-sa.tmp &
-./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --length 4 --sa --label ../VerifyData/test-ho-mod-2-sa --model 2 > ../VerifyData/t-ho-mod-2-sa.tmp &
-./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --length 4 --sa --label ../VerifyData/test-ho-mod-3-sa --model 3 > ../VerifyData/t-ho-mod-3-sa.tmp &
+./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --lscale 10 --length 4 --label ../VerifyData/test-ho-mod--1 --model -1 > ../VerifyData/t-ho-mod--1.tmp &
+./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --lscale 10 --length 4 --label ../VerifyData/test-ho-mod-2 --model 2 > ../VerifyData/t-ho-mod-2.tmp &
+./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --lscale 10 --length 4 --label ../VerifyData/test-ho-mod-3 --model 3 > ../VerifyData/t-ho-mod-3.tmp &
+./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --lscale 10 --length 5 --label ../VerifyData/test-ho-mod--1-l --model -1 > ../VerifyData/t-ho-mod--1-l.tmp &
+./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --lscale 10 --length 5 --label ../VerifyData/test-ho-mod-2-l --model 2 > ../VerifyData/t-ho-mod-2-l.tmp &
+./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --lscale 10 --length 5 --label ../VerifyData/test-ho-mod-3-l --model 3 > ../VerifyData/t-ho-mod-3-l.tmp &
+./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --lscale 10 --length 5 --sa --label ../VerifyData/test-ho-mod--1-sa --model -1 > ../VerifyData/t-ho-mod--1-sa.tmp &
+./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --lscale 10 --length 5 --sa --label ../VerifyData/test-ho-mod-2-sa --model 2 > ../VerifyData/t-ho-mod-2-sa.tmp &
+./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --lscale 10 --length 5 --sa --label ../VerifyData/test-ho-mod-3-sa --model 3 > ../VerifyData/t-ho-mod-3-sa.tmp &
 
 ## continuous time
 # different sampling walkers

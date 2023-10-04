@@ -25,7 +25,9 @@ gcc -o3 posteriors.c -lm -o posteriors.ce
 ./posteriors.ce --posterior ../VerifyData/test-ho-mod--1-sa-best.txt --model -1 --sims 1000 --verbose > ../VerifyData/t-ho-mod--1-sa-a.tmp &
 ./posteriors.ce --posterior ../VerifyData/test-ho-mod-2-sa-best.txt --model 2 --sims 1000 --verbose > ../VerifyData/t-ho-mod-2-sa-a.tmp &
 ./posteriors.ce --posterior ../VerifyData/test-ho-mod-3-sa-best.txt --model 3 --sims 1000 --verbose > ../VerifyData/t-ho-mod-3-sa-a.tmp &
-
+./posteriors.ce --posterior ../VerifyData/test-ho-mod--1-sa-regularised.txt --model -1 --sims 1000 --verbose > ../VerifyData/t-ho-mod--1-sa-r-a.tmp &
+./posteriors.ce --posterior ../VerifyData/test-ho-mod-2-sa-regularised.txt --model 2 --sims 1000 --verbose > ../VerifyData/t-ho-mod-2-sa-r-a.tmp &
+./posteriors.ce --posterior ../VerifyData/test-ho-mod-3-sa-regularised.txt --model 3 --sims 1000 --verbose > ../VerifyData/t-ho-mod-3-sa-r-a.tmp &
 
 ## continuous time
 # different sampling walkers
