@@ -1,11 +1,21 @@
 library(ggplot2)
 library(gridExtra)
-source("plot-trans.R")
+#source("plot-trans.R")
 library(stringdist)
+library(stringr)
 library(pheatmap)
 library(igraph)
 library(ggraph)
 library(ggplotify)
+
+DecToBin <- function(x, len) {
+  s = c()
+  for(j in (len-1):0)
+  {
+    if(x >= 2**j) { s=c(s,1); x = x-2**j } else { s=c(s,0)}
+  }
+  return(paste(s, collapse=""))
+}
 
 #### various test bed experiments
 
@@ -84,8 +94,8 @@ for(expt in 1:5) {
     trans.s.1 = read.csv(states.name, sep=" ")
     trans.s.1 = trans.s.1[!is.nan(trans.s.1$Probability),]
     # produce plot using custom code
-    g.cube[[i]] = plot.hypercube3(trans.1, statesdf=trans.s.1, 
-                                  node.labels = FALSE, seg.labels = TRUE, threshold=5e-2)
+ #   g.cube[[i]] = plot.hypercube3(trans.1, statesdf=trans.s.1, 
+ #                                 node.labels = FALSE, seg.labels = TRUE, threshold=5e-2)
     
     # set up metadata for ggraph plot
     trans.1$Flux = trans.1$Probability*trans.s.1$Probability[trans.1$From+1]
