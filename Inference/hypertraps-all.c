@@ -729,13 +729,13 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
 
     sprintf(fstr, "%s-regularised-lik.txt", labelstr);
  fp = fopen(fstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); 
- fprintf(fp, "0,%e,%e\n", GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model), GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model));
+ fprintf(fp, "0,%e,%e\n", GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model), GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model));
   fclose(fp);
 
    sprintf(fstr, "%s-regularised-trans.txt", labelstr);
-  	  OutputTransitions(fstr, ntrans, len, model);
+  	  OutputTransitions(fstr, best, len, model);
 	     sprintf(fstr, "%s-regularised-states.txt", labelstr);
-	  OutputStates(fstr, ntrans, len, model);
+	  OutputStates(fstr, best, len, model);
 
   free(best);
 
