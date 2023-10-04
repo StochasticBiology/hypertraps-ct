@@ -2,7 +2,19 @@
 
 library(ggplot2)
 library(gridExtra)
-source("plot-trans.R")
+library(igraph)
+library(ggraph)
+library(stringr)
+#source("plot-trans.R")
+
+DecToBin <- function(x, len) {
+  s = c()
+  for(j in (len-1):0)
+  {
+    if(x >= 2**j) { s=c(s,1); x = x-2**j } else { s=c(s,0)}
+  }
+  return(paste(s, collapse=""))
+}
 
 #### bubble and hypercube plots for TB experiments
 
@@ -55,16 +67,32 @@ ggplot(thdfp[thdfp$Expt>2,], aes(x=Time, y=Probability, color=factor(Expt))) +
   geom_col(data=thdfp[thdfp$Expt>2 && thdfp$Time==10,]) + facet_wrap(~OriginalIndex, ncol=2) +
   theme_light() #+ scale_x_continuous(trans="log10")
 
+# read transition and state probabilities
 trans.1 = read.csv("Data/tb-dt-1-trans.txt", sep=" ")
+trans.1 = trans.1[!is.nan(trans.1$Probability),]
+
 trans.s.1 = read.csv("Data/tb-dt-1-states.txt", sep=" ")
-g.tb.cube = plot.hypercube3(trans.1, statesdf=trans.s.1, 
-                node.labels = FALSE, seg.labels = TRUE, threshold=5e-2)
+trans.s.1 = trans.s.1[!is.nan(trans.s.1$Probability),]
+
+# set up metadata for ggraph plot
+trans.1$Flux = trans.1$Probability*trans.s.1$Probability[trans.1$From+1]
+
+bigL = 10
+trans.p = trans.1[trans.1$Flux > 0.05,]
+trans.g = graph_from_data_frame(trans.p)
+bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
+V(trans.g)$binname = bs
+layers = str_count(bs, "1")
+g.tb.cube = ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
+  geom_node_point() + geom_node_label(aes(label=binname),size=2) +
+  scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
+  theme_graph() #aes(label=bs)) + theme_graph() 
+
+
+#g.tb.cube = plot.hypercube3(trans.1, statesdf=trans.s.1, 
+#                node.labels = FALSE, seg.labels = TRUE, threshold=5e-2)
 
 g.tb.summary = grid.arrange(g.tb.bubbles, g.tb.thist, g.tb.thist2, nrow=3)
-sf = 2
-png("plot-science-tb.png", width=600*sf, height=1200*sf, res=72*sf)
-grid.arrange(g.tb.cube, g.tb.summary, nrow=2)
-dev.off()
 
 ######## routes analysis TB
 routes = read.table("Data/tb-ct-1-posterior.txt-routes.txt")
@@ -80,7 +108,7 @@ for(j in 1:ncol(routes)) {
     startprob = startprob+thisprob
   }
 }
-ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Index))) +
+g.tb.motifs = ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Index))) +
   geom_text(aes(x=Time,y=(Start+End)/2,label=Index), color="#FFFFFF") + ylab("Probability") + theme_light()
 
 # time series illustration
@@ -92,15 +120,13 @@ for(i in 1:1000) { #nrow(routes)) {
     prevtime = routetimes[i,j]
   }
 }
-ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
+g.tb.ts = ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
   scale_x_continuous(trans="log") + theme_light()
 
-thist = data.frame()
-for(i in 0:9) {
-  times = routetimes[routes==1]
-  thist = rbind(thist, data.frame(Index=i, times=times))
-  XXX
-}
+sf = 2
+png("plot-science-tb.png", width=1200*sf, height=1200*sf, res=72*sf)
+grid.arrange(g.tb.cube, g.tb.summary, g.tb.motifs, g.tb.ts, nrow=2)
+dev.off()
 
 #### bubble and hypercube plots for MRO experiments
 
@@ -152,16 +178,24 @@ grid.arrange(g.mro.thist, g.mro.thist2, nrow=2)
 
 trans.1 = read.csv("Data/mro-1-trans.txt", sep=" ")
 trans.s.1 = read.csv("Data/mro-1-states.txt", sep=" ")
-g.mro.cube = plot.hypercube3(trans.1, statesdf=trans.s.1, 
-                node.labels = FALSE, seg.labels = TRUE, threshold=1e-5)
+# set up metadata for ggraph plot
+trans.1$Flux = trans.1$Probability*trans.s.1$Probability[trans.1$From+1]
+
+bigL = 10
+trans.p = trans.1[trans.1$Flux > 0.05,]
+trans.g = graph_from_data_frame(trans.p)
+bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
+V(trans.g)$binname = bs
+layers = str_count(bs, "1")
+g.mro.cube = ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
+  geom_node_point() + geom_node_label(aes(label=binname),size=2) +
+  scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
+  theme_graph() #aes(label=bs)) + theme_graph() 
+
+#g.mro.cube = plot.hypercube3(trans.1, statesdf=trans.s.1, 
+#                node.labels = FALSE, seg.labels = TRUE, threshold=1e-5)
 
 g.mro.summary = grid.arrange(g.mro.bubbles, g.mro.thist, g.mro.thist2, ncol=1)
-sf = 2
-png("plot-science-mro.png", width=600*sf, height=1200*sf, res=72*sf)
-grid.arrange(g.mro.cube, g.mro.summary, nrow=2)
-dev.off()
-
-
 
 #### routes analysis MRO
 routes = read.table("Data/mro-3-posterior.txt-routes.txt")
@@ -177,7 +211,7 @@ for(j in 1:ncol(routes)) {
     startprob = startprob+thisprob
   }
 }
-ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Index))) +
+g.mro.motifs = ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Index))) +
   geom_text(aes(x=Time,y=(Start+End)/2,label=Index), color="#FFFFFF") + ylab("Probability") + theme_light()
 
 # time series illustration
@@ -189,49 +223,11 @@ for(i in 1:1000) { #nrow(routes)) {
     prevtime = routetimes[i,j]
   }
 }
-ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
+g.mro.ts = ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
   scale_x_continuous(trans="log") + theme_light()
 
+sf = 2
+png("plot-science-mro.png", width=1200*sf, height=1200*sf, res=72*sf)
+grid.arrange(g.mro.cube, g.mro.summary, g.mro.motifs, g.mro.ts, nrow=2)
+dev.off()
 
-####### comparison to old code for debugging
-########
-
-thdf.old = read.csv("OldTH/synth-1-data.txt-posterior-1-1-3-3-0.txt.ctrec.process", sep=" ", header=FALSE)
-colnames(thdf.old) = c("OriginalIndex", "Time", "Probability")
-thdf.old$year="old"
-
-thdf.new = read.csv("../hctdump-main-old/VerifyData/synth-1-data.txt-posterior-1-1-3-3-0.txt-timehists.csv")
-#colnames(thdf) = c("OriginalIndex", "Time", "Probability")
-thdf.new$year="new"
-
-thdf=rbind(thdf.old,thdf.new)
-ggplot() + geom_line(data=thdf, 
-                     aes(x=Time, y=Probability, color=year)) +
-  facet_wrap(~OriginalIndex) + xlim(0,3) +
-  theme_light()
-
-########
-
-thdf.old = read.csv("OldTH/ng.2878-S2.txt-pruned.txt-labels.txt-data.txt-posterior-1-2-4-4-0.txt.ctrec.process", sep=" ", header=FALSE)
-colnames(thdf.old) = c("OriginalIndex", "Time", "Probability")
-thdf.old$year="old"
-
-thdf.new = read.csv("Data/tb-ct-1-posterior.txt-timehists.csv")
-#colnames(thdf) = c("OriginalIndex", "Time", "Probability")
-thdf.new$year="new"
-
-thdf = thdf.old
-thdf=rbind(thdf.old,thdf.new)
-ggplot() + geom_line(data=thdf, 
-                     aes(x=Time, y=Probability, color=year)) +
-  facet_wrap(~OriginalIndex) + xlim(0,10) +
-  theme_light()
-
-ggplot(thdf, aes(x=Time, y=Probability, fill=factor(OriginalIndex))) + 
-  geom_col(position="dodge") + xlim(-0.1,1.05) + facet_wrap(~year) +
-  theme_light() #+ scale_x_continuous(trans="log10")
-
-
-g.tb.thist = ggplot(thdf, aes(x=Time, y=Probability, fill=factor(year))) + 
-  geom_col(position="dodge") + xlim(-0.1,10.5) + facet_wrap(~OriginalIndex) +
-  theme_light() #+ scale_x_continuous(trans="log10")
