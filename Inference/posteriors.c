@@ -10,10 +10,10 @@
 #define RND drand48()
 
 // number of trajectories to simulate for each parameterisation
-#define NTRAJ 100
+int NTRAJ = 100;
 
 // number of times to call GetRoutes. each call runs NSAMP trajectories and records one sampled route, so the balance of the two controls the number of explicit recorded routes vs the number of sampled trajectories.
-#define NSAMP 10
+int NSAMP = 10;
 
 // maximum continuous-time value above which results are truncated
 #define MAXCT 1000
@@ -21,13 +21,97 @@
 // just used in assigning ordinal labels to different features
 #define FLEN 15
 
+int mypow2(int r)
+{
+  int s = 1;
+  int i;
+  for(i = 1; i <= r; i++)
+    s *= 2;
+  return s;
+}
+
+int BinToDec(int *state, int LEN)
+{
+  int v = 1;
+  int i;
+  int val = 0;
+  
+  for(i = LEN-1; i >= 0; i--)
+    {
+      val += state[i]*v;
+      v *= 2;
+    }
+  return val;
+}
+
+int nparams(int model, int LEN)
+{
+  switch(model)
+    {
+    case 0: return 0;
+    case 1: return LEN;
+    case 2: return LEN*LEN;
+    case 3: return LEN*LEN*LEN;
+    case 4: return LEN*LEN*LEN*LEN;
+    case -1: return mypow2(LEN)*LEN;
+    default: return 0;
+    }
+}
+
+double RetrieveEdge(int *state, int locus, double *ntrans, int LEN, int model)
+{
+  double rate;
+  int i, j, k;
+  
+  if(model == 0)
+    return 0;
+  if(model == 1) // pi[locus] = rate of locus
+    return ntrans[locus];
+  if(model == 2) // pi[i*LEN + locus] = influence of i on locus
+    {
+      	      rate = ntrans[locus*LEN+locus];
+	      for(i = 0; i < LEN; i++)
+		rate += state[i]*ntrans[i*LEN+locus];
+    }
+  if(model == 3) // pi[j*LEN*LEN + i*LEN + locus] = influence of ij on locus, j>=i (j==i is influence of i on locus)
+    {
+      rate = ntrans[locus*LEN*LEN+locus*LEN+locus];
+      for(i = 0; i < LEN; i++)
+	{
+	for(j = i; j < LEN; j++)
+	  {
+	    rate += state[i]*state[j]*ntrans[j*LEN*LEN+i*LEN+locus];
+	  }
+	}
+    }
+  if(model == 4) // pi[k*LEN*LEN*LEN + j*LEN*LEN + i*LEN + i] = influence of ijk on i, k>=j>=i (j==i is influence of ik, k==j==i is influence of i); what does k==j,i mean
+    {
+      rate = ntrans[locus*LEN*LEN*LEN+locus*LEN*LEN+locus*LEN+locus];
+      for(i = 0; i < LEN; i++)
+	{
+	for(j = i; j < LEN; j++)
+	  {
+	    for(k = j; k < LEN; k++)
+	      {
+	    rate += state[i]*state[j]*state[k]*ntrans[k*LEN*LEN*LEN+j*LEN*LEN+i*LEN+locus];
+	  }
+	}
+    }
+    }
+  if(model == -1)
+    {
+      rate = ntrans[BinToDec(state, LEN)*LEN+locus];
+    }
+  return exp(rate);
+}
+
 // simulate trajectories on a given hypercube parameterisation, and store a bunch of summary data about those trajectories
 // mean[i] stores the mean acquisition ordering for feature i
 // ctrec[MAXCT*i + ref] stores a histogram of acquisitions of feature i at continuous time reference ref
 // times[t] stores the continuous time at which feature t is acquired in the first simulated run
 // betas[t] stores the exit propensity after feature t is acquired in the first simulated run
 // route[t] is the feature changed at step t
-void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double *mean, double *ctrec, double *times, double *betas, int *route, double BINSCALE)
+void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double *mean, double *ctrec, double *times, double *betas, int *route, double BINSCALE, int model)
 {
   int run, t;
   double time1;
@@ -72,10 +156,7 @@ void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double
 	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
 	      if(state[i] == 0)
 		{
-	          rate[i] = ntrans[i*len+i];
-	          for(j = 0; j < len; j++)
-		    rate[i] += state[j]*ntrans[j*len+i];
-		  rate[i] = exp(rate[i]);
+		  rate[i] = RetrieveEdge(state, i, ntrans, len, model);
 		}
 	      else // we've already lost this gene
 		rate[i] = 0;
@@ -177,7 +258,7 @@ void Label(char *names, int len)
 
 void helpandquit(int debug)
 {
-  printf("Options [defaults]:\n\n--posterior file.txt\tposteriors file [NA]\n--seed N\t\trandom seed [0]\n--binscale X\t\tscale for time bins [10]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--verbose\t\tverbose file output\n--help\t\t\t[show this message]\n\n");
+  printf("Options [defaults]:\n\n--posterior file.txt\tposteriors file [NA]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--seed N\t\trandom seed [0]\n--sims N\t\tsimulations per posterior sample [10]\n--trajs N\t\ttrajectories per simulation [100]\n--burnin N\t\tnumber of samples to skip as burn-in [0]\n--period N\t\tnumber of samples to \"thin\" between sims [0]\n--binscale X\t\tscale for time bins [10]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--verbose\t\tverbose file output\n--help\t\t\t[show this message]\n\n");
   exit(0);
 }
 
@@ -217,26 +298,48 @@ int main(int argc, char *argv[])
   char postfile[1000];
   int filelabel;
   char labelstr[1000];
+  int NVAL;
+  int model;
+  int burnin, sampleperiod;
   
   // default values
   BINSCALE = 10;
   verbose = 0;
   filelabel = 0;
   seed = 0;
-
-    printf("HyperTraPS(-CT) posterior analysis\n");
+  model = 2;
+  burnin = 0;
+  sampleperiod = 0;
+  sprintf(postfile, "");
+  
+    printf("\nHyperTraPS(-CT) posterior analysis\n\n");
 
     // deal with command-line arguments
-  if(argc < 2) helpandquit(0);
-  for(i = 1; i < argc; i+=2)
+   for(i = 1; i < argc; i+=2)
     {
       if(strcmp(argv[i], "--posterior\0") == 0) strcpy(postfile, argv[i+1]);
       else if(strcmp(argv[i], "--label\0") == 0) { filelabel = 1; strcpy(labelstr, argv[i+1]); }
       else if(strcmp(argv[i], "--seed\0") == 0) seed = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--model\0") == 0) model = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--sims\0") == 0) NSAMP = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--trajs\0") == 0) NTRAJ = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--burnin\0") == 0) burnin = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--period\0") == 0) sampleperiod = atoi(argv[i+1]);      
       else if(strcmp(argv[i], "--binscale\0") == 0) BINSCALE = atof(argv[i+1]);
       else if(strcmp(argv[i], "--verbose\0") == 0) { verbose = 1; i--; }
       else if(strcmp(argv[i], "--help\0") == 0) helpandquit(0);
     }
+
+   if(strcmp(postfile, "") == 0)
+     {
+       printf("*** I need at least a file of posterior samples! ***\n\n");
+       helpandquit(0);
+     }
+   if(model == 0)
+     {
+       printf("*** Posterior analysis isn't meaningful for a zero-parameter model ***\n\n");
+       return 0;
+     }
 
   printf("Verbose flag is %i\n", verbose);
   printf("Bin scale is %f\n", BINSCALE);
@@ -265,19 +368,19 @@ int main(int argc, char *argv[])
   len = 0;
   for(i = 1; i < 200; i++)
     {
-      if(tlen == i*i)
-	{
-	  len = i;
-	  break;
-	}
+      if(tlen == nparams(model, i))
+      {
+	len = i;
+	break;
+      }
     }
   if(len == 0)
     {
-      printf("Couldn't determine number of features from %s\n", postfile);
+      printf("Given model type %i, couldn't determine number of features from %s, which seems to have %i params per sample\n", model, postfile, tlen);
       return 0;
     }
 
-  printf("Based on %s , there are %i features\n", postfile, len);
+  printf("Based on %s with %i params per model and model %i, there are %i features\n", postfile, tlen, model, len);
 
 
   // initialise and allocate a lot of different arrays to compute and store statistics
@@ -285,6 +388,7 @@ int main(int argc, char *argv[])
   allruns  =0;
   ntarg = 0;
   Label(names, len);
+  NVAL = nparams(model, len);
   
   matrix = (int*)malloc(sizeof(int)*10000);
   ctrec = (double*)malloc(sizeof(double)*MAXCT*len);
@@ -292,8 +396,8 @@ int main(int argc, char *argv[])
   betas = (double*)malloc(sizeof(double)*len);
   route = (int*)malloc(sizeof(int)*len);
 
-  trans = (double*)malloc(sizeof(double)*len*len); /* transition matrix */
-  ntrans = (double*)malloc(sizeof(double)*len*len);
+  trans = (double*)malloc(sizeof(double)*NVAL); /* transition matrix */
+  ntrans = (double*)malloc(sizeof(double)*NVAL);
   rec = (int*)malloc(sizeof(int)*len*len); /* stores step ordering, modified by getlikelihood */
   mean = (double*)malloc(sizeof(double)*len);
   meanstore = (double*)malloc(sizeof(double)*len);
@@ -338,12 +442,12 @@ int main(int argc, char *argv[])
       while(!feof(fp))
 	{
 	  // read in single posterior sample
-	  for(i = 0; i < len*len; i++)
-	    fscanf(fp, "%lf", &ntrans[i]);
-
+	  for(i = 0; i < NVAL; i++)
+      	    fscanf(fp, "%lf", &ntrans[i]);
+	  
 	  // this if statement controls which samples get processed
 	  // if we want to include burn-in or subsampling, can put it here
-	  if(!feof(fp) && count > 50)// && count % 5 == 0)// && count > 100 && count % 5 == 0)
+	  if(!feof(fp) && count >= burnin && count % (sampleperiod+1) == 0)
 	    {
 	      // loop through iterations
 	      for(j = 0; j< NSAMP; j++)
@@ -351,7 +455,7 @@ int main(int argc, char *argv[])
 		  for(i = 0; i < len; i++)
 		    meanstore[i] = 0;
 		  // simulate behaviour on this posterior and add statistics to counts and histograms
-		  GetRoutes(matrix, len, ntarg, ntrans, rec, meanstore, ctrec, times, betas, route, BINSCALE);
+		  GetRoutes(matrix, len, ntarg, ntrans, rec, meanstore, ctrec, times, betas, route, BINSCALE, model);
 		  for(i = 0; i < len; i++)
 		    fmeanstore[i] += meanstore[i];
 		  ctnorm += NTRAJ;
@@ -364,7 +468,7 @@ int main(int argc, char *argv[])
 		      for(i = 0; i < len; i++)
 			fprintf(fp2, "%.15f ", betas[i]);
 		      for(i = 0; i < len; i++)
-			fprintf(fp3, "%.3f ", times[i]);
+			fprintf(fp3, "%.3e ", times[i]);
 		      fprintf(fp1, "\n");
 		      fprintf(fp2, "\n");
 		      fprintf(fp3, "\n");
@@ -380,7 +484,9 @@ int main(int argc, char *argv[])
 	  fclose(fp2);
 	  fclose(fp3);
 	} 
-	 
+
+
+      printf("allruns is %i\n", allruns);
 
   // output various summaries
   for(i = 0; i < len; i++)
