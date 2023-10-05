@@ -226,15 +226,15 @@ void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double
 
 // construct labels for different features
 // for different specific studies this can be adapted to help output
-void Label(char *names, int len)
+void Label(char *names, int len, char *fname)
 {
   int i, j;
   FILE *fp;
   
-  fp = fopen("trait-names.txt", "r");
+  fp = fopen(fname, "r");
   if(fp == NULL)
     {
-      printf("Didn't find trait-names.txt, using default labels\n");
+      printf("Didn't find feature label file %s, using default labels\n", fname);
   for(i = 0; i < len; i++)
     {
       sprintf(&names[i*FLEN], "feature_%i", i);
@@ -258,7 +258,7 @@ void Label(char *names, int len)
 
 void helpandquit(int debug)
 {
-  printf("Options [defaults]:\n\n--posterior file.txt\tposteriors file [NA]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--seed N\t\trandom seed [0]\n--sims N\t\tsimulations per posterior sample [10]\n--trajs N\t\ttrajectories per simulation [100]\n--burnin N\t\tnumber of samples to skip as burn-in [0]\n--period N\t\tnumber of samples to \"thin\" between sims [0]\n--binscale X\t\tscale for time bins [10]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--verbose\t\tverbose file output\n--help\t\t\t[show this message]\n\n");
+  printf("Options [defaults]:\n\n--posterior file.txt\tposteriors file [NA]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--featurenames file.txt\ttext file with one feature name per row [NA]\n--seed N\t\trandom seed [0]\n--sims N\t\tsimulations per posterior sample [10]\n--trajs N\t\ttrajectories per simulation [100]\n--burnin N\t\tnumber of samples to skip as burn-in [0]\n--period N\t\tnumber of samples to \"thin\" between sims [0]\n--binscale X\t\tscale for time bins [10]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--verbose\t\tverbose file output\n--help\t\t\t[show this message]\n\n");
   exit(0);
 }
 
@@ -301,6 +301,8 @@ int main(int argc, char *argv[])
   int NVAL;
   int model;
   int burnin, sampleperiod;
+  int flabels;
+  char labelfile[1000];
   
   // default values
   BINSCALE = 10;
@@ -311,6 +313,7 @@ int main(int argc, char *argv[])
   burnin = 0;
   sampleperiod = 0;
   sprintf(postfile, "");
+  sprintf(labelfile, "");
   
     printf("\nHyperTraPS(-CT) posterior analysis\n\n");
 
@@ -319,6 +322,7 @@ int main(int argc, char *argv[])
     {
       if(strcmp(argv[i], "--posterior\0") == 0) strcpy(postfile, argv[i+1]);
       else if(strcmp(argv[i], "--label\0") == 0) { filelabel = 1; strcpy(labelstr, argv[i+1]); }
+      else if(strcmp(argv[i], "--featurenames\0") == 0) { strcpy(labelfile, argv[i+1]); }
       else if(strcmp(argv[i], "--seed\0") == 0) seed = atoi(argv[i+1]);
       else if(strcmp(argv[i], "--model\0") == 0) model = atoi(argv[i+1]);
       else if(strcmp(argv[i], "--sims\0") == 0) NSAMP = atoi(argv[i+1]);
@@ -387,7 +391,8 @@ int main(int argc, char *argv[])
   srand48(seed);
   allruns  =0;
   ntarg = 0;
-  Label(names, len);
+  Label(names, len, labelfile);
+    
   NVAL = nparams(model, len);
   
   matrix = (int*)malloc(sizeof(int)*10000);
