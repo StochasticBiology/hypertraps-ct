@@ -172,6 +172,34 @@ void InitialMatrix(double *trans, int len, int model)
     }
 }
 
+
+void ReadMatrix(double *trans, int len, int model, char *fname)
+{
+  int NVAL;
+  int i;
+  FILE *fp;
+
+  fp = fopen(fname, "r");
+  if(fp == NULL)
+    {
+      printf("Couldn't find parameter file %s\n", fname);
+      exit(0);
+    }
+  
+  NVAL = nparams(model, len);
+  
+  for(i = 0; i < NVAL; i++)
+    {
+      if(feof(fp))
+	{
+	  printf("Couldn't find sufficient parameters in file %s\n", fname);
+	  exit(0);
+	}
+      fscanf(fp, "%lf", &(trans[i]));
+    }
+  fclose(fp);
+}
+
   
 void OutputTransitions(char *besttransstr, double *ntrans, int LEN, int model)
 {
@@ -793,7 +821,7 @@ int main(int argc, char *argv[])
   char likstr[100];
   double testval;
   char header[10000];
-  char obsfile[1000], timefile[1000], endtimefile[1000];
+  char obsfile[1000], timefile[1000], endtimefile[1000], paramfile[1000];
   int searchmethod;
   int filelabel;
   char labelstr[1000];
@@ -807,6 +835,7 @@ int main(int argc, char *argv[])
   int model;
   int regularise;
   int outputtransitions;
+  int readparams;
   
   printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
@@ -824,8 +853,10 @@ int main(int argc, char *argv[])
   outputinput = 0;
   regularise = 0;
   model = 2;
+  readparams = 0;
   outputtransitions = 1;
   strcpy(obsfile, "");
+  strcpy(paramfile, "");
   strcpy(timefile, "");
   strcpy(endtimefile, "");
 
@@ -833,6 +864,7 @@ int main(int argc, char *argv[])
    for(i = 1; i < argc; i+=2)
     {
       if(strcmp(argv[i], "--obs\0") == 0) strcpy(obsfile, argv[i+1]);
+      else if(strcmp(argv[i], "--params\0") == 0) { readparams = 1; strcpy(paramfile, argv[i+1]); }
       else if(strcmp(argv[i], "--label\0") == 0) { filelabel = 1; strcpy(labelstr, argv[i+1]); }
       else if(strcmp(argv[i], "--times\0") == 0) { spectrumtype = 1; strcpy(timefile, argv[i+1]); }
       else if(strcmp(argv[i], "--endtimes\0") == 0) strcpy(endtimefile, argv[i+1]);
@@ -1063,7 +1095,15 @@ int main(int argc, char *argv[])
   sprintf(beststatesstr, "%s-states.txt", labelstr);
   
   // initialise with an agnostic transition matrix
+  if(readparams == 0)
+    {
+      printf("Starting with simple initial param guess\n");
   InitialMatrix(trans, len, model);
+    }
+  else
+    {
+      ReadMatrix(trans, len, model, paramfile);
+    }
 
   // compute initial likelihood given this matrix
   time(&start_t);
