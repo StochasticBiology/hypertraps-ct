@@ -156,7 +156,7 @@ void InitialMatrix(double *trans, int len, int model)
   int NVAL;
   int i;
   
-  NVAL = nparams(len, model);
+  NVAL = nparams(model, len);
   
   for(i = 0; i < NVAL; i++)
     trans[i] = 0;
@@ -743,9 +743,9 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
 
 void helpandquit(int debug)
 {
-  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
+  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--outputtransitions N\toutput transition matrix (0 no, 1 yes) [1]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
   if(debug)
-    printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n--outputinput\t\toutput the data we read in(note: an undocumented option exists to pass CSV data as the observations file: file should have a header, and a column of (ignored) sample IDs, before subsequent columns with all \"before\" features followed by all \"after\" features on the same row.  \n\n");
+    printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n--outputinput\t\toutput the data we read in(note: an undocumented option exists to pass CSV data as the observations file: file should have a header, and two columns of (ignored) before + after sample IDs, before subsequent columns with all \"before\" features followed by all \"after\" features on the same row.  \n\n");
   exit(0);
 }
 
@@ -806,6 +806,7 @@ int main(int argc, char *argv[])
   double sgdscale;
   int model;
   int regularise;
+  int outputtransitions;
   
   printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
@@ -823,6 +824,7 @@ int main(int argc, char *argv[])
   outputinput = 0;
   regularise = 0;
   model = 2;
+  outputtransitions = 1;
   strcpy(obsfile, "");
   strcpy(timefile, "");
   strcpy(endtimefile, "");
@@ -850,6 +852,7 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--walkers\0") == 0) BANK = atoi(argv[i+1]);
       else if(strcmp(argv[i], "--sgd\0") == 0) { searchmethod = 1; i--; }
       else if(strcmp(argv[i], "--sgdscale\0") == 0) sgdscale = atof(argv[i+1]);
+      else if(strcmp(argv[i], "--outputtransitions\0") == 0) outputtransitions = atoi(argv[i+1]);
       else if(strcmp(argv[i], "--sa\0") == 0) { searchmethod = 2; i--; }
       else if(strcmp(argv[i], "--lscale\0") == 0) { lscale = atof(argv[i+1]); }
       else if(strcmp(argv[i], "--regularise\0") == 0) { regularise = 1; i--; }
@@ -886,7 +889,7 @@ int main(int argc, char *argv[])
     SAMPLE = 1;
 
   srand48(seed);
-  matrix = (int*)malloc(sizeof(int)*100000);
+  matrix = (int*)malloc(sizeof(int)*1000000);
 
   // choose parameterisation based on command line
   expt = kernelindex;
@@ -1070,7 +1073,7 @@ int main(int argc, char *argv[])
   gettimeofday(&t_stop, NULL);
   diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
   //  diff_t = difftime(end_t, start_t);
-  printf("One likelihood estimation took %e seconds.\n", diff_t);
+  printf("One likelihood estimation took %e seconds.\nInitial likelihood is %e\n", diff_t, lik);
   // MCMC or simulated annealing
   if(searchmethod == 0 || searchmethod == 2)
     {
@@ -1109,8 +1112,11 @@ int main(int argc, char *argv[])
 	  fprintf(fp, "\n");
 	  fclose(fp);
 
+	  if(outputtransitions)
+	    {
 	  OutputTransitions(besttransstr, trans, len, model);
 	  OutputStates(beststatesstr, trans, len, model);
+	    }
 	}
 
       // output some info periodically
