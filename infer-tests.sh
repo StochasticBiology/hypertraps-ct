@@ -4,6 +4,8 @@ mkdir VerifyData/
 cd Verify
 gcc -o3 generate-cross.c -lm -o generate-cross.ce
 ./generate-cross.ce
+gcc -o3 generate-big-crosses.c -lm -o generate-big-crosses.ce
+./generate-big-crosses.ce
 
 cp synth* ../VerifyData
 cp hi-order.txt ../VerifyData
@@ -60,3 +62,17 @@ gcc -o3 hypertraps-all.c -lm -o hypertraps-all.ce
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --times ../VerifyData/synth-cross-times-1.txt --length 4 --label ../VerifyData/test-cross-ct-mod-3 --model 3 > ../VerifyData/t-simple-ct-mod-3.tmp &
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --times ../VerifyData/synth-cross-times-1.txt --length 4 --label ../VerifyData/test-cross-ct-mod-4 --model 4 > ../VerifyData/t-simple-ct-mod-4.tmp &
 
+## different parameter space sizes
+# sequential observations
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-10-easy-samples.txt --times ../VerifyData/synth-bigcross-10-easy-times.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-easy-10 > ../VerifyData/t-bigcross-easy-10.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-30-easy-samples.txt --times ../VerifyData/synth-bigcross-30-easy-times.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-easy-30 > ../VerifyData/t-bigcross-easy-30.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-50-easy-samples.txt --times ../VerifyData/synth-bigcross-50-easy-times.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-easy-50 > ../VerifyData/t-bigcross-easy-50.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-70-easy-samples.txt --times ../VerifyData/synth-bigcross-70-easy-times.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-easy-70 > ../VerifyData/t-bigcross-easy-70.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-90-easy-samples.txt --times ../VerifyData/synth-bigcross-90-easy-times.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-easy-90 > ../VerifyData/t-bigcross-easy-90.tmp &
+
+# cross-cube observations
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-10-hard-samples.txt --times ../VerifyData/synth-bigcross-10-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-10 > ../VerifyData/t-bigcross-hard-10.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-30-hard-samples.txt --times ../VerifyData/synth-bigcross-30-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-30 > ../VerifyData/t-bigcross-hard-30.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-50-hard-samples.txt --times ../VerifyData/synth-bigcross-50-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-50 > ../VerifyData/t-bigcross-hard-50.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-70-hard-samples.txt --times ../VerifyData/synth-bigcross-70-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-70 > ../VerifyData/t-bigcross-hard-70.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-90-hard-samples.txt --times ../VerifyData/synth-bigcross-90-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-90 > ../VerifyData/t-bigcross-hard-90.tmp &
