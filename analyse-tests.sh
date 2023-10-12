@@ -44,3 +44,18 @@ gcc -o3 posteriors.c -lm -o posteriors.ce
 ./posteriors.ce --posterior ../VerifyData/test-cross-ct-mod-2-posterior.txt --model 2 > ../VerifyData/t-sample-ct-mod-2-a.tmp &
 ./posteriors.ce --posterior ../VerifyData/test-cross-ct-mod-3-posterior.txt --model 3 > ../VerifyData/t-sample-ct-mod-3-a.tmp &
 ./posteriors.ce --posterior ../VerifyData/test-cross-ct-mod-4-posterior.txt --model 4 > ../VerifyData/t-sample-ct-mod-4-a.tmp &
+
+## different parameter space sizes
+# sequential observations
+./posteriors.ce --posterior ../VerifyData/test-bigcross-easy-10-posterior.txt > ../VerifyData/t-bigcross-easy-10-a.tmp &
+./posteriors.ce --posterior ../VerifyData/test-bigcross-easy-30-posterior.txt > ../VerifyData/t-bigcross-easy-30-a.tmp &
+./posteriors.ce --posterior ../VerifyData/test-bigcross-easy-50-posterior.txt > ../VerifyData/t-bigcross-easy-50-a.tmp &
+./posteriors.ce --posterior ../VerifyData/test-bigcross-easy-70-posterior.txt > ../VerifyData/t-bigcross-easy-70-a.tmp &
+./posteriors.ce --posterior ../VerifyData/test-bigcross-easy-90-posterior.txt > ../VerifyData/t-bigcross-easy-90-a.tmp &
+
+# cross-cube observations
+./posteriors.ce --posterior ../VerifyData/test-bigcross-hard-10-posterior.txt > ../VerifyData/t-bigcross-hard-10-a.tmp &
+./posteriors.ce --posterior ../VerifyData/test-bigcross-hard-30-posterior.txt > ../VerifyData/t-bigcross-hard-30-a.tmp &
+./posteriors.ce --posterior ../VerifyData/test-bigcross-hard-50-posterior.txt > ../VerifyData/t-bigcross-hard-50-a.tmp &
+./posteriors.ce --posterior ../VerifyData/test-bigcross-hard-70-posterior.txt > ../VerifyData/t-bigcross-hard-70-a.tmp &
+./posteriors.ce --posterior ../VerifyData/test-bigcross-hard-90-posterior.txt > ../VerifyData/t-bigcross-hard-90-a.tmp &
