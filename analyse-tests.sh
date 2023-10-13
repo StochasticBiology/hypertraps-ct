@@ -20,6 +20,10 @@ gcc -o3 posteriors.c -lm -o posteriors.ce
 ./posteriors.ce --posterior ../VerifyData/test-cross-mod-2-sa-regularised.txt --model 2 --sims 1000 --verbose > ../VerifyData/t-cross-mod-2-sa-a.tmp &
 ./posteriors.ce --posterior ../VerifyData/test-cross-mod-3-sa-regularised.txt --model 3 --sims 1000 --verbose > ../VerifyData/t-cross-mod-3-sa-a.tmp &
 
+# PLI
+./posteriors.ce --posterior ../VerifyData/test-cross-mod-2-pli-posterior.txt --model 2 --verbose > ../VerifyData/t-cross-pli.tmp &
+
+./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --length 4 --label ../VerifyData/test-cross-mod-2-pli --pli --walkers 200
 ### discrete time hi-order logic problem
 ./posteriors.ce --posterior ../VerifyData/test-ho-mod--1-posterior.txt --model -1 --verbose > ../VerifyData/t-ho-mod--1-a.tmp &
 ./posteriors.ce --posterior ../VerifyData/test-ho-mod-2-posterior.txt --model 2 --verbose > ../VerifyData/t-ho-mod-2-a.tmp &
@@ -59,3 +63,5 @@ gcc -o3 posteriors.c -lm -o posteriors.ce
 ./posteriors.ce --posterior ../VerifyData/test-bigcross-hard-50-posterior.txt > ../VerifyData/t-bigcross-hard-50-a.tmp &
 ./posteriors.ce --posterior ../VerifyData/test-bigcross-hard-70-posterior.txt > ../VerifyData/t-bigcross-hard-70-a.tmp &
 ./posteriors.ce --posterior ../VerifyData/test-bigcross-hard-90-posterior.txt > ../VerifyData/t-bigcross-hard-90-a.tmp &
+
+./posteriors.ce --posterior ../VerifyData/test-bigcross-hard-90-1-posterior-1.txt > ../VerifyData/t-bigcross-hard-90-1-a.tmp &

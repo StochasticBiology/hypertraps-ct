@@ -30,10 +30,33 @@ gcc -o3 hypertraps-all.c -lm -o hypertraps-all.ce
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --length 4 --label ../VerifyData/test-cross-mod-3 --model 3 > ../VerifyData/t-simple-mod-3.tmp &
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --length 4 --label ../VerifyData/test-cross-mod-4 --model 4 > ../VerifyData/t-simple-mod-4.tmp &
 
+## different parameter space sizes
+# sequential observations
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-10-easy-samples.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-easy-10 > ../VerifyData/t-bigcross-dt-easy-10.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-30-easy-samples.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-easy-30 > ../VerifyData/t-bigcross-dt-easy-30.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-50-easy-samples.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-easy-50 > ../VerifyData/t-bigcross-dt-easy-50.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-70-easy-samples.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-easy-70 > ../VerifyData/t-bigcross-dt-easy-70.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-90-easy-samples.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-easy-90 > ../VerifyData/t-bigcross-dt-easy-90.tmp &
+
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-90-hard-samples.txt --length 5 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-90-1 --walkers 1 > ../VerifyData/t-bigcross-dt-hard-90-1.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-90-hard-samples.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-90-1-sa --sa --walkers 1 > ../VerifyData/t-bigcross-dt-hard-90-1-sa.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-90-hard-samples.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-90-1-sgd --sgd --walkers 1 > ../VerifyData/t-bigcross-dt-hard-90-1-sgd.tmp &
+
+
+# cross-cube observations
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-10-hard-samples.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-10 > ../VerifyData/t-bigcross-dt-hard-10.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-30-hard-samples.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-30 > ../VerifyData/t-bigcross-dt-hard-30.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-50-hard-samples.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-50 > ../VerifyData/t-bigcross-dt-hard-50.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-70-hard-samples.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-70 > ../VerifyData/t-bigcross-dt-hard-70.tmp &
+./hypertraps-all.ce --obs ../VerifyData/synth-bigcross-90-hard-samples.txt --length 4 --outputtransitions 0 --kernel 3 --label ../VerifyData/test-bigcross-hard-90 > ../VerifyData/t-bigcross-dt-hard-90.tmp &
+
 ### regularisation demo
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt -lscale 100 --sa --length 4 --label ../VerifyData/test-cross-mod--1-sa --model -1 --regularise > ../VerifyData/t-simple-mod--1-sa.tmp &
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt -lscale 100 --sa --length 4 --label ../VerifyData/test-cross-mod-2-sa --model 2 --regularise > ../VerifyData/t-simple-mod-2-sa.tmp &
 ./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt -lscale 100 --sa --length 4 --label ../VerifyData/test-cross-mod-3-sa --model 3 --regularise > ../VerifyData/t-simple-mod-3-sa.tmp &
+
+# PLI
+./hypertraps-all.ce --obs ../VerifyData/synth-cross-samples-1.txt --length 4 --label ../VerifyData/test-cross-mod-2-pli --pli --walkers 200
 
 ### discrete time hi-order logic problem
 ./hypertraps-all.ce --obs ../VerifyData/hi-order.txt --lscale 10 --length 4 --label ../VerifyData/test-ho-mod--1 --model -1 > ../VerifyData/t-ho-mod--1.tmp &
