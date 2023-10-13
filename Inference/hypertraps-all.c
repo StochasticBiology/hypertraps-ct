@@ -12,7 +12,7 @@
 #define RND drand48()
 
 // maximum number of datapoints (just for memory allocation)
-#define _MAXN 2000
+#define _MAXN 20000
 
 // number of trajectories N_h, and frequencies of sampling for posteriors and for output
 int BANK = 200;
@@ -110,19 +110,19 @@ double RetrieveEdge(int *state, int locus, double *ntrans, int LEN, int model)
     return ntrans[locus];
   if(model == 2) // pi[i*LEN + locus] = influence of i on locus
     {
-      	      rate = ntrans[locus*LEN+locus];
-	      for(i = 0; i < LEN; i++)
-		rate += state[i]*ntrans[i*LEN+locus];
+      rate = ntrans[locus*LEN+locus];
+      for(i = 0; i < LEN; i++)
+	rate += state[i]*ntrans[i*LEN+locus];
     }
   if(model == 3) // pi[j*LEN*LEN + i*LEN + locus] = influence of ij on locus, j>=i (j==i is influence of i on locus)
     {
       rate = ntrans[locus*LEN*LEN+locus*LEN+locus];
       for(i = 0; i < LEN; i++)
 	{
-	for(j = i; j < LEN; j++)
-	  {
-	    rate += state[i]*state[j]*ntrans[j*LEN*LEN+i*LEN+locus];
-	  }
+	  for(j = i; j < LEN; j++)
+	    {
+	      rate += state[i]*state[j]*ntrans[j*LEN*LEN+i*LEN+locus];
+	    }
 	}
     }
   if(model == 4) // pi[k*LEN*LEN*LEN + j*LEN*LEN + i*LEN + i] = influence of ijk on i, k>=j>=i (j==i is influence of ik, k==j==i is influence of i); what does k==j,i mean
@@ -130,14 +130,14 @@ double RetrieveEdge(int *state, int locus, double *ntrans, int LEN, int model)
       rate = ntrans[locus*LEN*LEN*LEN+locus*LEN*LEN+locus*LEN+locus];
       for(i = 0; i < LEN; i++)
 	{
-	for(j = i; j < LEN; j++)
-	  {
-	    for(k = j; k < LEN; k++)
-	      {
-	    rate += state[i]*state[j]*state[k]*ntrans[k*LEN*LEN*LEN+j*LEN*LEN+i*LEN+locus];
-	  }
+	  for(j = i; j < LEN; j++)
+	    {
+	      for(k = j; k < LEN; k++)
+		{
+		  rate += state[i]*state[j]*state[k]*ntrans[k*LEN*LEN*LEN+j*LEN*LEN+i*LEN+locus];
+		}
+	    }
 	}
-    }
     }
   if(model == -1)
     {
@@ -412,6 +412,158 @@ void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, 
   *beta = nobiastotrate;
 }
 
+// compute PLI probability of a transition from "startpos" to "targ" given transition matrix "P"
+double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, double tau1, double tau2, int model)
+{
+  int *bank;
+  int n0, n1;
+  double *reject;
+  int i, j, r;
+  int locus;
+  int attempt[LEN];
+  double min;
+  double mean;
+  double *prodreject;
+  double summand[LEN];
+  int fail, score;
+  int *hitss, *hitsd, *mins, *mind;
+  double totalsum;
+  int endtarg[LEN];
+  double lik;
+  
+  // new variables
+  double u, prob_path, vi, betaci, nobiastotrate;
+  double analyticI1, analyticI2;
+  double sumI1, sumI2;
+  int n;
+  double tmprate;
+  double *recbeta;
+  // nobiastotrate is retain to match role in PickLocus but basically corresponds to -u
+  int exitcount = 0;
+  
+  // allocate memory for BANK (N_h) trajectories
+  bank = (int*)malloc(sizeof(int)*LEN*BANK);
+  reject = (double*)malloc(sizeof(double)*BANK);
+  hitss = (int*)malloc(sizeof(int)*BANK);
+  hitsd = (int*)malloc(sizeof(int)*BANK);
+  mins = (int*)malloc(sizeof(int)*BANK);
+  mind = (int*)malloc(sizeof(int)*BANK);
+  prodreject = (double*)malloc(sizeof(double)*BANK);
+  recbeta = (double*)malloc(sizeof(double)*LEN*BANK);
+
+  // initialise each trajectory at 0^L
+  for(i = 0; i < LEN*BANK; i++)
+    bank[i] = 0;
+  n0 = 0;
+
+  for(i = 0; i < LEN; i++)
+    endtarg[i] = 1; 
+  n1 = LEN;
+  
+  mean = 1;
+  totalsum = 0;
+
+  for(i = 0; i < BANK; i++)
+    {
+      hitss[i] = hitsd[i] = 0;
+      mins[i] = mind[i] = LEN*LEN;
+    }
+
+  if(VERBOSE) {
+    printf("Source ");
+    for(i = 0; i < LEN; i++)
+      printf("%i", startpos[i]);
+    printf(" dest ");
+    for(i = 0; i < LEN; i++)
+      printf("%i", targ[i]);
+  }
+
+  // loop through each trajectory
+  for(i = 0; i < BANK; i++)
+    {
+
+      fail = 0;
+      // count whether we're there or not
+      for(j = 0; j < LEN; j++)
+	{
+	  if(bank[LEN*i+j] != startpos[j] && startpos[j] != 2) fail++;
+	}
+      hitss[i] += (fail == 0);
+      if(fail < mins[i]) mins[i] = fail;
+      if(VERBOSE && fail == 0) printf("Walker %i hit source (%i)\n", i, hitss[i]);
+
+      fail = 0;
+      // count whether we're there or not
+      for(j = 0; j < LEN; j++)
+	{
+	  if(bank[LEN*i+j] != targ[j] && targ[j] != 2) fail++;
+	}
+      hitsd[i] += (fail == 0);
+      if(fail < mind[i]) mind[i] = fail;
+      if(VERBOSE && fail == 0) printf("Walker %i hit dest (%i)\n", i, hitsd[i]);
+
+    }
+	  
+  // loop through the number of evolutionary steps we need to make
+  for(r = 0; r < LEN; r++)
+    {
+
+      // loop through each trajectory
+      for(i = 0; i < BANK; i++)
+	{
+	  for(j = 0; j < LEN; j++)
+	    attempt[j] = bank[LEN*i+j];
+	  // pick the locus to change at this step, and record the probability that we stay on track to the target
+	  PickLocus(&bank[LEN*i], P, endtarg, &locus, &reject[i], &recbeta[LEN*i + (r-n0)], LEN, model);
+	  bank[LEN*i+locus] = 1;
+	  if(VERBOSE)
+	    { printf("Walker %i at ", i);
+	      for(j = 0; j < LEN; j++)
+		printf("%i", bank[LEN*i+j]);
+	      printf("\n");
+	    }
+	  
+	  fail = 0;
+	  // count whether we're there or not
+	  for(j = 0; j < LEN; j++)
+	    {
+	      if(bank[LEN*i+j] != startpos[j] && startpos[j] != 2) fail++;
+	    }
+	  hitss[i] += (fail == 0);
+	  if(fail < mins[i]) mins[i] = fail;
+	  if(VERBOSE && fail == 0) printf("Walker %i hit source (%i)\n", i, hitss[i]);
+		  
+	  fail = 0;
+	  // count whether we're there or not
+	  for(j = 0; j < LEN; j++)
+	    {
+	      if(bank[LEN*i+j] != targ[j] && targ[j] != 2) fail++;
+	    }
+	  hitsd[i] += (fail == 0);
+	  if(fail < mind[i]) mind[i] = fail;
+	  if(VERBOSE && fail == 0) printf("Walker %i hit dest (%i)\n", i, hitsd[i]);
+	}
+    }
+
+  lik = 0;
+  for(i = 0; i < BANK; i++)
+    {
+      lik += ((double)hitss[i]/LEN)*((double)hitsd[i]/LEN);
+    }
+          
+  free(bank);
+  free(reject);
+  free(hitss);
+  free(hitsd);
+  free(mins);
+  free(mind);
+  free(prodreject);
+  free(recbeta);
+  //  exit(0);
+  return lik/BANK;
+
+}
+
 
 // compute HyperTraPS probability of a transition from "startpos" to "targ" given transition matrix "P"
 double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double tau1, double tau2, int model)
@@ -620,7 +772,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 }
 
 // get total likelihood for a set of changes
-double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model)
+double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, int PLI)
 {
   double loglik, tloglik, tlik;
   int i, j;
@@ -648,7 +800,10 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
       for(j = 0; j < len; j++)
 	startpos[j] = (matrix[2*i*len+j]);
       // get log-likelihood contribution from this pair (transition) using HyperTraPS
-      tlik = lscale*LikelihoodMultiple(&(matrix[2*i*len+len]), ntrans, len, startpos, tau1s[i], tau2s[i], model);
+      if(PLI)
+	tlik = lscale*LikelihoodMultiplePLI(&(matrix[2*i*len+len]), ntrans, len, startpos, tau1s[i], tau2s[i], model);
+      else 
+	tlik = lscale*LikelihoodMultiple(&(matrix[2*i*len+len]), ntrans, len, startpos, tau1s[i], tau2s[i], model);
       tloglik = log(tlik);
       if(tlik < 0)
 	{
@@ -666,22 +821,22 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
   return loglik;
 }
 
-void GetGradients(int *matrix, int len, int ntarg, double *trans, int *parents, double *tau1s, double *tau2s, double *gradients, double scale, int model)
+void GetGradients(int *matrix, int len, int ntarg, double *trans, int *parents, double *tau1s, double *tau2s, double *gradients, double scale, int model, int PLI)
 {
   double lik, newlik;
   int i;
   
-  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model);
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
   for(i = 0; i < nparams(model, len); i++)
     {
       trans[i] += scale;
-      newlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model);
+      newlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
       gradients[i] = (newlik-lik)/scale;
       trans[i] -= scale;
     }
 }
 
-void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, char *labelstr)
+void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, char *labelstr, int PLI)
 {
   int i, j;
   int NVAL;
@@ -698,7 +853,7 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
   NVAL = nparams(model, len);
   best = (double*)malloc(sizeof(double)*NVAL);
   
-  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model);
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI);
 
   AIC = 2*NVAL-2*lik;
   BIC = log(ntarg)*NVAL-2*lik;
@@ -722,7 +877,7 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
 	{
 	  oldval = ntrans[i];
 	  ntrans[i] = 0;
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI);
 	  ntrans[i] = oldval;
 	  if((biggest == 0 || nlik > biggest) && ntrans[i] != 0)
 	    {
@@ -755,15 +910,15 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
   fprintf(fp, "\n");
   fclose(fp);
 
-    sprintf(fstr, "%s-regularised-lik.txt", labelstr);
- fp = fopen(fstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); 
- fprintf(fp, "0,%e,%e\n", GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model), GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model));
+  sprintf(fstr, "%s-regularised-lik.txt", labelstr);
+  fp = fopen(fstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); 
+  fprintf(fp, "0,%e,%e\n", GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI), GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI));
   fclose(fp);
 
-   sprintf(fstr, "%s-regularised-trans.txt", labelstr);
-  	  OutputTransitions(fstr, best, len, model);
-	     sprintf(fstr, "%s-regularised-states.txt", labelstr);
-	  OutputStates(fstr, best, len, model);
+  sprintf(fstr, "%s-regularised-trans.txt", labelstr);
+  OutputTransitions(fstr, best, len, model);
+  sprintf(fstr, "%s-regularised-states.txt", labelstr);
+  OutputStates(fstr, best, len, model);
 
   free(best);
 
@@ -836,6 +991,7 @@ int main(int argc, char *argv[])
   int regularise;
   int outputtransitions;
   int readparams;
+  int PLI;
   
   printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
@@ -854,6 +1010,7 @@ int main(int argc, char *argv[])
   regularise = 0;
   model = 2;
   readparams = 0;
+  PLI = 0;
   outputtransitions = 1;
   strcpy(obsfile, "");
   strcpy(paramfile, "");
@@ -861,7 +1018,7 @@ int main(int argc, char *argv[])
   strcpy(endtimefile, "");
 
   // deal with command-line arguments
-   for(i = 1; i < argc; i+=2)
+  for(i = 1; i < argc; i+=2)
     {
       if(strcmp(argv[i], "--obs\0") == 0) strcpy(obsfile, argv[i+1]);
       else if(strcmp(argv[i], "--params\0") == 0) { readparams = 1; strcpy(paramfile, argv[i+1]); }
@@ -877,6 +1034,7 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--debug\0") == 0) helpandquit(1);
       else if(strcmp(argv[i], "--verbose\0") == 0) { VERBOSE = 1; i--; }
       else if(strcmp(argv[i], "--crosssectional\0") == 0) { crosssectional = 1; i--; }
+      else if(strcmp(argv[i], "--pli\0") == 0) { PLI = 1; i--; }
       else if(strcmp(argv[i], "--spectrumverbose\0") == 0) { SPECTRUM_VERBOSE = 1; i--; }
       else if(strcmp(argv[i], "--apmverbose\0") == 0) { APM_VERBOSE = 1; i--; }
       else if(strcmp(argv[i], "--outputinput\0") == 0) { outputinput = 1; i--; }      
@@ -901,8 +1059,10 @@ int main(int argc, char *argv[])
       printf("*** I need at least an observations file! ***\n\n");
       helpandquit(0);
     }
-  
-  if(spectrumtype == 1) {
+
+  if(PLI == 1) {
+    printf("Running Phenotype Landscape Inference with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
+  } else if(spectrumtype == 1) {
     printf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
   } else {
     printf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
@@ -987,16 +1147,16 @@ int main(int argc, char *argv[])
 
   if(outputinput)
     {
-  printf("Observed transitions:\n");
-  for(i = 0; i < ntarg/2; i++)
-    {
-      for(j = 0; j < len; j++) printf("%i", matrix[2*len*i+j]);
-      printf(" -> ");
-      for(j = 0; j < len; j++) printf("%i", matrix[2*len*i+len+j]);
-      printf("\n");
-    }
-  if(losses == 1) printf("(where 1 is absence)\n\n");
-  if(losses == 0) printf("(where 1 is presence)\n\n");
+      printf("Observed transitions:\n");
+      for(i = 0; i < ntarg/2; i++)
+	{
+	  for(j = 0; j < len; j++) printf("%i", matrix[2*len*i+j]);
+	  printf(" -> ");
+	  for(j = 0; j < len; j++) printf("%i", matrix[2*len*i+len+j]);
+	  printf("\n");
+	}
+      if(losses == 1) printf("(where 1 is absence)\n\n");
+      if(losses == 0) printf("(where 1 is presence)\n\n");
     }
   
   // grab timings from data file provided
@@ -1098,7 +1258,7 @@ int main(int argc, char *argv[])
   if(readparams == 0)
     {
       printf("Starting with simple initial param guess\n");
-  InitialMatrix(trans, len, model);
+      InitialMatrix(trans, len, model);
     }
   else
     {
@@ -1108,12 +1268,14 @@ int main(int argc, char *argv[])
   // compute initial likelihood given this matrix
   time(&start_t);
   gettimeofday(&t_start, NULL);
-  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model);
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
   time(&end_t);
   gettimeofday(&t_stop, NULL);
   diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
   //  diff_t = difftime(end_t, start_t);
   printf("One likelihood estimation took %e seconds.\nInitial likelihood is %e\n", diff_t, lik);
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
+  printf("Second guess is %e\n", lik);
   // MCMC or simulated annealing
   if(searchmethod == 0 || searchmethod == 2)
     {
@@ -1154,8 +1316,8 @@ int main(int argc, char *argv[])
 
 	  if(outputtransitions)
 	    {
-	  OutputTransitions(besttransstr, trans, len, model);
-	  OutputStates(beststatesstr, trans, len, model);
+	      OutputTransitions(besttransstr, trans, len, model);
+	      OutputStates(beststatesstr, trans, len, model);
 	    }
 	}
 
@@ -1173,9 +1335,9 @@ int main(int argc, char *argv[])
 	  fprintf(fp, "\n");
 	  fclose(fp);
 	  fp = fopen(likstr, "a");
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
 	  fprintf(fp, "%i,%f,", t, nlik);
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
 	  fprintf(fp, "%f\n", nlik);
 	  fclose(fp);
 	}
@@ -1226,7 +1388,7 @@ int main(int argc, char *argv[])
 		  printf("r seeded with %i, first call is %f\n", apm_seed, RND);
 		}
 	    }
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI);
 
 	  if(APM_VERBOSE)
 	    {
@@ -1282,14 +1444,14 @@ int main(int argc, char *argv[])
       // gradient descent
       if(searchmethod == 1)
 	{
-	   time(&start_t);
-  gettimeofday(&t_start, NULL);
-  GetGradients(matrix, len, ntarg, trans, parents, tau1s, tau2s, gradients, sgdscale, model);
-  time(&end_t);
-  gettimeofday(&t_stop, NULL);
-  diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
-  if(t == 0)
-    printf("Using SGD: one gradient calculation took %e seconds\n\n", diff_t);
+	  time(&start_t);
+	  gettimeofday(&t_start, NULL);
+	  GetGradients(matrix, len, ntarg, trans, parents, tau1s, tau2s, gradients, sgdscale, model, PLI);
+	  time(&end_t);
+	  gettimeofday(&t_stop, NULL);
+	  diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
+	  if(t == 0)
+	    printf("Using SGD: one gradient calculation took %e seconds\n\n", diff_t);
   
 	  for(i = 0; i < NVAL; i++)
 	    {
@@ -1298,7 +1460,7 @@ int main(int argc, char *argv[])
 	      if(trans[i] > 10) trans[i] = 10;
 	    }
 	  
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
 	  printf("Iteration %i likelihood %f previous-likelihood %f\n", t, nlik, lik);
 	  lik = nlik;
 	}
@@ -1313,7 +1475,7 @@ int main(int argc, char *argv[])
     }
   if(regularise)
     {
-      Regularise(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, labelstr);
+      Regularise(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, labelstr, PLI);
     }
 
   return 0;
