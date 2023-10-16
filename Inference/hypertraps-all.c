@@ -25,6 +25,7 @@ double lscale = 1;
 // control output
 int VERBOSE = 0;
 int SPECTRUM_VERBOSE = 0;
+int SUPERVERBOSE = 0;
 int APM_VERBOSE = 0;
 
 // impose limits on integer val to be between lo and hi
@@ -584,8 +585,9 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   double *prodreject;
   double summand[LEN];
   int fail, score;
-  int *hits;
+  int *hits, *totalhits;
   double totalsum;
+  int emission_count;
 
   // new variables
   double u, prob_path, vi, betaci, nobiastotrate;
@@ -601,6 +603,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   bank = (int*)malloc(sizeof(int)*LEN*BANK);
   reject = (double*)malloc(sizeof(double)*BANK);
   hits = (int*)malloc(sizeof(int)*BANK);
+  totalhits = (int*)malloc(sizeof(int)*BANK);
   prodreject = (double*)malloc(sizeof(double)*BANK);
   recbeta = (double*)malloc(sizeof(double)*LEN*BANK);
 
@@ -635,6 +638,9 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   for(i = 0; i < BANK; i++)
     prodreject[i] = 1;
 
+        for(i = 0; i < BANK; i++)
+	totalhits[i] = 0;
+
   // loop through the number of evolutionary steps we need to make
   for(r = n0; r < n1; r++)
     {
@@ -650,16 +656,26 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 	  PickLocus(&bank[LEN*i], P, targ, &locus, &reject[i], &recbeta[LEN*i + (r-n0)], LEN, model);
 	  bank[LEN*i+locus] = 1;
 
+	  if(SUPERVERBOSE)
+	    {
+	      printf("Now at ");
+	      for(j = 0; j < LEN; j++)
+		printf("%i", bank[LEN*i+j]);
+	      printf("\n");
+	    }
+	  
 	  fail = 0;
 	  // count whether we're there or not
 	  for(j = 0; j < LEN; j++)
 	    {
 	      if(bank[LEN*i+j] != targ[j] && targ[j] != 2) fail = 1;
+	      	  if(!fail && SUPERVERBOSE)
+		    printf("Hit target!\n");
 	    }
 	  hits[i] += (1-fail);
-
+	  totalhits[i] += (1-fail);
 	}
-
+      
       // keep track of total probability so far, and record if we're there
       summand[r] = 0;
       for(i = 0; i < BANK; i++)
@@ -668,20 +684,34 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 	  summand[r] += prodreject[i]*hits[i];
 	}
       summand[r] /= BANK;
+            if(SUPERVERBOSE)
+	{
+	  printf("At step %i averaged summand is %e\n", i, summand[r]);
+	}
+
 
       totalsum += summand[r];
     }
 
+   if(SUPERVERBOSE)
+	{
+	  printf("Total sum %e\n", totalsum);
+	}
+     
   // if we're not using continuous time, avoid this calculation and just return average path probability
   if(tau1 == 0 && tau2 == INFINITY)
     {
-      if(n0 == n1) prob_path = 1;
+      if(n0 == n1) {
+	prob_path = 1;
+	emission_count = 1;
+      }
       else
 	{
 	  prob_path = 0;
+	  emission_count = (n1-n0); 
 	  for(n = 0; n < BANK; n++)
 	    {
-	      prob_path += prodreject[n]*1./BANK;
+	      prob_path += (prodreject[n]*((double)(totalhits[n])/emission_count))/BANK;
 	    }
 	}
           
@@ -1039,6 +1069,7 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--help\0") == 0) helpandquit(0);
       else if(strcmp(argv[i], "--debug\0") == 0) helpandquit(1);
       else if(strcmp(argv[i], "--verbose\0") == 0) { VERBOSE = 1; i--; }
+      else if(strcmp(argv[i], "--superverbose\0") == 0) { SUPERVERBOSE = 1; i--; }
       else if(strcmp(argv[i], "--crosssectional\0") == 0) { crosssectional = 1; i--; }
       else if(strcmp(argv[i], "--pli\0") == 0) { PLI = 1; i--; }
       else if(strcmp(argv[i], "--spectrumverbose\0") == 0) { SPECTRUM_VERBOSE = 1; i--; }
