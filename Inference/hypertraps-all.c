@@ -20,7 +20,7 @@ int TMODULE = 100;
 
 int _EVERYITERATION = 0;
 
-double lscale = 10;
+double lscale = 1;
 
 // control output
 int VERBOSE = 0;
@@ -932,7 +932,7 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
 
 void helpandquit(int debug)
 {
-  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--outputtransitions N\toutput transition matrix (0 no, 1 yes) [1]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
+  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--params file.txt\tuse parameterisation in file as initial guess\n--lscale X\t\tscale for observation counts\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--outputtransitions N\toutput transition matrix (0 no, 1 yes) [1]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
   if(debug)
     printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n--outputinput\t\toutput the data we read in(note: an undocumented option exists to pass CSV data as the observations file: file should have a header, and two columns of (ignored) before + after sample IDs, before subsequent columns with all \"before\" features followed by all \"after\" features on the same row.  \n\n");
   exit(0);
@@ -1268,6 +1268,7 @@ int main(int argc, char *argv[])
     }
   else
     {
+      printf("Starting with supplied parameterisation\n");
       ReadMatrix(trans, len, model, paramfile);
     }
 
