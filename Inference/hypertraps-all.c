@@ -151,7 +151,7 @@ double RetrieveEdge(int *state, int locus, double *ntrans, int LEN, int model)
 // 111, 112, 113,      122, 123,           133,                     222, 223,           233,                                         333
 // 1     12   13        12  123            13                        2   23              23                                           3
 
-void InitialMatrix(double *trans, int len, int model)
+void InitialMatrix(double *trans, int len, int model, int userandom)
 {
   int NVAL;
   int i;
@@ -159,7 +159,7 @@ void InitialMatrix(double *trans, int len, int model)
   NVAL = nparams(model, len);
   
   for(i = 0; i < NVAL; i++)
-    trans[i] = 0;
+    trans[i] = (userandom ? RND : 0);
   for(i = 0; i < len; i++)
     {
       switch(model)
@@ -490,7 +490,7 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
 	}
       hitss[i] += (fail == 0);
       if(fail < mins[i]) mins[i] = fail;
-      if(VERBOSE && fail == 0) printf("Walker %i hit source (%i)\n", i, hitss[i]);
+      //   if(VERBOSE && fail == 0) printf("Walker %i hit source (%i)\n", i, hitss[i]);
 
       fail = 0;
       // count whether we're there or not
@@ -500,7 +500,7 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
 	}
       hitsd[i] += (fail == 0);
       if(fail < mind[i]) mind[i] = fail;
-      if(VERBOSE && fail == 0) printf("Walker %i hit dest (%i)\n", i, hitsd[i]);
+      //   if(VERBOSE && fail == 0) printf("Walker %i hit dest (%i)\n", i, hitsd[i]);
 
     }
 	  
@@ -516,12 +516,12 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
 	  // pick the locus to change at this step, and record the probability that we stay on track to the target
 	  PickLocus(&bank[LEN*i], P, endtarg, &locus, &reject[i], &recbeta[LEN*i + (r-n0)], LEN, model);
 	  bank[LEN*i+locus] = 1;
-	  if(VERBOSE)
+	  /*	  if(VERBOSE)
 	    { printf("Walker %i at ", i);
 	      for(j = 0; j < LEN; j++)
 		printf("%i", bank[LEN*i+j]);
 	      printf("\n");
-	    }
+	      }*/
 	  
 	  fail = 0;
 	  // count whether we're there or not
@@ -531,7 +531,7 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
 	    }
 	  hitss[i] += (fail == 0);
 	  if(fail < mins[i]) mins[i] = fail;
-	  if(VERBOSE && fail == 0) printf("Walker %i hit source (%i)\n", i, hitss[i]);
+	  //	  if(VERBOSE && fail == 0) printf("Walker %i hit source (%i)\n", i, hitss[i]);
 		  
 	  fail = 0;
 	  // count whether we're there or not
@@ -541,7 +541,7 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
 	    }
 	  hitsd[i] += (fail == 0);
 	  if(fail < mind[i]) mind[i] = fail;
-	  if(VERBOSE && fail == 0) printf("Walker %i hit dest (%i)\n", i, hitsd[i]);
+	  //if(VERBOSE && fail == 0) printf("Walker %i hit dest (%i)\n", i, hitsd[i]);
 	}
     }
 
@@ -550,6 +550,11 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
     {
       lik += ((double)hitss[i]/LEN)*((double)hitsd[i]/LEN);
     }
+  if(VERBOSE){
+    if(lik > 0) 
+    printf("\nHit this record at least once\n");
+    else printf("\n*** didn't hit this record!\n");
+  }
           
   free(bank);
   free(reject);
@@ -606,6 +611,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   for(i = 0; i < LEN; i++)
     n0 += startpos[i];
 
+  // the final "layer" of the hypercube we're interested in is that of the target when we've set all ambiguous loci to 1
   n1 = 0;
   for(i = 0; i < LEN; i++)
     n1 += (targ[i] == 1 || targ[i] == 2);
@@ -613,7 +619,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   if(n0 > n1)
     {
       // the target comes before the source
-      printf("Wrong ordering, or some other problem with input file. Remember that as of 2021, data file rows should be ordered ancestor then descendant!\n");
+      printf("Wrong ordering, or some other problem with input file. Data file rows should be ordered ancestor then descendant!\n");
       exit(0);
     }
 
@@ -1258,7 +1264,7 @@ int main(int argc, char *argv[])
   if(readparams == 0)
     {
       printf("Starting with simple initial param guess\n");
-      InitialMatrix(trans, len, model);
+      InitialMatrix(trans, len, model, 0);
     }
   else
     {
@@ -1281,7 +1287,19 @@ int main(int argc, char *argv[])
     {
       printf("This code (%i steps) will probably take around %.3f seconds (%.3f hours) to complete.\n\n", maxt, diff_t*maxt, diff_t*maxt/3600.);
     }
-      
+  if(isinf(lik))
+    {
+      printf("Start parameterisation gave a nonsensical likelihood. I'm going to try random alternatives.\n");
+      if(PLI) {
+	printf("With PLI, this often means we're not using enough random walkers to hit every datapoint on the hypercube. If this takes a while to find a suitable start parameterisation, consider re-running with more random walkers.\n");
+      }
+      do{
+	InitialMatrix(trans, len, model, 0);
+	lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
+      }while(isinf(lik));
+      printf("OK, starting with initial likelihood %e\n", lik);
+    }
+  
   // initialise counters for acceptance ratio
   acc = rej = 0;
   lacc = lrej = 0;
