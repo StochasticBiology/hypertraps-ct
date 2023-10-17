@@ -28,6 +28,15 @@ int SPECTRUM_VERBOSE = 0;
 int SUPERVERBOSE = 0;
 int APM_VERBOSE = 0;
 
+void myexit(int code)
+{
+  #ifndef _CODE_FOR_R
+  exit(0);
+  #else
+  Rcpp::stop("exiting");
+  #endif
+}
+
 // impose limits on integer val to be between lo and hi
 void limiti(int *val, int lo, int hi)
 {
@@ -184,7 +193,7 @@ void ReadMatrix(double *trans, int len, int model, char *fname)
   if(fp == NULL)
     {
       printf("Couldn't find parameter file %s\n", fname);
-      exit(0);
+      myexit(0);
     }
   
   NVAL = nparams(model, len);
@@ -194,7 +203,7 @@ void ReadMatrix(double *trans, int len, int model, char *fname)
       if(feof(fp))
 	{
 	  printf("Couldn't find sufficient parameters in file %s\n", fname);
-	  exit(0);
+	  myexit(0);
 	}
       fscanf(fp, "%lf", &(trans[i]));
     }
@@ -440,7 +449,7 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
   double tmprate;
   double *recbeta;
   // nobiastotrate is retain to match role in PickLocus but basically corresponds to -u
-  int exitcount = 0;
+  int myexitcount = 0;
   
   // allocate memory for BANK (N_h) trajectories
   bank = (int*)malloc(sizeof(int)*LEN*BANK);
@@ -565,7 +574,7 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
   free(mind);
   free(prodreject);
   free(recbeta);
-  //  exit(0);
+  //  myexit(0);
   return lik/BANK;
 
 }
@@ -597,7 +606,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   double tmprate;
   double *recbeta;
   // nobiastotrate is retain to match role in PickLocus but basically corresponds to -u
-  int exitcount = 0;
+  int myexitcount = 0;
   
   // allocate memory for BANK (N_h) trajectories
   bank = (int*)malloc(sizeof(int)*LEN*BANK);
@@ -621,11 +630,11 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
       n1 += (targ[i] == 1 || targ[i] == 2);
       if(targ[i] == 2 && !(tau1 == 0 && tau2 == INFINITY)) {
 	printf("Uncertain observations not currently supported for the continuous time picture! Please re-run with the discrete time picture.\n");
-	exit(0);
+	myexit(0);
       }
       if(targ[i] == 0 && startpos[i] == 1) {
 	printf("Wrong ordering, or some other problem with input file. Data file rows should be ordered ancestor then descendant!\n");
-	exit(0);
+	myexit(0);
       }
       
     }
@@ -634,7 +643,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
     {
       // the target comes before the source
       printf("Wrong ordering, or some other problem with input file. Data file rows should be ordered ancestor then descendant!\n");
-      exit(0);
+      myexit(0);
     }
 
   mean = 1;
@@ -787,17 +796,17 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 
 	  if(sumI1 < 0 || sumI2 < 0)
 	    {
-	      //	      printf("I got a negative value for I1 (%e) or I2 (%e), which shouldn't happen and suggests a lack of numerical convergence. This can happen with large numbers of features. I'm stopping to avoid unreliable posteriors; consider running without continuous time option.\n", sumI1, sumI2);
-	      //exit(0);
+	      printf("I got a negative value for I1 (%e) or I2 (%e), which shouldn't happen and suggests a lack of numerical convergence. This can happen with large numbers of features. I'm stopping to avoid unreliable posteriors; consider running without continuous time option.\n", sumI1, sumI2);
+	      myexit(0);
 	    }
 	  
 	  analyticI1 += (prob_path*sumI1);
 	  analyticI2 += (prob_path*sumI2);
 	  if(SPECTRUM_VERBOSE)
 	    printf("prob_path %.4f sumI1 %.4f sumI2 %.4f | analyticI1 %.4f analyticI2 %.4f\n", prob_path, sumI1, sumI2, analyticI1, analyticI2);
-	  exitcount++;
-	  //	  if(exitcount == 3)
-	  //exit(0);
+	  myexitcount++;
+	  //	  if(myexitcount == 3)
+	  //myexit(0);
 	}
     }
   else
@@ -814,8 +823,8 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 
   /*  if(analyticI1+analyticI2 > 100)
       {
-      printf("Exiting at line 283\n");
-      exit(0);
+      printf("Myexiting at line 283\n");
+      myexit(0);
       }*/
   
   return analyticI1+analyticI2;
@@ -858,7 +867,7 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
       if(tlik < 0)
 	{
 	  printf("Somehow I have a negative likelihood, suggesting a lack of numerical convergence. Terminating to avoid unreliable posteriors.\n");
-	  //exit(0);
+	  //myexit(0);
 	}
 
       // output if required
@@ -979,7 +988,7 @@ void helpandquit(int debug)
   printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--params file.txt\tuse parameterisation in file as initial guess\n--lscale X\t\tscale for observation counts\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--outputtransitions N\toutput transition matrix (0 no, 1 yes) [1]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
   if(debug)
     printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n--outputinput\t\toutput the data we read in(note: an undocumented option exists to pass CSV data as the observations file: file should have a header, and two columns of (ignored) before + after sample IDs, before subsequent columns with all \"before\" features followed by all \"after\" features on the same row.  \n\n");
-  exit(0);
+  myexit(0);
 }
 
 // main function processes command-line arguments and run the inference loop
@@ -1251,7 +1260,7 @@ int main(int argc, char *argv[])
 	      if(tau2s[ntau] < tau1s[ntau])
 		{
 		  printf("End time %f was less than start time %f!\n", tau2s[ntau], tau1s[ntau]);
-		  exit(0);
+		  myexit(0);
 		}
 	      if(!feof(fp)) { ntau++; }
 	    }
