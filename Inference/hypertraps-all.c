@@ -518,11 +518,11 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
 	  PickLocus(&bank[LEN*i], P, endtarg, &locus, &reject[i], &recbeta[LEN*i + (r-n0)], LEN, model);
 	  bank[LEN*i+locus] = 1;
 	  /*	  if(VERBOSE)
-	    { printf("Walker %i at ", i);
-	      for(j = 0; j < LEN; j++)
-		printf("%i", bank[LEN*i+j]);
-	      printf("\n");
-	      }*/
+		  { printf("Walker %i at ", i);
+		  for(j = 0; j < LEN; j++)
+		  printf("%i", bank[LEN*i+j]);
+		  printf("\n");
+		  }*/
 	  
 	  fail = 0;
 	  // count whether we're there or not
@@ -553,7 +553,7 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
     }
   if(VERBOSE){
     if(lik > 0) 
-    printf("\nHit this record at least once\n");
+      printf("\nHit this record at least once\n");
     else printf("\n*** didn't hit this record!\n");
   }
           
@@ -617,7 +617,13 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   // the final "layer" of the hypercube we're interested in is that of the target when we've set all ambiguous loci to 1
   n1 = 0;
   for(i = 0; i < LEN; i++)
-    n1 += (targ[i] == 1 || targ[i] == 2);
+    {
+      n1 += (targ[i] == 1 || targ[i] == 2);
+      if(targ[i] == 2 && !(tau1 == 0 && tau2 == INFINITY)) {
+	printf("Uncertain observations not currently supported for the continuous time picture! Please re-run with the discrete time picture.\n");
+	exit(0);
+      }
+    }
 
   if(n0 > n1)
     {
@@ -628,7 +634,8 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 
   mean = 1;
   totalsum = 0;
-
+  emission_count = (n1-n0);
+  
   // check we're not already there
   fail = 0;
   for(i = 0; i < LEN; i++)
@@ -638,8 +645,8 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   for(i = 0; i < BANK; i++)
     prodreject[i] = 1;
 
-        for(i = 0; i < BANK; i++)
-	totalhits[i] = 0;
+  for(i = 0; i < BANK; i++)
+    totalhits[i] = 0;
 
   // loop through the number of evolutionary steps we need to make
   for(r = n0; r < n1; r++)
@@ -669,8 +676,8 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 	  for(j = 0; j < LEN; j++)
 	    {
 	      if(bank[LEN*i+j] != targ[j] && targ[j] != 2) fail = 1;
-	      	  if(!fail && SUPERVERBOSE)
-		    printf("Hit target!\n");
+	      if(!fail && SUPERVERBOSE)
+		printf("Hit target!\n");
 	    }
 	  hits[i] += (1-fail);
 	  totalhits[i] += (1-fail);
@@ -684,7 +691,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 	  summand[r] += prodreject[i]*hits[i];
 	}
       summand[r] /= BANK;
-            if(SUPERVERBOSE)
+      if(SUPERVERBOSE)
 	{
 	  printf("At step %i averaged summand is %e\n", i, summand[r]);
 	}
@@ -693,10 +700,10 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
       totalsum += summand[r];
     }
 
-   if(SUPERVERBOSE)
-	{
-	  printf("Total sum %e\n", totalsum);
-	}
+  if(SUPERVERBOSE)
+    {
+      printf("Total sum %e\n", totalsum);
+    }
      
   // if we're not using continuous time, avoid this calculation and just return average path probability
   if(tau1 == 0 && tau2 == INFINITY)
@@ -708,9 +715,9 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
       else
 	{
 	  prob_path = 0;
-	  emission_count = (n1-n0); 
 	  for(n = 0; n < BANK; n++)
 	    {
+	      // for non-missing data, the comparison of total hits to emission count (ie opportunities for emission) factors out of the likelihood. but for missing data, different paths may have different numbers of opportunities to emit an observation-compatible signal, which we need to account for
 	      prob_path += (prodreject[n]*((double)(totalhits[n])/emission_count))/BANK;
 	    }
 	}
@@ -718,6 +725,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
       free(bank);
       free(reject);
       free(hits);
+      free(totalhits);
       free(prodreject);
       free(recbeta);
 
@@ -795,6 +803,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   free(bank);
   free(reject);
   free(hits);
+  free(totalhits);
   free(prodreject);
   free(recbeta);
 
@@ -1118,7 +1127,7 @@ int main(int argc, char *argv[])
     SAMPLE = 1;
 
   srand48(seed);
-  matrix = (int*)malloc(sizeof(int)*1000000);
+  matrix = (int*)malloc(sizeof(int)*10000000);
 
   // choose parameterisation based on command line
   expt = kernelindex;
@@ -1163,7 +1172,10 @@ int main(int argc, char *argv[])
 	if(len == 0) len = i;
 	if(csv) {
 	  do{ch=fgetc(fp);}while(!feof(fp) && ch != ',');
+	  if(!crosssectional)
+	    {
 	  do{ch=fgetc(fp);}while(!feof(fp) && ch != ',');
+	    }
 	}
 	if(crosssectional) {
 	  for(j = 0; j < len; j++)
@@ -1177,7 +1189,7 @@ int main(int argc, char *argv[])
 	break;
       }
   }while(!feof(fp));
-  if(csv) len /= 2;
+  if(csv && !crosssectional) len /= 2;
   ntarg = i/len;
   NVAL = nparams(model, len);
   fclose(fp);
@@ -1187,6 +1199,7 @@ int main(int argc, char *argv[])
       printf("Observed transitions:\n");
       for(i = 0; i < ntarg/2; i++)
 	{
+	  printf("%i: ", i);
 	  for(j = 0; j < len; j++) printf("%i", matrix[2*len*i+j]);
 	  printf(" -> ");
 	  for(j = 0; j < len; j++) printf("%i", matrix[2*len*i+len+j]);
@@ -1269,6 +1282,12 @@ int main(int argc, char *argv[])
 	}
     }
   printf("\n");
+
+  if(len > 15 && outputtransitions == 1)
+    {
+      printf("*** More than 15 features, meaning we'd need a lot of space to output transition and state information. I'm switching off this output.\n");
+      outputtransitions = 0;
+    }
   
   // allocate memory and initialise output file
   trans = (double*)malloc(sizeof(double)*NVAL); 
