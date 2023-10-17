@@ -623,6 +623,11 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 	printf("Uncertain observations not currently supported for the continuous time picture! Please re-run with the discrete time picture.\n");
 	exit(0);
       }
+      if(targ[i] == 0 && startpos[i] == 1) {
+	printf("Wrong ordering, or some other problem with input file. Data file rows should be ordered ancestor then descendant!\n");
+	exit(0);
+      }
+      
     }
 
   if(n0 > n1)
@@ -1174,7 +1179,7 @@ int main(int argc, char *argv[])
 	  do{ch=fgetc(fp);}while(!feof(fp) && ch != ',');
 	  if(!crosssectional)
 	    {
-	  do{ch=fgetc(fp);}while(!feof(fp) && ch != ',');
+	      do{ch=fgetc(fp);}while(!feof(fp) && ch != ',');
 	    }
 	}
 	if(crosssectional) {
