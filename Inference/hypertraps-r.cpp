@@ -4,7 +4,7 @@ using namespace Rcpp;
 #include "hypertraps-all.c"
   
 // [[Rcpp::export]]
-NumericVector HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector ntarg_arg,
+List HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector ntarg_arg,
 			 NumericVector length_index_arg = 3,
 			 NumericVector kernel_index_arg = 5,
 			 NumericVector losses_arg = 0,
@@ -507,7 +507,10 @@ NumericVector HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, Numeri
   NumericVector posterior_out(NVAL);
   for(i = 0; i < NVAL; i++)
     posterior_out[i] = trans[i];
+
+  List L = List::create(Named("label") = labelstr , Named("best") = posterior_out);
   
-  return posterior_out;
+  //  return posterior_out;
+  return L;
 }
 
