@@ -4,19 +4,19 @@ using namespace Rcpp;
 #include "hypertraps-all.c"
 
 // [[Rcpp::export]]
-int HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector ntarg_arg,
-	       NumericVector length_index_arg = 3,
-	       NumericVector kernel_index_arg = 5,
-	       NumericVector losses_arg = 0,
-	       NumericVector apm_type_arg = 0,
-	       NumericVector sgd_scale_arg = 0.01,
-	       NumericVector seed_arg = 1,
-	       NumericVector crosssectional_arg = 0,
-	       NumericVector outputinput_arg = 0,
-	       NumericVector regularise_arg = 0,
-	       NumericVector model_arg = 2,
-	       NumericVector PLI_arg = 0)
- {
+NumericVector HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector ntarg_arg,
+			 NumericVector length_index_arg = 3,
+			 NumericVector kernel_index_arg = 5,
+			 NumericVector losses_arg = 0,
+			 NumericVector apm_type_arg = 0,
+			 NumericVector sgd_scale_arg = 0.01,
+			 NumericVector seed_arg = 1,
+			 NumericVector crosssectional_arg = 0,
+			 NumericVector outputinput_arg = 0,
+			 NumericVector regularise_arg = 0,
+			 NumericVector model_arg = 2,
+			 NumericVector PLI_arg = 0)
+{
   int parents[_MAXN];
   FILE *fp;
   int *matrix;
@@ -76,11 +76,18 @@ int HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector nt
   int PLI;
   
   len = len_arg[0];
-  ntarg = ntarg_arg[0];
+  ntarg = ntarg_arg[0]*2;
+
+  matrix = (int*)malloc(sizeof(int)*10000000);
 
   matrix = (int*)malloc(sizeof(int)*matrix_arg.size());
-  for(i = 0; i < matrix_arg.size(); i++)
-    matrix[i] = matrix_arg[i];
+  for(i = 0; i < matrix_arg.length(); i++)
+    {
+      matrix[i] = matrix_arg[i];
+      Rprintf("%i ", matrix[i]);
+
+    }
+  Rprintf("\n");
 
   
   
@@ -129,7 +136,6 @@ int HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector nt
     SAMPLE = 1;
 
   srand48(seed);
-  matrix = (int*)malloc(sizeof(int)*10000000);
 
   // choose parameterisation based on command line
   expt = kernelindex;
@@ -500,6 +506,10 @@ int HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector nt
       Regularise(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, labelstr, PLI);
     }
 
-  return 0;
+  NumericVector posterior_out(NVAL);
+  for(i = 0; i < NVAL; i++)
+    posterior_out[i] = trans[i];
+  
+  return posterior_out;
 }
 
