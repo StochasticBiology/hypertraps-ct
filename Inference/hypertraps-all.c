@@ -30,7 +30,7 @@ int APM_VERBOSE = 0;
 
 void myexit(int code)
 {
-  #ifndef _CODE_FOR_R
+  #ifndef _USE_CODE_FOR_R
   exit(0);
   #else
   Rcpp::stop("exiting");

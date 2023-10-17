@@ -2,7 +2,7 @@
 using namespace Rcpp;
 #define _USE_CODE_FOR_R 1
 #include "hypertraps-all.c"
-
+  
 // [[Rcpp::export]]
 NumericVector HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector ntarg_arg,
 			 NumericVector length_index_arg = 3,
@@ -78,8 +78,7 @@ NumericVector HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, Numeri
   len = len_arg[0];
   ntarg = ntarg_arg[0]*2;
 
-  matrix = (int*)malloc(sizeof(int)*10000000);
-
+  
   matrix = (int*)malloc(sizeof(int)*matrix_arg.size());
   for(i = 0; i < matrix_arg.length(); i++)
     {
@@ -89,7 +88,6 @@ NumericVector HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, Numeri
     }
   Rprintf("\n");
 
-  
   
   Rprintf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
