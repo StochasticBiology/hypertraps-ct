@@ -16,3 +16,9 @@ gcc -o3 posteriors.c -lm -o posteriors.ce
 ./posteriors.ce --posterior ../Data/c4-ht-best.txt --featurenames ../Data/c4-trait-names.txt > ../Data/c4-ht-b-a.tmp &
 ./posteriors.ce --posterior ../Data/c4-pli-best.txt --featurenames ../Data/c4-trait-names.txt  > ../Data/c4-pli-b-a.tmp &
 ./posteriors.ce --posterior ../Data/c4-sa-best.txt --featurenames ../Data/c4-trait-names.txt  > ../Data/c4-sa-b-a.tmp &
+
+# other others
+./posteriors.ce --posterior ../Data/malaria-best.txt --featurenames ../Data/malaria-names.txt
+./posteriors.ce --posterior ../Data/malaria-sa-best.txt --featurenames ../Data/malaria-names.txt
+./posteriors.ce --posterior ../Data/tools-posterior.txt --featurenames ../Data/tools-names.txt
+
