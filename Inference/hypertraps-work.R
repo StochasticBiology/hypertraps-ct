@@ -61,6 +61,10 @@ plotHypercube = function(my.post, my.post.out, t.thresh = 20, f.thresh = 0.05) {
 sourceCpp("hypertraps-r.cpp")
 
 test.mat = as.matrix(read.table("../VerifyData/synth-cross-samples-1.txt"))
+my.post = HyperTraPS(test.mat, model = -1, regularise = 1, walkers_arg = 20)
+plot(my.post$regularisation$reg.process$AIC)
+
+test.mat = as.matrix(read.table("../VerifyData/synth-cross-samples-1.txt"))
 test.start.times = rep(0.1,nrow(test.mat))
 test.end.times = rep(0.2,nrow(test.mat))
 my.post = HyperTraPS(test.mat, 
@@ -74,6 +78,12 @@ g.obj = plotHypercube(my.post, my.post.out)
 test.mat = as.matrix(read.table("../Data/total-observations.txt-trans.txt"))
 starts = test.mat[seq(from=1, to=nrow(test.mat), by=2),]
 ends = test.mat[seq(from=2, to=nrow(test.mat), by=2),]
-my.post = HyperTraPS(ends, initialstates_arg = starts, outputinput= 1) 
-my.post.out = PosteriorAnalysis(my.post)
-g.obj = plotHypercube(my.post, my.post.out)
+my.post = HyperTraPS(ends, initialstates_arg = starts, length_index_arg = 4, outputinput= 1) 
+my.names = as.vector(read.table("../Data/tools-names.txt"))[[1]]
+my.post.out = PosteriorAnalysis(my.post, featurenames_arg = my.names)
+
+g.lik.trace = ggplot(my.post$lik.traces) + geom_line(aes(x=sample.times, y=l.samples.1)) +
+  geom_line(aes(x=sample.times, y=l.samples.2))
+g.bubbles = ggplot(my.post.out$Bubbles, aes(x=Time, y=factor(Name, levels=unique(my.post.out$Bubbles$Name)), size=Probability)) +
+  geom_point() 
+ggarrange(g.lik.trace, g.bubbles, nrow=2)

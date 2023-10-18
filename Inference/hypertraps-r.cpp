@@ -124,6 +124,120 @@ List OutputStatesR(double *ntrans, int LEN, int model)
   return Lout;
 }
 
+List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, int PLI)
+{
+  int i, j;
+  int NVAL;
+  double lik, nlik;
+  double oldval;
+  int biggestindex;
+  double biggest;
+  int pcount;
+  double AIC, BIC, bestBIC;
+  double *best;
+  
+  NVAL = nparams(model, len);
+  best = (double*)malloc(sizeof(double)*NVAL);
+  
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI);
+
+  AIC = 2*NVAL-2*lik;
+  BIC = log(ntarg)*NVAL-2*lik;
+  bestBIC = BIC;
+  for(i = 0; i < NVAL; i++)
+    best[i] = ntrans[i];
+
+  NumericVector NVAL_v, lik_v, AIC_v, BIC_v;
+  
+  // sprintf(fstr, "%s-regularising.csv", labelstr);
+  //fp = fopen(fstr, "w");
+  //fprintf(fp, "nparam,log.lik,AIC,BIC\n");
+  //fprintf(fp, "%i,%e,%e,%e\n", NVAL, lik, AIC, BIC);
+
+  NVAL_v.push_back(NVAL);
+  lik_v.push_back(lik);
+  AIC_v.push_back(AIC);
+  BIC_v.push_back(BIC);
+  
+  printf("Regularising...\npruning ");
+  // remove parameters stepwise
+  for(j = 0; j < NVAL; j++)
+    {
+      printf("%i of %i\n", j+1, NVAL); 
+      // find parameter that retains highest likelihood when removed
+      biggest = 0;
+      for(i = 0; i < NVAL; i++)
+	{
+	  oldval = ntrans[i];
+	  ntrans[i] = 0;
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI);
+	  ntrans[i] = oldval;
+	  if((biggest == 0 || nlik > biggest) && ntrans[i] != 0)
+	    {
+	      biggest = nlik;
+	      biggestindex = i;
+	    }
+	}
+      // set this param to zero and count new param set
+      ntrans[biggestindex] = 0;
+      pcount = 0;
+      for(i = 0; i < NVAL; i++)
+	{
+	  if(ntrans[i] != 0) pcount++;
+	}
+      // output
+      AIC = 2*pcount-2*biggest;
+      BIC = log(ntarg)*pcount-2*biggest;
+
+      NVAL_v.push_back(pcount);
+      lik_v.push_back(biggest);
+      AIC_v.push_back(AIC);
+      BIC_v.push_back(BIC);
+      //fprintf(fp, "%i,%e,%e,%e\n", pcount, biggest, AIC, BIC);
+      if(BIC < bestBIC)
+	{
+	  bestBIC = BIC;
+	  for(i = 0; i < NVAL; i++)
+	    best[i] = ntrans[i];
+	}
+    }
+
+  List Ldyn = List::create(Named("params") = NVAL_v,
+			   Named("lik") = lik_v,
+			   Named("AIC") = AIC_v,
+			   Named("BIC") = BIC_v);
+  
+  NumericVector best_v(NVAL);
+  
+  //sprintf(fstr, "%s-regularised.txt", labelstr);
+  //fp = fopen(fstr, "w");
+  // for(i = 0; i < NVAL; i++)
+  //  fprintf(fp, "%e ", best[i]);
+  //fprintf(fp, "\n");
+  //fclose(fp);
+  for(i = 0; i < NVAL; i++)
+    best_v[i] = best[i];
+
+  List Lout = List::create(Named("best") = best_v,
+			   Named("lik.1") = GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI),
+			   Named("lik.2") = GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI),
+			   Named("reg.process") = Ldyn);
+			   
+  //  sprintf(fstr, "%s-regularised-lik.txt", labelstr);
+  //fp = fopen(fstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); 
+  // fprintf(fp, "0,%e,%e\n", 
+    // fclose(fp);
+
+    //  sprintf(fstr, "%s-regularised-trans.txt", labelstr);
+    //OutputTransitions(fstr, best, len, model);
+    //sprintf(fstr, "%s-regularised-states.txt", labelstr);
+    //OutputStates(fstr, best, len, model);
+
+    free(best);
+  return Lout;
+  
+}
+
 
 //' Runs HyperTraPS-related inference on a dataset of observations
 //'
@@ -151,12 +265,15 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 		NumericVector kernel_index_arg = 5,
 		NumericVector losses_arg = 0,
 		NumericVector apm_type_arg = 0,
+		NumericVector sa_arg = 0,
+		NumericVector sgd_arg = 0,
 		NumericVector sgd_scale_arg = 0.01,
 		NumericVector seed_arg = 1,
 		NumericVector outputinput_arg = 0,
 		NumericVector regularise_arg = 0,
 		NumericVector model_arg = 2,
-		NumericVector PLI_arg = 0)
+		NumericVector PLI_arg = 0,
+		NumericVector walkers_arg = 200)
 {
   int parents[_MAXN];
   FILE *fp;
@@ -212,6 +329,11 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   filelabel = 0;
   seed = seed_arg[0];
   searchmethod = 0;
+  BANK = walkers_arg[0];
+  
+  if(sgd_arg[0] == 1) searchmethod = 1;
+  if(sa_arg[0] == 1) searchmethod = 2;
+  
   outputinput = outputinput_arg[0];
   regularise = regularise_arg[0];
   model = model_arg[0];
@@ -636,37 +758,28 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 	  lacc = lrej = 0;
 	}
     }
-  if(regularise)
-    {
-      Regularise(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, labelstr, PLI);
-    }
 
   List Lts = List::create(Named("sample.times") = t_output,
 			  Named("l.samples.1") = lik1_output,
 			  Named("l.samples.2") = lik2_output);
   DataFrame Ltsdf(Lts);
 
-  if(outputtransitions)
-    {
-      List L = List::create(Named("label") = labelstr ,
-			    Named("L") = len,
-			    Named("best") = best_output,
-			    Named("posterior.samples") = posterior_output,
-			    Named("lik.traces") = Ltsdf,
-			    Named("dynamics") = dynamics_output);
-      return L;
-    }
-  else
-    {
-      List L = List::create(Named("label") = labelstr ,
-			    Named("L") = len,
-			    Named("best") = best_output,
-			    Named("posterior.samples") = posterior_output,
-			    Named("lik.traces") = Ltsdf);
-      return L;
-    }
-  
+  List L = List::create(Named("label") = labelstr ,
+			Named("L") = len,
+			Named("best") = best_output,
+			Named("posterior.samples") = posterior_output,
+			Named("lik.traces") = Ltsdf);
 
+  if(outputtransitions) 
+    L["dynamics"] = dynamics_output;
+
+  if(regularise)
+    {
+      List regL = RegulariseR(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
+      L["regularisation"] = regL;
+    }
+
+  return L;
 }
 
 //' Extracts information from HyperTraPS-related posterior samples
@@ -674,7 +787,8 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 //' @param L List output from HyperTraPS, containing posterior samples
 //' @return Named list containing summary data for feature acquisition ordering ("bubbles"), time histograms, sampled accumulation routes, and timings of these sampled routes.
 // [[Rcpp::export]]
-List PosteriorAnalysis(List L)
+List PosteriorAnalysis(List L,
+		       Nullable<CharacterVector> featurenames_arg)
 {
   int *matrix;
   int len, ntarg;
@@ -750,6 +864,7 @@ List PosteriorAnalysis(List L)
   Rprintf("Verbose flag is %i\n", verbose);
   Rprintf("Bin scale is %f\n", BINSCALE);
 
+
   NumericMatrix posterior = as<NumericMatrix>(L["posterior.samples"]);
   
   tlen = posterior.ncol();
@@ -772,13 +887,28 @@ List PosteriorAnalysis(List L)
 
   Rprintf("Based on %s with %i params per model and model %i, there are %i features\n", postfile, tlen, model, len);
 
+  NumericVector passedL = as<NumericVector>(L["L"]); 
+  if(len != passedL[0]) {
+    Rprintf("But this doesn't match the L=%i in my argument!\n", passedL[0]);
+    myexit(0);
+  }
+
+  if(featurenames_arg.isUsable()) {
+    CharacterVector featurenames(featurenames_arg);
+    for(i = 0; i < len; i++)
+      {
+	sprintf(&names[i*FLEN], "%s", (char*)featurenames[i]);
+      }
+
+  } else {
+    Label(names, len, NULL);
+  }
 
   // initialise and allocate a lot of different arrays to compute and store statistics
   srand48(seed);
   allruns  =0;
   ntarg = 0;
-  Label(names, len, labelfile);
-    
+      
   NVAL = nparams(model, len);
   
   matrix = (int*)malloc(sizeof(int)*10000);
