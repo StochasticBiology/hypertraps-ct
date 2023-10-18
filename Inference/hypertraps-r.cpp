@@ -3,6 +3,145 @@ using namespace Rcpp;
 #define _USE_CODE_FOR_R 1
 #include "hypertraps-all.c"
 
+List OutputStatesR(double *ntrans, int LEN, int model)
+{
+  int i, j, k, a;
+  int statedec;
+  int src, dest;
+  int state[LEN];
+  double rate, totrate;
+  int *active, *newactive;
+  double *probs;
+  int nactive, newnactive;
+  int level;
+  int found;
+  
+  //  fp = fopen(beststatesstr, "w");
+  //fprintf(fp, "State Probability\n");
+  NumericVector state_v, prob_v;
+  NumericVector from_v, to_v, edgeprob_v, flux_v;
+
+  probs = (double*)malloc(sizeof(double)*mypow2(LEN));
+  active = (int*)malloc(sizeof(int)*mypow2(LEN));
+  newactive = (int*)malloc(sizeof(int)*mypow2(LEN));
+  for(i = 0; i < mypow2(LEN); i++)
+    probs[i] = 0;
+  level = 0;
+  
+  probs[0] = 1;
+  
+  active[0] = 0;
+  nactive = 1;
+  
+  while(nactive > 0)
+    {
+      newnactive = 0;
+      /*      printf("%i active\n", nactive);
+	      for(a = 0; a < nactive; a++)
+	      printf("%i ", active[a]);
+	      printf("\n\n"); */
+	    
+      for(a = 0; a < nactive; a++)
+	{
+	  src = active[a];
+	  statedec = src;
+	  for(j = LEN-1; j >= 0; j--)
+	    {
+	      if(statedec >= mypow2(j))
+		{
+		  state[LEN-1-j] = 1;
+		  statedec -= mypow2(j);
+		}
+	      else
+		state[LEN-1-j] = 0;
+	    }
+
+	  totrate = 0;
+	  for(j = 0; j < LEN; j++)
+	    {
+	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+	      if(state[j] == 0)
+		{
+		  rate = RetrieveEdge(state, j, ntrans, LEN, model);
+		  totrate += rate;
+		}
+	    }
+
+	  for(j = 0; j < LEN; j++)
+	    {
+	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+	      if(state[j] == 0)
+		{
+		  dest = src+mypow2(LEN-1-j);
+		  rate = RetrieveEdge(state, j, ntrans, LEN, model);
+		  probs[dest] += probs[src] * rate/totrate;
+		  from_v.push_back(src);
+		  to_v.push_back(dest);
+		  edgeprob_v.push_back(rate/totrate);
+		  flux_v.push_back(probs[src]*rate/totrate);
+		  //		  printf("%i: %i (from %i, %e): %e\n", level, dest, src, probs[src], probs[dest]);
+		
+		  found = 0;
+		  for(k = 0; k < newnactive; k++)
+		    {
+		      if(newactive[k] == dest) { found = 1; break; }
+		    }
+		  if(found == 0)
+		    newactive[newnactive++] = dest;
+		}
+	    }
+	}
+      for(a = 0; a < newnactive; a++)
+	active[a] = newactive[a];
+      nactive = newnactive;
+      level++;
+    }
+  
+  for(dest = 0; dest < mypow2(LEN); dest++)
+    {
+      state_v.push_back(dest);
+      prob_v.push_back(probs[dest]);
+    }
+  //    fprintf(fp, "%i %e\n", dest, probs[dest]);
+
+  List L = List::create(Named("State") = state_v,
+			Named("Probability") = prob_v);
+  DataFrame Ldf(L);
+
+  List Lflux = List::create(Named("From") = from_v,
+			    Named("To") = to_v,
+			    Named("Probability") = edgeprob_v,
+			    Named("Flux") = flux_v);
+  DataFrame Lfluxdf(Lflux);
+
+  List Lout = List::create(Named("States") = Ldf, Named("Edges") = Lfluxdf);
+  
+  //  fclose(fp);
+  free(active);
+  free(newactive);
+  free(probs);
+
+  return Lout;
+}
+
+
+//' Runs HyperTraPS-related inference on a dataset of observations
+//'
+//' @param matrix_arg A matrix of observations. Should contain 0s, 1s, and optional 2s for missing data. Should be $n \times L$, containing $n$ cross-sectional observations of length $L$.
+//' @param initialstates_arg An optional matrix of initial states. If we are using longitudinal observations, each row in this matrix gives the "before" state to the corresponding "after" state in the observations matrix. Omitting this matrix is equivalent to consider every observation to have a root "before" state. If specified, should be $n \times L$, containing $n$ cross-sectional observations of length $L$, to match the observations matrix.
+//' @param start_times_arg An optional vector of $n$ times describing the beginning of the observation time window for each observation. If empty, equivalent to this time window beginning at time 0. If specified, should be of length $n$.
+//' @param end_times_arg An optional vector of $n$ times describing the end of the observation time window for each observation. If empty, equivalent to this time window ending at time infinity. If specified, should be of length $n$.
+//' @param length_index_arg Length of MCMC chain
+//' @param kernel_index_arg Kernel index
+//' @param losses_arg Whether to consider accumulation of gains (0) or losses (1)
+//' @param apm_type_arg APM
+//' @param sgd_scale_arg SGD
+//' @param seed_arg Random number seed
+//' @param outputinput_arg Option to output the input data
+//' @param regularise_arg Regularise
+//' @param model_arg Model structure
+//' @param PLI_arg Phenotype landscape inference
+//' @return A named list of objects from the inference process, containing parameter samples from the inference process, the maximum likelihood parameterisation, likelihood samples, and the sampling times.
 // [[Rcpp::export]]
 List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector ntarg_arg,
 		Nullable<NumericMatrix> initialstates_arg = R_NilValue,
@@ -14,7 +153,6 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 			 NumericVector apm_type_arg = 0,
 			 NumericVector sgd_scale_arg = 0.01,
 			 NumericVector seed_arg = 1,
-			 NumericVector crosssectional_arg = 0,
 			 NumericVector outputinput_arg = 0,
 			 NumericVector regularise_arg = 0,
 			 NumericVector model_arg = 2,
@@ -74,7 +212,6 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   sgdscale = sgd_scale_arg[0];
   filelabel = 0;
   seed = seed_arg[0];
-  crosssectional = crosssectional_arg[0];
   searchmethod = 0;
   outputinput = outputinput_arg[0];
   regularise = regularise_arg[0];
@@ -362,6 +499,8 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   NumericVector best_output(NVAL);
   NumericMatrix posterior_output(NSAMPLES, NVAL);
   int sampleref = 0;
+
+  List dynamics_output;
   
   // run the chain
   for(t = 0; t < maxt; t++)
@@ -371,12 +510,13 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 	{
 	  for(i = 0; i < NVAL; i++)
 	    best_output[i] = trans[i];
-
-	  /*	  if(outputtransitions)
+	  bestlik = lik;
+	  
+	   if(outputtransitions)
 	    {
-	      OutputTransitions(besttransstr, trans, len, model);
-	      OutputStates(beststatesstr, trans, len, model);
-	      }*/
+	      
+	      dynamics_output = OutputStatesR(trans, len, model);
+	      }
 	}
 
       // output some info periodically
@@ -535,17 +675,38 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
       Regularise(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, labelstr, PLI);
     }
 
+  List Lts = List::create(Named("sample.times") = t_output,
+			Named("l.samples.1") = lik1_output,
+			  Named("l.samples.2") = lik2_output);
+  DataFrame Ltsdf(Lts);
+
+  if(outputtransitions)
+    {
   List L = List::create(Named("label") = labelstr ,
+			Named("L") = len,
 			Named("best") = best_output,
 			Named("posterior.samples") = posterior_output,
-			Named("sample.times") = t_output,
-			Named("l.samples.1") = lik1_output,
-			Named("l.samples.2") = lik2_output);
+			Named("lik.traces") = Ltsdf,
+			Named("dynamics") = dynamics_output);
+    return L;
+    }
+  else
+    {
+  List L = List::create(Named("label") = labelstr ,
+			Named("L") = len,
+			Named("best") = best_output,
+			Named("posterior.samples") = posterior_output,
+			Named("lik.traces") = Ltsdf);
+    return L;
+    }
   
-  //  return posterior_out;
-  return L;
+
 }
 
+//' Extracts information from HyperTraPS-related posterior samples
+//'
+//' @param L List output from HyperTraPS, containing posterior samples
+//' @return Named list containing summary data for feature acquisition ordering ("bubbles"), time histograms, sampled accumulation routes, and timings of these sampled routes.
 // [[Rcpp::export]]
 List PosteriorAnalysis(List L)
 {
