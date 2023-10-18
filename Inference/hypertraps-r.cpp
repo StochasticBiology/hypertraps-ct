@@ -45,7 +45,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   int lengthindex, kernelindex;
   int SAMPLE;
   int losses;
-  int apm_seed, old_apm_seed, apm_step;
+  int apm_seed, old_apm_seed;
   int apm_type;
   char likstr[100];
   double testval;
@@ -628,7 +628,7 @@ List PosteriorAnalysis(List L)
   NumericMatrix posterior = as<NumericMatrix>(L["posterior.samples"]);
   
   tlen = posterior.ncol();
-  x
+  
   // figure out if posterior file is presented in L*L format; get L if so
   len = 0;
   for(i = 1; i < 200; i++)
