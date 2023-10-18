@@ -546,3 +546,356 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   return L;
 }
 
+// [[Rcpp::export]]
+List PosteriorAnalysis(List L)
+{
+  FILE *fp;
+  int *matrix;
+  int len, ntarg;
+  double *trans, *ntrans;
+  int t;
+  int i, j;
+  int *rec, *order;
+  double *drec, *sortdrec, *mean;
+  int allruns;
+  int seed = 0;
+  char str[200];
+  double tmp;
+  int change;
+  char names[200*FLEN];
+  int count;
+  double *meanstore, *fmeanstore;
+  double *ctrec, ctnorm;
+  double *times, *betas;
+  int *route;
+  FILE *fp1, *fp2, *fp3;
+  char fstr[200];
+  int tlen;
+  int verbose;
+  double BINSCALE;
+  char postfile[1000];
+  int filelabel;
+  char labelstr[1000];
+  int NVAL;
+  int model;
+  int burnin, sampleperiod;
+  char labelfile[1000];
+  
+  // default values
+  BINSCALE = 10;
+  verbose = 0;
+  filelabel = 0;
+  seed = 0;
+  model = 2;
+  burnin = 0;
+  sampleperiod = 0;
+  sprintf(postfile, "rcpp");
+  sprintf(labelfile, "");
+  
+    Rprintf("\nHyperTraPS(-CT) posterior analysis\n\n");
+
+    // deal with command-line arguments
+    /*  for(i = 1; i < argc; i+=2)
+    {
+      if(strcmp(argv[i], "--posterior\0") == 0) strcpy(postfile, argv[i+1]);
+      else if(strcmp(argv[i], "--label\0") == 0) { filelabel = 1; strcpy(labelstr, argv[i+1]); }
+      else if(strcmp(argv[i], "--featurenames\0") == 0) { strcpy(labelfile, argv[i+1]); }
+      else if(strcmp(argv[i], "--seed\0") == 0) seed = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--model\0") == 0) model = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--sims\0") == 0) NSAMP = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--trajs\0") == 0) NTRAJ = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--burnin\0") == 0) burnin = atoi(argv[i+1]);
+      else if(strcmp(argv[i], "--period\0") == 0) sampleperiod = atoi(argv[i+1]);      
+      else if(strcmp(argv[i], "--binscale\0") == 0) BINSCALE = atof(argv[i+1]);
+      else if(strcmp(argv[i], "--verbose\0") == 0) { verbose = 1; i--; }
+      else if(strcmp(argv[i], "--help\0") == 0) helpandquit(0);
+    }
+
+   if(strcmp(postfile, "") == 0)
+     {
+       Rprintf("*** I need at least a file of posterior samples! ***\n\n");
+       helpandquit(0);
+     }
+   if(model == 0)
+     {
+       Rprintf("*** Posterior analysis isn't meaningful for a zero-parameter model ***\n\n");
+       return 0;
+       }*/
+
+  Rprintf("Verbose flag is %i\n", verbose);
+  Rprintf("Bin scale is %f\n", BINSCALE);
+
+  NumericMatrix posterior = as<NumericMatrix>(L["posterior.samples"]);
+  
+  tlen = posterior.ncol();
+  x
+  // figure out if posterior file is presented in L*L format; get L if so
+  len = 0;
+  for(i = 1; i < 200; i++)
+    {
+      if(tlen == nparams(model, i))
+      {
+	len = i;
+	break;
+      }
+    }
+  if(len == 0)
+    {
+      Rprintf("Given model type %i, couldn't determine number of features from %s, which seems to have %i params per sample\n", model, postfile, tlen);
+      return 0;
+    }
+
+  Rprintf("Based on %s with %i params per model and model %i, there are %i features\n", postfile, tlen, model, len);
+
+
+  // initialise and allocate a lot of different arrays to compute and store statistics
+  srand48(seed);
+  allruns  =0;
+  ntarg = 0;
+  Label(names, len, labelfile);
+    
+  NVAL = nparams(model, len);
+  
+  matrix = (int*)malloc(sizeof(int)*10000);
+  ctrec = (double*)malloc(sizeof(double)*MAXCT*len);
+  times = (double*)malloc(sizeof(double)*len);
+  betas = (double*)malloc(sizeof(double)*len);
+  route = (int*)malloc(sizeof(int)*len);
+
+  trans = (double*)malloc(sizeof(double)*NVAL); /* transition matrix */
+  ntrans = (double*)malloc(sizeof(double)*NVAL);
+  rec = (int*)malloc(sizeof(int)*len*len); /* stores step ordering, modified by getlikelihood */
+  mean = (double*)malloc(sizeof(double)*len);
+  meanstore = (double*)malloc(sizeof(double)*len);
+  fmeanstore = (double*)malloc(sizeof(double)*len);
+  order = (int*)malloc(sizeof(int)*len);
+  drec = (double*)malloc(sizeof(double)*len*len);
+  sortdrec = (double*)malloc(sizeof(double)*len*len);
+
+  // initialise
+  for(i = 0; i < MAXCT*len; i++)
+    ctrec[i] = 0;
+  ctnorm = 0;
+
+  for(i = 0; i < len*len; i++)
+    rec[i] = 0;
+
+  for(i = 0; i < len; i++)
+    fmeanstore[i] = 0;
+
+  if(filelabel == 0)
+    sprintf(labelstr, "%s", postfile);
+
+  Rprintf("Output label is %s\n", labelstr);
+  
+  // set up file outputs
+  if(verbose)
+    {
+      sprintf(fstr, "%s-routes.txt", labelstr);
+      fp1 = fopen(fstr, "w");
+      sprintf(fstr, "%s-betas.txt", labelstr);
+      fp2 = fopen(fstr, "w");
+      sprintf(fstr, "%s-times.txt", labelstr);
+      fp3 = fopen(fstr, "w");
+    }
+  
+  int NSAMPLES = ((posterior.nrow() - burnin)/(sampleperiod+1))*(NSAMP);
+      NumericMatrix route_out(NSAMPLES, len);
+      NumericMatrix betas_out(NSAMPLES, len);
+      NumericMatrix times_out(NSAMPLES, len);
+      int sampleindex = 0;
+      
+      for(count = 0; count < posterior.nrow(); count++)
+	{
+	  // read in single posterior sample
+	  for(i = 0; i < NVAL; i++)
+      	    ntrans[i] = posterior(count,i);
+	  
+	  // this if statement controls which samples get processed
+	  // if we want to include burn-in or subsampling, can put it here
+	  if(count >= burnin && count % (sampleperiod+1) == 0)
+	    {
+	      // loop through iterations
+	      for(j = 0; j < NSAMP; j++)
+		{
+		  for(i = 0; i < len; i++)
+		    meanstore[i] = 0;
+		  // simulate behaviour on this posterior and add statistics to counts and histograms
+		  GetRoutes(matrix, len, ntarg, ntrans, rec, meanstore, ctrec, times, betas, route, BINSCALE, model);
+		  for(i = 0; i < len; i++)
+		    fmeanstore[i] += meanstore[i];
+		  ctnorm += NTRAJ;
+		  allruns++;
+
+		  for(i = 0; i < len; i++)
+		    {
+		      route_out(sampleindex, i) = route[i];
+		      betas_out(sampleindex, i) = betas[i];
+		      times_out(sampleindex, i) = times[i];
+		    }
+		  sampleindex++;
+		  /*		  if(verbose)
+		    {
+		      for(i = 0; i < len; i++)
+ 		        fprintf(fp1, "%i ", route[i]);
+		      for(i = 0; i < len; i++)
+			fprintf(fp2, "%.15f ", betas[i]);
+		      for(i = 0; i < len; i++)
+			fprintf(fp3, "%.3e ", times[i]);
+		      fprintf(fp1, "\n");
+		      fprintf(fp2, "\n");
+		      fprintf(fp3, "\n");
+		      }*/
+		}
+	    }
+	}
+      /*  if(verbose)
+	{
+	  fclose(fp1);
+	  fclose(fp2);
+	  fclose(fp3);
+	  } */
+
+
+      Rprintf("allruns is %i\n", allruns);
+
+  // output various summaries
+  for(i = 0; i < len; i++)
+    Rprintf("%i %f\n", i, fmeanstore[i]/allruns);
+
+  // compute mean orderings
+  // rec[t*len+i] is prob of obtaining i at time t
+
+  for(i = 0; i < len*len; i++)
+    drec[i] = (double)rec[i]/(allruns*NTRAJ);
+
+  for(i = 0; i < len; i++)
+    {
+      mean[i] = 0;
+      order[i] = i;
+      for(t = 0; t < len; t++)
+	mean[i] += t*drec[t*len+i];
+    }
+
+  // simple bubble sort orders features by mean acquisition order
+  do{
+    change = 0;
+    for(i = 0; i < len-1; i++)
+      {
+	if(mean[i] > mean[i+1])
+	  {
+	    tmp = mean[i]; mean[i] = mean[i+1]; mean[i+1] = tmp;
+	    tmp = order[i]; order[i] = order[i+1]; order[i+1] = tmp;
+	    change = 1;
+	  }
+      }
+  }while(change == 1);
+  seed--;
+
+  // output the set of summary statistics
+  // rec[t*len+i] is prob of obtaining i at time t
+
+  // this produces the heatmap of acquisition probability by feature and order
+  // outputs both the original feature ordering and the above mean-sorted references
+
+  NumericVector t_col(len*len), i_col(len*len), order_col(len*len), prob_col(len*len);
+  CharacterVector name_col(len*len);
+  
+  for(t = 0; t < len; t++)
+    {
+      for(i = 0; i < len; i++)
+	{
+	  t_col(t*len+i) = t;
+	  i_col(t*len+i) = i;
+	  order_col(t*len+i) = order[i];
+	  prob_col(t*len+i) = drec[t*len+order[i]];
+	  name_col(t*len+i) = &names[FLEN*order[i]];
+	}
+    }
+
+  List BubbleL = List::create(Named("Time") = t_col,
+			      Named("ReorderedIndex") = i_col,
+			      Named("OriginalIndex") = order_col,
+			      Named("Name") = name_col,
+			      Named("Probability") = prob_col);
+
+  /*
+  sprintf(str, "%s-bubbles.csv", labelstr);
+  fp = fopen(str, "w");
+  fprintf(fp, "Time,ReorderedIndex,OriginalIndex,Name,Probability\n");
+  for(t = 0; t < len; t++)
+    {
+      for(i = 0; i < len; i++)
+	fprintf(fp, "%i,%i,%i,%s,%.15f\n", t, i, order[i], &names[FLEN*order[i]], drec[t*len+order[i]]);
+      fprintf(fp, "\n");
+      }*/
+
+  // these appended comments give gnuplot commands for axis labels if required: both in original and mean-sorted orderings
+  // commented here, as we're shifting to csv format
+  /*  fprintf(fp, "# set xtics (");
+  for(i = 0; i < len; i++)
+    fprintf(fp, "\"%s\" %i%c", &names[FLEN*order[i]], i, (i == len-1 ? ')' : ','));
+  fprintf(fp, "\n");
+  fprintf(fp, "# default-order set xtics (");
+  for(i = 0; i < len; i++)
+    fprintf(fp, "\"%s\" %i%c", &names[FLEN*i], i, (i == len-1 ? ')' : ','));
+  fprintf(fp, "\n");
+
+  fprintf(fp, "# (");
+  for(i = 0; i < len; i++)
+    fprintf(fp, "%i, ", order[i]);
+  fprintf(fp, ")\n");
+
+  fprintf(fp, "# ");
+  for(i = 0; i < len; i++)
+    fprintf(fp, "%s %.4f, ", &names[FLEN*order[i]], mean[i]);
+  fprintf(fp, ")\n");
+
+  fclose(fp);*/
+
+  // this stores the time histograms associated with acquisition times for each feature
+  // remember here that we've scaled by BINSCALE to store in an integer-referenced array (see GetRoutes())
+
+  NumericVector i_col_ct(len*MAXCT), t_col_ct(len*MAXCT), prob_col_ct(len*MAXCT);
+  for(i = 0; i < len; i++)
+    {
+      for(j = 0; j < MAXCT; j++)
+	{
+	  i_col_ct(i*MAXCT+j) = i;
+	  t_col_ct(i*MAXCT+j) = j/BINSCALE;
+	  prob_col_ct(i*MAXCT+j) = ctrec[MAXCT*i+j]/ctnorm;
+	}
+    }
+
+   List THistL = List::create(Named("OriginalIndex") = i_col_ct,
+			      Named("Time") = t_col_ct,
+			      Named("Probability") = prob_col_ct);
+			      
+
+   /*  sprintf(str, "%s-timehists.csv", labelstr);
+  fp = fopen(str, "w");
+  fprintf(fp, "OriginalIndex,Time,Probability\n");
+  for(i = 0; i < len; i++)
+    {
+      tmp = 0;
+      for(j = 0; j < MAXCT; j++)
+	{
+	  fprintf(fp, "%i,%f,%.6f\n", i, j/BINSCALE, ctrec[MAXCT*i+j]/ctnorm);
+	  tmp += ctrec[MAXCT*i+j]*j;
+	}
+      Rprintf("%i %.4f\n", i, tmp/ctnorm);
+      fprintf(fp, "\n");
+      }*/
+
+   DataFrame Bubbledf(BubbleL);
+   DataFrame THistdf(THistL);
+
+   List OutputL = List::create(Named("Bubbles") = Bubbledf,
+			       Named("THist") = THistdf,
+			       Named("Routes") = route_out,
+			       Named("Betas") = betas_out,
+			       Named("Times") = times_out);
+
+   return OutputL;
+}
+

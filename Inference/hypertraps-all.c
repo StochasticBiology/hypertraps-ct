@@ -14,9 +14,17 @@
 // maximum number of datapoints (just for memory allocation)
 #define _MAXN 20000
 
+// maximum continuous-time value above which results are truncated
+#define MAXCT 1000
+
+// just used in assigning ordinal labels to different features
+#define FLEN 100
+
 // number of trajectories N_h, and frequencies of sampling for posteriors and for output
 int BANK = 200;
+int NTRAJ = 100;
 int TMODULE = 100;
+int NSAMP = 10;
 
 int _EVERYITERATION = 0;
 
@@ -971,6 +979,155 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
 
   free(best);
 
+}
+
+// simulate trajectories on a given hypercube parameterisation, and store a bunch of summary data about those trajectories
+// mean[i] stores the mean acquisition ordering for feature i
+// ctrec[MAXCT*i + ref] stores a histogram of acquisitions of feature i at continuous time reference ref
+// times[t] stores the continuous time at which feature t is acquired in the first simulated run
+// betas[t] stores the exit propensity after feature t is acquired in the first simulated run
+// route[t] is the feature changed at step t
+void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double *mean, double *ctrec, double *times, double *betas, int *route, double BINSCALE, int model)
+{
+  int run, t;
+  double time1;
+  int state[len];
+  double totrate;
+  double rate[len];
+  double cumsum[len];
+  double r;
+  int i;
+  int startt;
+  int checker[ntarg];
+  double continuoustime;
+
+  for(i = 0; i < ntarg; i++)
+    checker[i] = 0;
+
+  for(i = 0; i < len; i++)
+    mean[i] = 0;
+  
+  /* loop through NTRAJ simulated trajectories */
+  for(run = 0; run < NTRAJ; run++)
+    {
+      startt = 0; time1 = 0;
+
+      // start at initial state
+      for(i = 0; i < len; i++)
+	state[i] = 0;
+
+      // track the (continuous) time elapsed
+      // (but continuous time is not interpretable unless the posteriors have been produced in the continuous time paradigm)
+      continuoustime = 0;
+
+      // loop through feature acquisitions
+      for(t = 0; t < len; t++)
+	{
+	  totrate = 0;
+	  // compute the rate for feature i given the current set of features
+	  for(i = 0; i < len; i++)
+	    {
+	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+	      if(state[i] == 0)
+		{
+		  rate[i] = RetrieveEdge(state, i, ntrans, len, model);
+		}
+	      else // we've already lost this gene
+		rate[i] = 0;
+
+	      // roulette wheel calculations as normal
+	      cumsum[i] = (i == 0 ? 0 : rate[i-1]+cumsum[i-1]);
+	      totrate += rate[i];
+	    }
+
+	  // choose a step
+	  for(i = 0; i < len; i++)
+	    cumsum[i] /= totrate;
+	  r = RND;
+	  continuoustime += (1./totrate)*log(1./r);
+
+#ifdef VERBOSE
+	  for(i = 0; i < len; i++)
+	    printf("%.2f ", cumsum[i]);
+	  printf("\n");
+#endif
+
+	  r = RND;
+	  for(i = 0; i < len-1; i++)
+	    {
+	      if(cumsum[i] < r && cumsum[i+1] > r) { break; }
+	    }
+
+#ifdef VERBOSE
+	  printf("Rolled %f, chose %i\n", r, i);
+#endif
+
+	  // we've chosen feature i, at ordering t, and a timescale continuoustime
+	  state[i] = 1;
+	  mean[i] += t;
+
+	  // rec[t*len + i] increments if we acquire feature i at ordering t
+	  // ctrec[MAXCT*i + ref] increments if we acquire feature i at ct-reference ref
+	  // pay attention here! we scale continuous times by BINSCALE (e.g. x100) to produce a reference that allows sensible storage in an integer-referenced histogram, bounded by 0 and MAXCT (element MAXCT-1 stores the number of cases that exceed this)
+
+  	  rec[t*len+i]++;
+	  if(continuoustime*BINSCALE < MAXCT)
+	    ctrec[MAXCT*i+((int)(BINSCALE*continuoustime))]++;
+	  else
+	    ctrec[MAXCT*i + MAXCT-1]++;
+
+	  // sample the statistics of the first simulated run. 
+	  if(run == 0)
+	    {
+	      times[t] = continuoustime;
+	      betas[t] = totrate;
+	      route[t] = i;
+	    }
+
+#ifdef VERBOSE
+	  for(i = 0; i < len; i++)
+	    printf("%i", state[i]);
+	  printf(" (%i)\n", t);
+#endif
+
+	}
+    }
+
+  for(i = 0; i < len; i++)
+    mean[i] /= NTRAJ;
+
+}
+
+// construct labels for different features
+// for different specific studies this can be adapted to help output
+void Label(char *names, int len, char *fname)
+{
+  int i, j;
+  FILE *fp;
+  
+  fp = fopen(fname, "r");
+  if(fp == NULL)
+    {
+      printf("Didn't find feature label file %s, using default labels\n", fname);
+  for(i = 0; i < len; i++)
+    {
+      sprintf(&names[i*FLEN], "feature_%i", i);
+    }
+    }
+  else
+    {
+      i = 0;
+      do{
+	fgets(&names[i*FLEN], FLEN, fp);
+	for(j = 0; j < FLEN; j++)
+	  {
+	    if(names[i*FLEN+j] == '\n')
+	      names[i*FLEN+j] = '\0';
+	  }
+	i++;
+      }while(!feof(fp));
+      fclose(fp);
+    }
 }
 
 void helpandquit(int debug)
