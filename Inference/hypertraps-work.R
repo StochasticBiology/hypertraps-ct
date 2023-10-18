@@ -14,13 +14,13 @@ DecToBin <- function(x, len) {
   return(paste(s, collapse=""))
 }
 
-plotHypercube = function(my.post, my.post.out, t.thresh = 20, f.thresh = 0.05) {
+plotHypercube = function(my.post, t.thresh = 20, f.thresh = 0.05) {
   ### likelihood traces
   g.lik.trace = ggplot(my.post$lik.traces) + geom_line(aes(x=sample.times, y=l.samples.1)) +
     geom_line(aes(x=sample.times, y=l.samples.2))
   
   ### bubble plot
-  g.bubbles = ggplot(my.post.out$Bubbles, aes(x=Time, y=OriginalIndex, size=Probability)) +
+  g.bubbles = ggplot(my.post$Bubbles, aes(x=Time, y=Name, size=Probability)) +
     geom_point() 
   
   ### produce hypercube subgraph
@@ -37,9 +37,9 @@ plotHypercube = function(my.post, my.post.out, t.thresh = 20, f.thresh = 0.05) {
   
   thdfp = data.frame()
   for(i in c(3,4)) {
-    for(j in unique(my.post.out$THist$OriginalIndex)) {
-      sub = my.post.out$THist[my.post.out$THist$OriginalIndex == j & my.post.out$THist$Time < t.thresh,]
-      sub1 = my.post.out$THist[my.post.out$THist$OriginalIndex == j & my.post.out$THist$Time >= t.thresh,]
+    for(j in unique(my.post$THist$OriginalIndex)) {
+      sub = my.post$THist[my.post$THist$OriginalIndex == j & my.post$THist$Time < t.thresh,]
+      sub1 = my.post$THist[my.post$THist$OriginalIndex == j & my.post$THist$Time >= t.thresh,]
       thdfp = rbind(thdfp, sub)
       thdfp = rbind(thdfp, data.frame(OriginalIndex=j, Time=t.thresh, Probability=sum(sub1$Probability)))
     }
@@ -60,10 +60,33 @@ plotHypercube = function(my.post, my.post.out, t.thresh = 20, f.thresh = 0.05) {
 
 sourceCpp("hypertraps-r.cpp")
 
+### simple demo
 test.mat = as.matrix(read.table("../VerifyData/synth-cross-samples-1.txt"))
-my.post = HyperTraPS(test.mat, model = -1, regularise = 1, walkers_arg = 20)
-plot(my.post$regularisation$reg.process$AIC)
+my.post = HyperTraPS(test.mat, featurenames_arg = c("A", "B", "C", "D", "E")); 
+plotHypercube(my.post)
 
+### various other demos
+# regularisation
+my.post.regularise = HyperTraPS(test.mat, regularise_arg = 1, walkers_arg = 20)
+plot(my.post.regularise$regularisation$reg.process$params, my.post.regularise$regularisation$reg.process$AIC)
+plotHypercube(my.post.regularise)
+
+# simulated annealing output
+my.post.sa = HyperTraPS(test.mat, sa_arg = 1)
+plotHypercube(my.post.sa)
+
+# phenotypic landscape inference
+my.post.pli = HyperTraPS(test.mat, PLI_arg = 1)
+plotHypercube(my.post.pli)
+
+# start with every edge parameterised, then regularise
+my.post.bigmodel.regularise = HyperTraPS(test.mat, model_arg = -1, regularise_arg = 1, walkers_arg = 20)
+plotHypercube(my.post.bigmodel.regularise)
+
+ggarrange( ggplot(my.post))
+plot(my.post$regularisation$reg.process$params, my.post$regularisation$reg.process$AIC)
+
+# continuous time demo
 test.mat = as.matrix(read.table("../VerifyData/synth-cross-samples-1.txt"))
 test.start.times = rep(0.1,nrow(test.mat))
 test.end.times = rep(0.2,nrow(test.mat))
@@ -72,9 +95,9 @@ my.post = HyperTraPS(test.mat,
                      endtimes_arg = test.end.times, 
                      outputinput_arg = 1)
 my.post.out = PosteriorAnalysis(my.post)
+plotHypercube(my.post, my.post.out)
 
-g.obj = plotHypercube(my.post, my.post.out)
-
+# tool use paper reproduction
 test.mat = as.matrix(read.table("../Data/total-observations.txt-trans.txt"))
 starts = test.mat[seq(from=1, to=nrow(test.mat), by=2),]
 ends = test.mat[seq(from=2, to=nrow(test.mat), by=2),]

@@ -3,6 +3,29 @@ using namespace Rcpp;
 #define _USE_CODE_FOR_R 1
 #include "hypertraps-all.c"
 
+List PosteriorAnalysis(List L,
+		       Nullable<CharacterVector> featurenames_arg);
+List OutputStatesR(double *ntrans, int LEN, int model);
+List HyperTraPS(NumericMatrix matrix_arg,
+		Nullable<NumericMatrix> initialstates_arg,
+		Nullable<NumericVector> starttimes_arg,
+		Nullable<NumericVector> endtimes_arg,
+		NumericVector length_index_arg,
+		NumericVector kernel_index_arg,
+		NumericVector losses_arg,
+		NumericVector apm_type_arg,
+		NumericVector sa_arg,
+		NumericVector sgd_arg,
+		NumericVector sgd_scale_arg,
+		NumericVector seed_arg,
+		NumericVector outputinput_arg,
+		NumericVector regularise_arg,
+		NumericVector model_arg,
+		NumericVector PLI_arg,
+		NumericVector walkers_arg,
+		NumericVector full_analysis_arg,
+		Nullable<CharacterVector> featurenames_arg);
+
 List OutputStatesR(double *ntrans, int LEN, int model)
 {
   int i, j, k, a;
@@ -273,7 +296,9 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 		NumericVector regularise_arg = 0,
 		NumericVector model_arg = 2,
 		NumericVector PLI_arg = 0,
-		NumericVector walkers_arg = 200)
+		NumericVector walkers_arg = 200,
+		NumericVector full_analysis_arg = 1,
+		Nullable<CharacterVector> featurenames_arg = R_NilValue)
 {
   int parents[_MAXN];
   FILE *fp;
@@ -779,7 +804,10 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
       L["regularisation"] = regL;
     }
 
-  return L;
+  if(full_analysis_arg[0] == 0)
+    return L;
+  else
+    return PosteriorAnalysis(L, featurenames_arg);
 }
 
 //' Extracts information from HyperTraPS-related posterior samples
@@ -788,7 +816,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 //' @return Named list containing summary data for feature acquisition ordering ("bubbles"), time histograms, sampled accumulation routes, and timings of these sampled routes.
 // [[Rcpp::export]]
 List PosteriorAnalysis(List L,
-		       Nullable<CharacterVector> featurenames_arg)
+		       Nullable<CharacterVector> featurenames_arg = R_NilValue)
 {
   int *matrix;
   int len, ntarg;
@@ -1145,11 +1173,13 @@ List PosteriorAnalysis(List L,
   DataFrame Bubbledf(BubbleL);
   DataFrame THistdf(THistL);
 
-  List OutputL = List::create(Named("Bubbles") = Bubbledf,
-			      Named("THist") = THistdf,
-			      Named("Routes") = route_out,
-			      Named("Betas") = betas_out,
-			      Named("Times") = times_out);
+  List OutputL = L;
+
+  OutputL["Bubbles"] = Bubbledf;
+  OutputL["THist"] = THistdf;
+  OutputL["Routes"] = route_out;
+  OutputL["Betas"] = betas_out;
+  OutputL["Times"] = times_out;
 
   return OutputL;
 }
