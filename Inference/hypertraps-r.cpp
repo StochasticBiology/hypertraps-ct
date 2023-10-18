@@ -147,16 +147,16 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 		Nullable<NumericMatrix> initialstates_arg = R_NilValue,
 		Nullable<NumericVector> starttimes_arg = R_NilValue,
 		Nullable<NumericVector> endtimes_arg = R_NilValue,
-			 NumericVector length_index_arg = 3,
-			 NumericVector kernel_index_arg = 5,
-			 NumericVector losses_arg = 0,
-			 NumericVector apm_type_arg = 0,
-			 NumericVector sgd_scale_arg = 0.01,
-			 NumericVector seed_arg = 1,
-			 NumericVector outputinput_arg = 0,
-			 NumericVector regularise_arg = 0,
-			 NumericVector model_arg = 2,
-			 NumericVector PLI_arg = 0)
+		NumericVector length_index_arg = 3,
+		NumericVector kernel_index_arg = 5,
+		NumericVector losses_arg = 0,
+		NumericVector apm_type_arg = 0,
+		NumericVector sgd_scale_arg = 0.01,
+		NumericVector seed_arg = 1,
+		NumericVector outputinput_arg = 0,
+		NumericVector regularise_arg = 0,
+		NumericVector model_arg = 2,
+		NumericVector PLI_arg = 0)
 {
   int parents[_MAXN];
   FILE *fp;
@@ -176,7 +176,6 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   double *tmpmat;
   double r;
   double tau1s[_MAXN], tau2s[_MAXN];
-  int ntau;
   int nancount = 0;
   int spectrumtype;
   double bestlik = 0;
@@ -203,7 +202,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   int readparams;
   int PLI;
 
-    // default values
+  // default values
   spectrumtype = 0;
   lengthindex = length_index_arg[0];
   kernelindex = kernel_index_arg[0];
@@ -226,66 +225,91 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 
   // basic input parsing
   len = matrix_arg.ncol();
-  ntarg = matrix_arg.nrow();
-   // construct internal observation matrix
-  matrix = (int*)malloc(sizeof(int)*2*len*ntarg);
+  ntarg = matrix_arg.nrow()*2;
+  // construct internal observation matrix
+  matrix = (int*)malloc(sizeof(int)*len*ntarg);
  
   // check to see if we're doing crosssectional analysis, and if not, if we've got appropriate initial state info
   crosssectional = 1;
-  if(initialstates_arg.isNotNull()) {
+  if(initialstates_arg.isUsable()) {
     NumericMatrix initialstates(initialstates_arg);
     crosssectional = 0;
-    if(initialstates.ncol() != len || initialstates.nrow() != ntarg)
-    {
-      Rprintf("If specifying initial states, we need one initial state for each observation.");
-      myexit(0);
-    }
-     for(i = 0; i < ntarg; i++)
-    {
-      for(j = 0; j < len; j++)
-	    matrix[i*len+j] = initialstates(i, j);
-      for(j = 0; j < len; j++)
-	matrix[i*(2*len)+len+j] = matrix_arg(i,j);
-    }
+    if(initialstates.ncol() != len || initialstates.nrow() != ntarg/2)
+      {
+	Rprintf("If specifying initial states, we need one initial state for each observation.");
+	myexit(0);
+      }
+    for(i = 0; i < ntarg/2; i++)
+      {
+	for(j = 0; j < len; j++)
+	  matrix[i*(2*len)+j] = initialstates(i, j);
+	for(j = 0; j < len; j++)
+	  matrix[i*(2*len)+len+j] = matrix_arg(i,j);
+      }
  
   }
   else {
-  for(i = 0; i < ntarg; i++)
-    {
-      for(j = 0; j < len; j++)
-	    matrix[i*(2*len)+j] = 0;
-      for(j = 0; j < len; j++)
-	matrix[i*(2*len)+len+j] = matrix_arg(i,j);
-    }
+    for(i = 0; i < ntarg/2; i++)
+      {
+	for(j = 0; j < len; j++)
+	  matrix[i*(2*len)+j] = 0;
+	for(j = 0; j < len; j++)
+	  matrix[i*(2*len)+len+j] = matrix_arg(i,j);
+      }
   }
 
-  // XXX TIMINGS TO POPULATE
-  if(starttimes_arg.isNotNull()) {
+  // populate timing vectors
+  if(starttimes_arg.isUsable()) {
     NumericVector starttimes(starttimes_arg);
-    if(starttimes.length() != ntarg) {
+    if(starttimes.length() != ntarg/2) {
       Rprintf("If specifying start timings, we need one timing entry for each observation.");
       myexit(0);
     }
+    for(i = 0; i < ntarg/2; i++)
+      tau1s[i] = starttimes[i];
     spectrumtype = 1;
   }
-    if(endtimes_arg.isNotNull()) {
-    NumericVector endtimes(starttimes_arg);
-    if(endtimes.length() != ntarg) {
+  if(endtimes_arg.isUsable()) {
+    NumericVector endtimes(endtimes_arg);
+    if(endtimes.length() != ntarg/2) {
       Rprintf("If specifying end timings, we need one timing entry for each observation.");
       myexit(0);
     }
+    for(i = 0; i < ntarg/2; i++)
+      tau2s[i] = endtimes[i];
+
     spectrumtype = 1;
   }
 
-    if(spectrumtype == 1)
-      {
-	if(!starttimes_arg.isNotNull()) {
-	  Rprintf("End timings, but not start timings, specified. Assuming t = 0 starts.\n");
-	}
-	if(!endtimes_arg.isNotNull()) {
-	  Rprintf("Start timings, but not end timings, specified. Assuming t = inf ends.\n");
-	}
+  if(spectrumtype == 1)
+    {
+      if(!starttimes_arg.isNotNull()) {
+	Rprintf("End timings, but not start timings, specified. Assuming t = 0 starts.\n");
+	for(i = 0; i < ntarg/2; i++)
+	  tau1s[i] = 0;
       }
+      if(!endtimes_arg.isNotNull()) {
+	Rprintf("Start timings, but not end timings, specified. Assuming t = inf ends.\n");
+	for(i = 0; i < ntarg/2; i++)
+	  tau2s[i] = INFINITY;
+      }
+      for(i = 0; i < ntarg/2; i++)
+	{
+	  if(tau2s[i] < tau1s[i])
+	    {
+	      Rprintf("End time %i is less than start time!\n", i);
+	      myexit(0);
+	    }
+	}
+    }
+  else
+    {
+      for(i = 0; i < ntarg/2; i++)
+	{
+	  tau1s[i] = 0;
+	  tau2s[i] = INFINITY;
+	}
+    }
   
   Rprintf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
@@ -338,79 +362,21 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 	  for(j = 0; j < len; j++) Rprintf("%i", matrix[2*len*i+j]);
 	  Rprintf(" -> ");
 	  for(j = 0; j < len; j++) Rprintf("%i", matrix[2*len*i+len+j]);
+	  if(spectrumtype != 0)
+	    Rprintf("(window %.3e-%.3e)", tau1s[i], tau2s[i]);
 	  Rprintf("\n");
 	}
       if(losses == 1) Rprintf("(where 1 is absence)\n\n");
       if(losses == 0) Rprintf("(where 1 is presence)\n\n");
     }
-  
-  // grab timings from data file provided
-  if(spectrumtype != 0)
-    {
-      ntau = 0;
-      fp = fopen(timefile, "r");
-      if(fp == NULL)
-	{
-	  Rprintf("Couldn't find start timings file %s\n", timefile);
-	  return 0;
-	}
-      while(!feof(fp))
-	{
-	  fscanf(fp, "%lf", &(tau1s[ntau]));
-	  if(!feof(fp)) { ntau++; }
-	}
-      fclose(fp);
-      if(ntau != ntarg/2) 
-	{
-	  Rprintf("I found %i timings and %i observation pairs -- these numbers should be equal.\n", ntau, ntarg);
-	  return 0;
-	}
-
-      fp = fopen(endtimefile, "r");
-      if(fp == NULL)
-	{
-	  Rprintf("Couldn't find end timings file -- I'm assuming that start times *are* end times (i.e. each observation has a precisely specified single time)\n");
-	  for(i = 0; i < ntau; i++) tau2s[i] = tau1s[i];
-	}
-      else
-	{
-	  ntau = 0;
-	  while(!feof(fp))
-	    {
-	      fscanf(fp, "%lf", &(tau2s[ntau]));
-	      if(tau2s[ntau] < tau1s[ntau])
-		{
-		  Rprintf("End time %f was less than start time %f!\n", tau2s[ntau], tau1s[ntau]);
-		  myexit(0);
-		}
-	      if(!feof(fp)) { ntau++; }
-	    }
-	  fclose(fp);
-	}
-      if(ntau != ntarg/2) 
-	{
-	  Rprintf("I found %i timings and %i observation pairs -- these numbers should be equal.\n", ntau, ntarg);
-	  return 0;
-	}
-
-    }
-  else
-    {
-      ntau = ntarg/2;
-      for(i = 0; i < ntau; i++)
-	{
-	  tau1s[i] = 0;
-	  tau2s[i] = INFINITY;
-	}
-    }
-  
+    
   if(spectrumtype == 0)
     {
       Rprintf("Number of features is %i, I found %i observation pairs\n", len, ntarg/2);
     }
   else
     {
-      Rprintf("Number of features is %i, I found %i observation pairs and %i timing pairs\n", len, ntarg/2, ntau);
+      Rprintf("Number of features is %i, I found %i observation pairs and %i timing pairs\n", len, ntarg/2, ntarg/2);
       if(len > 30)
 	{
 	  Rprintf("*** CAUTION: continuous time calculations sometimes fail to converge for large (>30) feature sets. This can lead to NaNs appearing, which will stop the simulation. Consider running without continuous time option.\n");
@@ -512,11 +478,11 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 	    best_output[i] = trans[i];
 	  bestlik = lik;
 	  
-	   if(outputtransitions)
+	  if(outputtransitions)
 	    {
 	      
 	      dynamics_output = OutputStatesR(trans, len, model);
-	      }
+	    }
 	}
 
       // output some info periodically
@@ -676,28 +642,28 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
     }
 
   List Lts = List::create(Named("sample.times") = t_output,
-			Named("l.samples.1") = lik1_output,
+			  Named("l.samples.1") = lik1_output,
 			  Named("l.samples.2") = lik2_output);
   DataFrame Ltsdf(Lts);
 
   if(outputtransitions)
     {
-  List L = List::create(Named("label") = labelstr ,
-			Named("L") = len,
-			Named("best") = best_output,
-			Named("posterior.samples") = posterior_output,
-			Named("lik.traces") = Ltsdf,
-			Named("dynamics") = dynamics_output);
-    return L;
+      List L = List::create(Named("label") = labelstr ,
+			    Named("L") = len,
+			    Named("best") = best_output,
+			    Named("posterior.samples") = posterior_output,
+			    Named("lik.traces") = Ltsdf,
+			    Named("dynamics") = dynamics_output);
+      return L;
     }
   else
     {
-  List L = List::create(Named("label") = labelstr ,
-			Named("L") = len,
-			Named("best") = best_output,
-			Named("posterior.samples") = posterior_output,
-			Named("lik.traces") = Ltsdf);
-    return L;
+      List L = List::create(Named("label") = labelstr ,
+			    Named("L") = len,
+			    Named("best") = best_output,
+			    Named("posterior.samples") = posterior_output,
+			    Named("lik.traces") = Ltsdf);
+      return L;
     }
   
 
@@ -751,11 +717,11 @@ List PosteriorAnalysis(List L)
   sprintf(postfile, "rcpp");
   sprintf(labelfile, "");
   
-    Rprintf("\nHyperTraPS(-CT) posterior analysis\n\n");
+  Rprintf("\nHyperTraPS(-CT) posterior analysis\n\n");
 
-    // deal with command-line arguments
-    /*  for(i = 1; i < argc; i+=2)
-    {
+  // deal with command-line arguments
+  /*  for(i = 1; i < argc; i+=2)
+      {
       if(strcmp(argv[i], "--posterior\0") == 0) strcpy(postfile, argv[i+1]);
       else if(strcmp(argv[i], "--label\0") == 0) { filelabel = 1; strcpy(labelstr, argv[i+1]); }
       else if(strcmp(argv[i], "--featurenames\0") == 0) { strcpy(labelfile, argv[i+1]); }
@@ -768,18 +734,18 @@ List PosteriorAnalysis(List L)
       else if(strcmp(argv[i], "--binscale\0") == 0) BINSCALE = atof(argv[i+1]);
       else if(strcmp(argv[i], "--verbose\0") == 0) { verbose = 1; i--; }
       else if(strcmp(argv[i], "--help\0") == 0) helpandquit(0);
-    }
+      }
 
-   if(strcmp(postfile, "") == 0)
-     {
-       Rprintf("*** I need at least a file of posterior samples! ***\n\n");
-       helpandquit(0);
-     }
-   if(model == 0)
-     {
-       Rprintf("*** Posterior analysis isn't meaningful for a zero-parameter model ***\n\n");
-       return 0;
-       }*/
+      if(strcmp(postfile, "") == 0)
+      {
+      Rprintf("*** I need at least a file of posterior samples! ***\n\n");
+      helpandquit(0);
+      }
+      if(model == 0)
+      {
+      Rprintf("*** Posterior analysis isn't meaningful for a zero-parameter model ***\n\n");
+      return 0;
+      }*/
 
   Rprintf("Verbose flag is %i\n", verbose);
   Rprintf("Bin scale is %f\n", BINSCALE);
@@ -793,10 +759,10 @@ List PosteriorAnalysis(List L)
   for(i = 1; i < 200; i++)
     {
       if(tlen == nparams(model, i))
-      {
-	len = i;
-	break;
-      }
+	{
+	  len = i;
+	  break;
+	}
     }
   if(len == 0)
     {
@@ -859,64 +825,64 @@ List PosteriorAnalysis(List L)
     }
   
   int NSAMPLES = ((posterior.nrow() - burnin)/(sampleperiod+1))*(NSAMP);
-      NumericMatrix route_out(NSAMPLES, len);
-      NumericMatrix betas_out(NSAMPLES, len);
-      NumericMatrix times_out(NSAMPLES, len);
-      int sampleindex = 0;
+  NumericMatrix route_out(NSAMPLES, len);
+  NumericMatrix betas_out(NSAMPLES, len);
+  NumericMatrix times_out(NSAMPLES, len);
+  int sampleindex = 0;
       
-      for(count = 0; count < posterior.nrow(); count++)
-	{
-	  // read in single posterior sample
-	  for(i = 0; i < NVAL; i++)
-      	    ntrans[i] = posterior(count,i);
+  for(count = 0; count < posterior.nrow(); count++)
+    {
+      // read in single posterior sample
+      for(i = 0; i < NVAL; i++)
+	ntrans[i] = posterior(count,i);
 	  
-	  // this if statement controls which samples get processed
-	  // if we want to include burn-in or subsampling, can put it here
-	  if(count >= burnin && count % (sampleperiod+1) == 0)
+      // this if statement controls which samples get processed
+      // if we want to include burn-in or subsampling, can put it here
+      if(count >= burnin && count % (sampleperiod+1) == 0)
+	{
+	  // loop through iterations
+	  for(j = 0; j < NSAMP; j++)
 	    {
-	      // loop through iterations
-	      for(j = 0; j < NSAMP; j++)
-		{
-		  for(i = 0; i < len; i++)
-		    meanstore[i] = 0;
-		  // simulate behaviour on this posterior and add statistics to counts and histograms
-		  GetRoutes(matrix, len, ntarg, ntrans, rec, meanstore, ctrec, times, betas, route, BINSCALE, model);
-		  for(i = 0; i < len; i++)
-		    fmeanstore[i] += meanstore[i];
-		  ctnorm += NTRAJ;
-		  allruns++;
+	      for(i = 0; i < len; i++)
+		meanstore[i] = 0;
+	      // simulate behaviour on this posterior and add statistics to counts and histograms
+	      GetRoutes(matrix, len, ntarg, ntrans, rec, meanstore, ctrec, times, betas, route, BINSCALE, model);
+	      for(i = 0; i < len; i++)
+		fmeanstore[i] += meanstore[i];
+	      ctnorm += NTRAJ;
+	      allruns++;
 
-		  for(i = 0; i < len; i++)
-		    {
-		      route_out(sampleindex, i) = route[i];
-		      betas_out(sampleindex, i) = betas[i];
-		      times_out(sampleindex, i) = times[i];
-		    }
-		  sampleindex++;
-		  /*		  if(verbose)
-		    {
-		      for(i = 0; i < len; i++)
- 		        fprintf(fp1, "%i ", route[i]);
-		      for(i = 0; i < len; i++)
-			fprintf(fp2, "%.15f ", betas[i]);
-		      for(i = 0; i < len; i++)
-			fprintf(fp3, "%.3e ", times[i]);
-		      fprintf(fp1, "\n");
-		      fprintf(fp2, "\n");
-		      fprintf(fp3, "\n");
-		      }*/
+	      for(i = 0; i < len; i++)
+		{
+		  route_out(sampleindex, i) = route[i];
+		  betas_out(sampleindex, i) = betas[i];
+		  times_out(sampleindex, i) = times[i];
 		}
+	      sampleindex++;
+	      /*		  if(verbose)
+				  {
+				  for(i = 0; i < len; i++)
+				  fprintf(fp1, "%i ", route[i]);
+				  for(i = 0; i < len; i++)
+				  fprintf(fp2, "%.15f ", betas[i]);
+				  for(i = 0; i < len; i++)
+				  fprintf(fp3, "%.3e ", times[i]);
+				  fprintf(fp1, "\n");
+				  fprintf(fp2, "\n");
+				  fprintf(fp3, "\n");
+				  }*/
 	    }
 	}
-      /*  if(verbose)
-	{
-	  fclose(fp1);
-	  fclose(fp2);
-	  fclose(fp3);
-	  } */
+    }
+  /*  if(verbose)
+      {
+      fclose(fp1);
+      fclose(fp2);
+      fclose(fp3);
+      } */
 
 
-      Rprintf("allruns is %i\n", allruns);
+  Rprintf("allruns is %i\n", allruns);
 
   // output various summaries
   for(i = 0; i < len; i++)
@@ -979,38 +945,38 @@ List PosteriorAnalysis(List L)
 			      Named("Probability") = prob_col);
 
   /*
-  sprintf(str, "%s-bubbles.csv", labelstr);
-  fp = fopen(str, "w");
-  fprintf(fp, "Time,ReorderedIndex,OriginalIndex,Name,Probability\n");
-  for(t = 0; t < len; t++)
+    sprintf(str, "%s-bubbles.csv", labelstr);
+    fp = fopen(str, "w");
+    fprintf(fp, "Time,ReorderedIndex,OriginalIndex,Name,Probability\n");
+    for(t = 0; t < len; t++)
     {
-      for(i = 0; i < len; i++)
-	fprintf(fp, "%i,%i,%i,%s,%.15f\n", t, i, order[i], &names[FLEN*order[i]], drec[t*len+order[i]]);
-      fprintf(fp, "\n");
-      }*/
+    for(i = 0; i < len; i++)
+    fprintf(fp, "%i,%i,%i,%s,%.15f\n", t, i, order[i], &names[FLEN*order[i]], drec[t*len+order[i]]);
+    fprintf(fp, "\n");
+    }*/
 
   // these appended comments give gnuplot commands for axis labels if required: both in original and mean-sorted orderings
   // commented here, as we're shifting to csv format
   /*  fprintf(fp, "# set xtics (");
-  for(i = 0; i < len; i++)
-    fprintf(fp, "\"%s\" %i%c", &names[FLEN*order[i]], i, (i == len-1 ? ')' : ','));
-  fprintf(fp, "\n");
-  fprintf(fp, "# default-order set xtics (");
-  for(i = 0; i < len; i++)
-    fprintf(fp, "\"%s\" %i%c", &names[FLEN*i], i, (i == len-1 ? ')' : ','));
-  fprintf(fp, "\n");
+      for(i = 0; i < len; i++)
+      fprintf(fp, "\"%s\" %i%c", &names[FLEN*order[i]], i, (i == len-1 ? ')' : ','));
+      fprintf(fp, "\n");
+      fprintf(fp, "# default-order set xtics (");
+      for(i = 0; i < len; i++)
+      fprintf(fp, "\"%s\" %i%c", &names[FLEN*i], i, (i == len-1 ? ')' : ','));
+      fprintf(fp, "\n");
 
-  fprintf(fp, "# (");
-  for(i = 0; i < len; i++)
-    fprintf(fp, "%i, ", order[i]);
-  fprintf(fp, ")\n");
+      fprintf(fp, "# (");
+      for(i = 0; i < len; i++)
+      fprintf(fp, "%i, ", order[i]);
+      fprintf(fp, ")\n");
 
-  fprintf(fp, "# ");
-  for(i = 0; i < len; i++)
-    fprintf(fp, "%s %.4f, ", &names[FLEN*order[i]], mean[i]);
-  fprintf(fp, ")\n");
+      fprintf(fp, "# ");
+      for(i = 0; i < len; i++)
+      fprintf(fp, "%s %.4f, ", &names[FLEN*order[i]], mean[i]);
+      fprintf(fp, ")\n");
 
-  fclose(fp);*/
+      fclose(fp);*/
 
   // this stores the time histograms associated with acquisition times for each feature
   // remember here that we've scaled by BINSCALE to store in an integer-referenced array (see GetRoutes())
@@ -1026,35 +992,35 @@ List PosteriorAnalysis(List L)
 	}
     }
 
-   List THistL = List::create(Named("OriginalIndex") = i_col_ct,
-			      Named("Time") = t_col_ct,
-			      Named("Probability") = prob_col_ct);
+  List THistL = List::create(Named("OriginalIndex") = i_col_ct,
+			     Named("Time") = t_col_ct,
+			     Named("Probability") = prob_col_ct);
 			      
 
-   /*  sprintf(str, "%s-timehists.csv", labelstr);
-  fp = fopen(str, "w");
-  fprintf(fp, "OriginalIndex,Time,Probability\n");
-  for(i = 0; i < len; i++)
-    {
+  /*  sprintf(str, "%s-timehists.csv", labelstr);
+      fp = fopen(str, "w");
+      fprintf(fp, "OriginalIndex,Time,Probability\n");
+      for(i = 0; i < len; i++)
+      {
       tmp = 0;
       for(j = 0; j < MAXCT; j++)
-	{
-	  fprintf(fp, "%i,%f,%.6f\n", i, j/BINSCALE, ctrec[MAXCT*i+j]/ctnorm);
-	  tmp += ctrec[MAXCT*i+j]*j;
-	}
+      {
+      fprintf(fp, "%i,%f,%.6f\n", i, j/BINSCALE, ctrec[MAXCT*i+j]/ctnorm);
+      tmp += ctrec[MAXCT*i+j]*j;
+      }
       Rprintf("%i %.4f\n", i, tmp/ctnorm);
       fprintf(fp, "\n");
       }*/
 
-   DataFrame Bubbledf(BubbleL);
-   DataFrame THistdf(THistL);
+  DataFrame Bubbledf(BubbleL);
+  DataFrame THistdf(THistL);
 
-   List OutputL = List::create(Named("Bubbles") = Bubbledf,
-			       Named("THist") = THistdf,
-			       Named("Routes") = route_out,
-			       Named("Betas") = betas_out,
-			       Named("Times") = times_out);
+  List OutputL = List::create(Named("Bubbles") = Bubbledf,
+			      Named("THist") = THistdf,
+			      Named("Routes") = route_out,
+			      Named("Betas") = betas_out,
+			      Named("Times") = times_out);
 
-   return OutputL;
+  return OutputL;
 }
 
