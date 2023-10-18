@@ -214,7 +214,7 @@ void ReadMatrix(double *trans, int len, int model, char *fname)
 void OutputTransitions(char *besttransstr, double *ntrans, int LEN, int model)
 {
   FILE *fp;
-  int i, j, k;
+  int i, j;
   int statedec;
   int state[LEN];
   double rate, totrate;
@@ -364,7 +364,7 @@ void OutputStates(char *beststatesstr, double *ntrans, int LEN, int model)
 // pick a new locus to change in state "state"; return it in "locus" and keep track of the on-course probability in "prob". "ntrans" is the transition matrix
 void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, double *beta, int LEN, int model)
 {
-  int i, j;
+  int i;
   double rate[LEN];
   double totrate, nobiastotrate;
   double cumsum[LEN];
@@ -431,25 +431,17 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
   int i, j, r;
   int locus;
   int attempt[LEN];
-  double min;
   double mean;
   double *prodreject;
-  double summand[LEN];
-  int fail, score;
+  int fail;
   int *hitss, *hitsd, *mins, *mind;
   double totalsum;
   int endtarg[LEN];
   double lik;
   
   // new variables
-  double u, prob_path, vi, betaci, nobiastotrate;
-  double analyticI1, analyticI2;
-  double sumI1, sumI2;
-  int n;
-  double tmprate;
   double *recbeta;
   // nobiastotrate is retain to match role in PickLocus but basically corresponds to -u
-  int myexitcount = 0;
   
   // allocate memory for BANK (N_h) trajectories
   bank = (int*)malloc(sizeof(int)*LEN*BANK);
@@ -589,11 +581,10 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   int i, j, r;
   int locus;
   int attempt[LEN];
-  double min;
   double mean;
   double *prodreject;
   double summand[LEN];
-  int fail, score;
+  int fail;
   int *hits, *totalhits;
   double totalsum;
   int emission_count;
@@ -835,7 +826,6 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
 {
   double loglik, tloglik, tlik;
   int i, j;
-  int multiple;
   int startpos[len];
 
   // initialise and start at one corner of the hypercube
@@ -904,8 +894,8 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
   int biggestindex;
   double biggest;
   int pcount;
-  FILE *fp, *fp1;
-  char fstr[200], fstr1[200];
+  FILE *fp;
+  char fstr[200];
   double AIC, BIC, bestBIC;
   double *best;
   
@@ -1003,25 +993,19 @@ int main(int argc, char *argv[])
   int i, j;
   char ch;
   double lik, nlik;
-  int *rec, *tmprec;
-  int maxt, allruns;
+  int maxt;
   int seed;
-  char str[200];
-  char fstr[200];
   char shotstr[200], bestshotstr[200], besttransstr[200], beststatesstr[200];
   double DELTA, MU;
   int NVAL;
   int expt;
   double acc, rej, lacc, lrej;
-  int chain1, chain2;
-  double prob;
   double *tmpmat;
   double r;
-  char fstr1[100], fstr2[100];
   time_t timer;
   char buffer[25];
   struct tm* tm_info;
-  double taus[_MAXN], tau1s[_MAXN], tau2s[_MAXN];
+  double tau1s[_MAXN], tau2s[_MAXN];
   int ntau;
   int nancount = 0;
   int spectrumtype;
@@ -1029,7 +1013,7 @@ int main(int argc, char *argv[])
   int lengthindex, kernelindex;
   int SAMPLE;
   int losses;
-  int apm_seed, old_apm_seed, apm_step;
+  int apm_seed, old_apm_seed;
   int apm_type;
   int csv;
   char likstr[100];

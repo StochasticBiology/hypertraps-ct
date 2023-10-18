@@ -4,7 +4,10 @@ using namespace Rcpp;
 #include "hypertraps-all.c"
   
 // [[Rcpp::export]]
-List HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector ntarg_arg,
+List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector ntarg_arg,
+		Nullable<NumericMatrix> initialstates_arg = R_NilValue,
+		Nullable<NumericVector> starttimes_arg = R_NilValue,
+		Nullable<NumericVector> endtimes_arg = R_NilValue,
 			 NumericVector length_index_arg = 3,
 			 NumericVector kernel_index_arg = 5,
 			 NumericVector losses_arg = 0,
@@ -24,27 +27,17 @@ List HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector n
   double *trans, *ntrans, *gradients;
   int t;
   int i, j;
-  char ch;
   double lik, nlik;
-  int *rec, *tmprec;
-  int maxt, allruns;
+  int maxt;
   int seed;
-  char str[200];
-  char fstr[200];
   char shotstr[200], bestshotstr[200], besttransstr[200], beststatesstr[200];
   double DELTA, MU;
   int NVAL;
   int expt;
   double acc, rej, lacc, lrej;
-  int chain1, chain2;
-  double prob;
   double *tmpmat;
   double r;
-  char fstr1[100], fstr2[100];
-  time_t timer;
-  char buffer[25];
-  struct tm* tm_info;
-  double taus[_MAXN], tau1s[_MAXN], tau2s[_MAXN];
+  double tau1s[_MAXN], tau2s[_MAXN];
   int ntau;
   int nancount = 0;
   int spectrumtype;
@@ -54,16 +47,13 @@ List HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector n
   int losses;
   int apm_seed, old_apm_seed, apm_step;
   int apm_type;
-  int csv;
   char likstr[100];
   double testval;
-  char header[10000];
   char obsfile[1000], timefile[1000], endtimefile[1000], paramfile[1000];
   int searchmethod;
   int filelabel;
   char labelstr[1000];
   int crosssectional;
-  int tmprow[1000];
   time_t start_t, end_t;
   double diff_t;
   struct timeval t_stop, t_start;
@@ -74,24 +64,8 @@ List HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector n
   int outputtransitions;
   int readparams;
   int PLI;
-  
-  len = len_arg[0];
-  ntarg = ntarg_arg[0]*2;
 
-  
-  matrix = (int*)malloc(sizeof(int)*matrix_arg.size());
-  for(i = 0; i < matrix_arg.length(); i++)
-    {
-      matrix[i] = matrix_arg[i];
-      Rprintf("%i ", matrix[i]);
-
-    }
-  Rprintf("\n");
-
-  
-  Rprintf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
-
-  // default values
+    // default values
   spectrumtype = 0;
   lengthindex = length_index_arg[0];
   kernelindex = kernel_index_arg[0];
@@ -112,6 +86,73 @@ List HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector n
   strcpy(paramfile, "");
   strcpy(timefile, "");
   strcpy(endtimefile, "");
+
+  // basic input parsing
+  len = matrix_arg.ncol();
+  ntarg = matrix_arg.nrow();
+   // construct internal observation matrix
+  matrix = (int*)malloc(sizeof(int)*2*len*ntarg);
+ 
+  // check to see if we're doing crosssectional analysis, and if not, if we've got appropriate initial state info
+  crosssectional = 1;
+  if(initialstates_arg.isNotNull()) {
+    NumericMatrix initialstates(initialstates_arg);
+    crosssectional = 0;
+    if(initialstates.ncol() != len || initialstates.nrow() != ntarg)
+    {
+      Rprintf("If specifying initial states, we need one initial state for each observation.");
+      myexit(0);
+    }
+     for(i = 0; i < ntarg; i++)
+    {
+      for(j = 0; j < len; j++)
+	    matrix[i*len+j] = initialstates(i, j);
+      for(j = 0; j < len; j++)
+	matrix[i*(2*len)+len+j] = matrix_arg(i,j);
+    }
+ 
+  }
+  else {
+  for(i = 0; i < ntarg; i++)
+    {
+      for(j = 0; j < len; j++)
+	    matrix[i*(2*len)+j] = 0;
+      for(j = 0; j < len; j++)
+	matrix[i*(2*len)+len+j] = matrix_arg(i,j);
+    }
+  }
+
+  // XXX TIMINGS TO POPULATE
+  if(starttimes_arg.isNotNull()) {
+    NumericVector starttimes(starttimes_arg);
+    if(starttimes.length() != ntarg) {
+      Rprintf("If specifying start timings, we need one timing entry for each observation.");
+      myexit(0);
+    }
+    spectrumtype = 1;
+  }
+    if(endtimes_arg.isNotNull()) {
+    NumericVector endtimes(starttimes_arg);
+    if(endtimes.length() != ntarg) {
+      Rprintf("If specifying end timings, we need one timing entry for each observation.");
+      myexit(0);
+    }
+    spectrumtype = 1;
+  }
+
+    if(spectrumtype == 1)
+      {
+	if(!starttimes_arg.isNotNull()) {
+	  Rprintf("End timings, but not start timings, specified. Assuming t = 0 starts.\n");
+	}
+	if(!endtimes_arg.isNotNull()) {
+	  Rprintf("Start timings, but not end timings, specified. Assuming t = inf ends.\n");
+	}
+      }
+  
+  Rprintf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
+
+
 
   if(PLI == 1) {
     Rprintf("Running Phenotype Landscape Inference with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
@@ -315,36 +356,25 @@ List HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector n
   if(apm_type == 1)
     apm_seed = seed;
 
+  NumericVector lik1_output, lik2_output, t_output;
+  NumericVector best_output(NVAL);
+  NumericVector current_output(NVAL);
+  List posterior_output;
+  
   // run the chain
   for(t = 0; t < maxt; t++)
     {
-      if(t % SAMPLE == 0)
-	{
-	  // periodically output progress to a tracker file
-	  time(&timer);
-	  tm_info = localtime(&timer);
-
-	  strftime(buffer, 25, "%Y:%m:%d %H:%M:%S", tm_info);
-
-	  fp = fopen("alltrackernew.txt", "a");
-	  fprintf(fp, "%s %i %i %i %s\n", shotstr, t, maxt/5, maxt, buffer);
-	  fclose(fp);
-	}
       // if we've got a new best likelihood, store it
       if(lik > bestlik || t == 0)
 	{
-	  bestlik = lik;
-	  fp = fopen(bestshotstr, "w");
 	  for(i = 0; i < NVAL; i++)
-	    fprintf(fp, "%f ", trans[i]);
-	  fprintf(fp, "\n");
-	  fclose(fp);
+	    best_output[i] = trans[i];
 
-	  if(outputtransitions)
+	  /*	  if(outputtransitions)
 	    {
 	      OutputTransitions(besttransstr, trans, len, model);
 	      OutputStates(beststatesstr, trans, len, model);
-	    }
+	      }*/
 	}
 
       // output some info periodically
@@ -355,17 +385,15 @@ List HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector n
 	{
 	  // if we're burnt in, periodically sample the current parameterisation to an output file
 	  // most appropriate for Bayesian MCMC but useful for all
-	  fp = fopen(shotstr, "a");
 	  for(i = 0; i < NVAL; i++)
-	    fprintf(fp, "%f ", trans[i]);
-	  fprintf(fp, "\n");
-	  fclose(fp);
-	  fp = fopen(likstr, "a");
+	    current_output[i] = trans[i];
+	  posterior_output.push_back(current_output);
+	  
 	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
-	  fprintf(fp, "%i,%f,", t, nlik);
+	  lik1_output.push_back(nlik);
 	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
-	  fprintf(fp, "%f\n", nlik);
-	  fclose(fp);
+	  lik2_output.push_back(nlik);
+	  t_output.push_back(t);
 	}
 
       // MCMC or simulated annealing
@@ -504,11 +532,12 @@ List HyperTraPS(NumericVector matrix_arg, NumericVector len_arg, NumericVector n
       Regularise(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, labelstr, PLI);
     }
 
-  NumericVector posterior_out(NVAL);
-  for(i = 0; i < NVAL; i++)
-    posterior_out[i] = trans[i];
-
-  List L = List::create(Named("label") = labelstr , Named("best") = posterior_out);
+  List L = List::create(Named("label") = labelstr ,
+			Named("best") = best_output,
+			Named("posterior.samples") = posterior_output,
+			Named("sample.times") = t_output,
+			Named("l.samples.1") = lik1_output,
+			Named("l.samples.2") = lik2_output);
   
   //  return posterior_out;
   return L;
