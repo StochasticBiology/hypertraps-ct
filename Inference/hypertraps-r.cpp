@@ -2,7 +2,7 @@
 using namespace Rcpp;
 #define _USE_CODE_FOR_R 1
 #include "hypertraps-all.c"
-  
+
 // [[Rcpp::export]]
 List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector ntarg_arg,
 		Nullable<NumericMatrix> initialstates_arg = R_NilValue,
@@ -356,10 +356,12 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   if(apm_type == 1)
     apm_seed = seed;
 
+  int NSAMPLES = (maxt-maxt/5)/SAMPLE-1;
+  
   NumericVector lik1_output, lik2_output, t_output;
   NumericVector best_output(NVAL);
-  NumericVector current_output(NVAL);
-  List posterior_output;
+  NumericMatrix posterior_output(NSAMPLES, NVAL);
+  int sampleref = 0;
   
   // run the chain
   for(t = 0; t < maxt; t++)
@@ -386,8 +388,9 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 	  // if we're burnt in, periodically sample the current parameterisation to an output file
 	  // most appropriate for Bayesian MCMC but useful for all
 	  for(i = 0; i < NVAL; i++)
-	    current_output[i] = trans[i];
-	  posterior_output.push_back(current_output);
+	    posterior_output(sampleref, i) = trans[i];
+
+	  sampleref++;
 	  
 	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
 	  lik1_output.push_back(nlik);
