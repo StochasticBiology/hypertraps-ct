@@ -549,7 +549,6 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 // [[Rcpp::export]]
 List PosteriorAnalysis(List L)
 {
-  FILE *fp;
   int *matrix;
   int len, ntarg;
   double *trans, *ntrans;
@@ -559,7 +558,6 @@ List PosteriorAnalysis(List L)
   double *drec, *sortdrec, *mean;
   int allruns;
   int seed = 0;
-  char str[200];
   double tmp;
   int change;
   char names[200*FLEN];
