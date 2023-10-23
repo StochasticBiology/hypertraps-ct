@@ -14,9 +14,17 @@
 // maximum number of datapoints (just for memory allocation)
 #define _MAXN 20000
 
+// maximum continuous-time value above which results are truncated
+#define MAXCT 1000
+
+// just used in assigning ordinal labels to different features
+#define FLEN 100
+
 // number of trajectories N_h, and frequencies of sampling for posteriors and for output
 int BANK = 200;
+int NTRAJ = 100;
 int TMODULE = 100;
+int NSAMP = 10;
 
 int _EVERYITERATION = 0;
 
@@ -27,6 +35,15 @@ int VERBOSE = 0;
 int SPECTRUM_VERBOSE = 0;
 int SUPERVERBOSE = 0;
 int APM_VERBOSE = 0;
+
+void myexit(int code)
+{
+  #ifndef _USE_CODE_FOR_R
+  exit(0);
+  #else
+  Rcpp::stop("exiting");
+  #endif
+}
 
 // impose limits on integer val to be between lo and hi
 void limiti(int *val, int lo, int hi)
@@ -184,7 +201,7 @@ void ReadMatrix(double *trans, int len, int model, char *fname)
   if(fp == NULL)
     {
       printf("Couldn't find parameter file %s\n", fname);
-      exit(0);
+      myexit(0);
     }
   
   NVAL = nparams(model, len);
@@ -194,7 +211,7 @@ void ReadMatrix(double *trans, int len, int model, char *fname)
       if(feof(fp))
 	{
 	  printf("Couldn't find sufficient parameters in file %s\n", fname);
-	  exit(0);
+	  myexit(0);
 	}
       fscanf(fp, "%lf", &(trans[i]));
     }
@@ -205,7 +222,7 @@ void ReadMatrix(double *trans, int len, int model, char *fname)
 void OutputTransitions(char *besttransstr, double *ntrans, int LEN, int model)
 {
   FILE *fp;
-  int i, j, k;
+  int i, j;
   int statedec;
   int state[LEN];
   double rate, totrate;
@@ -355,7 +372,7 @@ void OutputStates(char *beststatesstr, double *ntrans, int LEN, int model)
 // pick a new locus to change in state "state"; return it in "locus" and keep track of the on-course probability in "prob". "ntrans" is the transition matrix
 void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, double *beta, int LEN, int model)
 {
-  int i, j;
+  int i;
   double rate[LEN];
   double totrate, nobiastotrate;
   double cumsum[LEN];
@@ -422,25 +439,17 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
   int i, j, r;
   int locus;
   int attempt[LEN];
-  double min;
   double mean;
   double *prodreject;
-  double summand[LEN];
-  int fail, score;
+  int fail;
   int *hitss, *hitsd, *mins, *mind;
   double totalsum;
   int endtarg[LEN];
   double lik;
   
   // new variables
-  double u, prob_path, vi, betaci, nobiastotrate;
-  double analyticI1, analyticI2;
-  double sumI1, sumI2;
-  int n;
-  double tmprate;
   double *recbeta;
   // nobiastotrate is retain to match role in PickLocus but basically corresponds to -u
-  int exitcount = 0;
   
   // allocate memory for BANK (N_h) trajectories
   bank = (int*)malloc(sizeof(int)*LEN*BANK);
@@ -565,7 +574,7 @@ double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, doubl
   free(mind);
   free(prodreject);
   free(recbeta);
-  //  exit(0);
+  //  myexit(0);
   return lik/BANK;
 
 }
@@ -580,11 +589,10 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   int i, j, r;
   int locus;
   int attempt[LEN];
-  double min;
   double mean;
   double *prodreject;
   double summand[LEN];
-  int fail, score;
+  int fail;
   int *hits, *totalhits;
   double totalsum;
   int emission_count;
@@ -597,7 +605,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   double tmprate;
   double *recbeta;
   // nobiastotrate is retain to match role in PickLocus but basically corresponds to -u
-  int exitcount = 0;
+  int myexitcount = 0;
   
   // allocate memory for BANK (N_h) trajectories
   bank = (int*)malloc(sizeof(int)*LEN*BANK);
@@ -621,11 +629,11 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
       n1 += (targ[i] == 1 || targ[i] == 2);
       if(targ[i] == 2 && !(tau1 == 0 && tau2 == INFINITY)) {
 	printf("Uncertain observations not currently supported for the continuous time picture! Please re-run with the discrete time picture.\n");
-	exit(0);
+	myexit(0);
       }
       if(targ[i] == 0 && startpos[i] == 1) {
 	printf("Wrong ordering, or some other problem with input file. Data file rows should be ordered ancestor then descendant!\n");
-	exit(0);
+	myexit(0);
       }
       
     }
@@ -634,7 +642,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
     {
       // the target comes before the source
       printf("Wrong ordering, or some other problem with input file. Data file rows should be ordered ancestor then descendant!\n");
-      exit(0);
+      myexit(0);
     }
 
   mean = 1;
@@ -787,17 +795,17 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 
 	  if(sumI1 < 0 || sumI2 < 0)
 	    {
-	      //	      printf("I got a negative value for I1 (%e) or I2 (%e), which shouldn't happen and suggests a lack of numerical convergence. This can happen with large numbers of features. I'm stopping to avoid unreliable posteriors; consider running without continuous time option.\n", sumI1, sumI2);
-	      //exit(0);
+	      printf("I got a negative value for I1 (%e) or I2 (%e), which shouldn't happen and suggests a lack of numerical convergence. This can happen with large numbers of features. I'm stopping to avoid unreliable posteriors; consider running without continuous time option.\n", sumI1, sumI2);
+	      myexit(0);
 	    }
 	  
 	  analyticI1 += (prob_path*sumI1);
 	  analyticI2 += (prob_path*sumI2);
 	  if(SPECTRUM_VERBOSE)
 	    printf("prob_path %.4f sumI1 %.4f sumI2 %.4f | analyticI1 %.4f analyticI2 %.4f\n", prob_path, sumI1, sumI2, analyticI1, analyticI2);
-	  exitcount++;
-	  //	  if(exitcount == 3)
-	  //exit(0);
+	  myexitcount++;
+	  //	  if(myexitcount == 3)
+	  //myexit(0);
 	}
     }
   else
@@ -814,8 +822,8 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 
   /*  if(analyticI1+analyticI2 > 100)
       {
-      printf("Exiting at line 283\n");
-      exit(0);
+      printf("Myexiting at line 283\n");
+      myexit(0);
       }*/
   
   return analyticI1+analyticI2;
@@ -826,7 +834,6 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
 {
   double loglik, tloglik, tlik;
   int i, j;
-  int multiple;
   int startpos[len];
 
   // initialise and start at one corner of the hypercube
@@ -858,7 +865,7 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
       if(tlik < 0)
 	{
 	  printf("Somehow I have a negative likelihood, suggesting a lack of numerical convergence. Terminating to avoid unreliable posteriors.\n");
-	  //exit(0);
+	  //myexit(0);
 	}
 
       // output if required
@@ -895,8 +902,8 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
   int biggestindex;
   double biggest;
   int pcount;
-  FILE *fp, *fp1;
-  char fstr[200], fstr1[200];
+  FILE *fp;
+  char fstr[200];
   double AIC, BIC, bestBIC;
   double *best;
   
@@ -974,12 +981,161 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
 
 }
 
+// simulate trajectories on a given hypercube parameterisation, and store a bunch of summary data about those trajectories
+// mean[i] stores the mean acquisition ordering for feature i
+// ctrec[MAXCT*i + ref] stores a histogram of acquisitions of feature i at continuous time reference ref
+// times[t] stores the continuous time at which feature t is acquired in the first simulated run
+// betas[t] stores the exit propensity after feature t is acquired in the first simulated run
+// route[t] is the feature changed at step t
+void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double *mean, double *ctrec, double *times, double *betas, int *route, double BINSCALE, int model)
+{
+  int run, t;
+  double time1;
+  int state[len];
+  double totrate;
+  double rate[len];
+  double cumsum[len];
+  double r;
+  int i;
+  int startt;
+  int checker[ntarg];
+  double continuoustime;
+
+  for(i = 0; i < ntarg; i++)
+    checker[i] = 0;
+
+  for(i = 0; i < len; i++)
+    mean[i] = 0;
+  
+  /* loop through NTRAJ simulated trajectories */
+  for(run = 0; run < NTRAJ; run++)
+    {
+      startt = 0; time1 = 0;
+
+      // start at initial state
+      for(i = 0; i < len; i++)
+	state[i] = 0;
+
+      // track the (continuous) time elapsed
+      // (but continuous time is not interpretable unless the posteriors have been produced in the continuous time paradigm)
+      continuoustime = 0;
+
+      // loop through feature acquisitions
+      for(t = 0; t < len; t++)
+	{
+	  totrate = 0;
+	  // compute the rate for feature i given the current set of features
+	  for(i = 0; i < len; i++)
+	    {
+	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+	      if(state[i] == 0)
+		{
+		  rate[i] = RetrieveEdge(state, i, ntrans, len, model);
+		}
+	      else // we've already lost this gene
+		rate[i] = 0;
+
+	      // roulette wheel calculations as normal
+	      cumsum[i] = (i == 0 ? 0 : rate[i-1]+cumsum[i-1]);
+	      totrate += rate[i];
+	    }
+
+	  // choose a step
+	  for(i = 0; i < len; i++)
+	    cumsum[i] /= totrate;
+	  r = RND;
+	  continuoustime += (1./totrate)*log(1./r);
+
+#ifdef VERBOSE
+	  for(i = 0; i < len; i++)
+	    printf("%.2f ", cumsum[i]);
+	  printf("\n");
+#endif
+
+	  r = RND;
+	  for(i = 0; i < len-1; i++)
+	    {
+	      if(cumsum[i] < r && cumsum[i+1] > r) { break; }
+	    }
+
+#ifdef VERBOSE
+	  printf("Rolled %f, chose %i\n", r, i);
+#endif
+
+	  // we've chosen feature i, at ordering t, and a timescale continuoustime
+	  state[i] = 1;
+	  mean[i] += t;
+
+	  // rec[t*len + i] increments if we acquire feature i at ordering t
+	  // ctrec[MAXCT*i + ref] increments if we acquire feature i at ct-reference ref
+	  // pay attention here! we scale continuous times by BINSCALE (e.g. x100) to produce a reference that allows sensible storage in an integer-referenced histogram, bounded by 0 and MAXCT (element MAXCT-1 stores the number of cases that exceed this)
+
+  	  rec[t*len+i]++;
+	  if(continuoustime*BINSCALE < MAXCT)
+	    ctrec[MAXCT*i+((int)(BINSCALE*continuoustime))]++;
+	  else
+	    ctrec[MAXCT*i + MAXCT-1]++;
+
+	  // sample the statistics of the first simulated run. 
+	  if(run == 0)
+	    {
+	      times[t] = continuoustime;
+	      betas[t] = totrate;
+	      route[t] = i;
+	    }
+
+#ifdef VERBOSE
+	  for(i = 0; i < len; i++)
+	    printf("%i", state[i]);
+	  printf(" (%i)\n", t);
+#endif
+
+	}
+    }
+
+  for(i = 0; i < len; i++)
+    mean[i] /= NTRAJ;
+
+}
+
+// construct labels for different features
+// for different specific studies this can be adapted to help output
+void Label(char *names, int len, char *fname)
+{
+  int i, j;
+  FILE *fp;
+  
+  fp = fopen(fname, "r");
+  if(fp == NULL)
+    {
+      printf("Didn't find feature label file %s, using default labels\n", fname);
+  for(i = 0; i < len; i++)
+    {
+      sprintf(&names[i*FLEN], "feature_%i", i);
+    }
+    }
+  else
+    {
+      i = 0;
+      do{
+	fgets(&names[i*FLEN], FLEN, fp);
+	for(j = 0; j < FLEN; j++)
+	  {
+	    if(names[i*FLEN+j] == '\n')
+	      names[i*FLEN+j] = '\0';
+	  }
+	i++;
+      }while(!feof(fp));
+      fclose(fp);
+    }
+}
+
 void helpandquit(int debug)
 {
   printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--params file.txt\tuse parameterisation in file as initial guess\n--lscale X\t\tscale for observation counts\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--outputtransitions N\toutput transition matrix (0 no, 1 yes) [1]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
   if(debug)
     printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n--outputinput\t\toutput the data we read in(note: an undocumented option exists to pass CSV data as the observations file: file should have a header, and two columns of (ignored) before + after sample IDs, before subsequent columns with all \"before\" features followed by all \"after\" features on the same row.  \n\n");
-  exit(0);
+  myexit(0);
 }
 
 // main function processes command-line arguments and run the inference loop
@@ -994,25 +1150,19 @@ int main(int argc, char *argv[])
   int i, j;
   char ch;
   double lik, nlik;
-  int *rec, *tmprec;
-  int maxt, allruns;
+  int maxt;
   int seed;
-  char str[200];
-  char fstr[200];
   char shotstr[200], bestshotstr[200], besttransstr[200], beststatesstr[200];
   double DELTA, MU;
   int NVAL;
   int expt;
   double acc, rej, lacc, lrej;
-  int chain1, chain2;
-  double prob;
   double *tmpmat;
   double r;
-  char fstr1[100], fstr2[100];
   time_t timer;
   char buffer[25];
   struct tm* tm_info;
-  double taus[_MAXN], tau1s[_MAXN], tau2s[_MAXN];
+  double tau1s[_MAXN], tau2s[_MAXN];
   int ntau;
   int nancount = 0;
   int spectrumtype;
@@ -1020,7 +1170,7 @@ int main(int argc, char *argv[])
   int lengthindex, kernelindex;
   int SAMPLE;
   int losses;
-  int apm_seed, old_apm_seed, apm_step;
+  int apm_seed, old_apm_seed;
   int apm_type;
   int csv;
   char likstr[100];
@@ -1251,7 +1401,7 @@ int main(int argc, char *argv[])
 	      if(tau2s[ntau] < tau1s[ntau])
 		{
 		  printf("End time %f was less than start time %f!\n", tau2s[ntau], tau1s[ntau]);
-		  exit(0);
+		  myexit(0);
 		}
 	      if(!feof(fp)) { ntau++; }
 	    }
