@@ -65,6 +65,18 @@ plotHypercube.timehists = function(my.post, t.thresh = 20) {
   return(ggarrange(g.thist, g.thist2))
 }
 
+plotHypercube.regularisation = function(my.post) {
+  return(ggplot(my.post.regularise$regularisation$reg.process, 
+         aes(x=params, y=AIC)) + geom_point() )
+}
+
+plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20) {
+  return (ggarrange(plotHypercube.lik.trace(my.post.r),
+            plotHypercube.bubbles(my.post.r),
+            plotHypercube.graph(my.post.r, f.thresh),
+            plotHypercube.timehists(my.post.r, t.thresh), nrow=2, ncol=2) )
+}
+
 mylabel = function(label, suffix) {
   return(paste(c(label, suffix), collapse=""))
 }

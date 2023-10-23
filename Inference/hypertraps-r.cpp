@@ -229,6 +229,8 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
 			   Named("lik") = lik_v,
 			   Named("AIC") = AIC_v,
 			   Named("BIC") = BIC_v);
+
+  DataFrame Ldyndf(Ldyn);
   
   NumericVector best_v(NVAL);
   
@@ -244,7 +246,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
   List Lout = List::create(Named("best") = best_v,
 			   Named("lik.1") = GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI),
 			   Named("lik.2") = GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI),
-			   Named("reg.process") = Ldyn);
+			   Named("reg.process") = Ldyndf);
 			   
   //  sprintf(fstr, "%s-regularised-lik.txt", labelstr);
   //fp = fopen(fstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); 
