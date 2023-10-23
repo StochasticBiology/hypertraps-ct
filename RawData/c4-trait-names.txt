@@ -1,0 +1,16 @@
+Large BS cells
+GDC spec
+Veins
+Decarb spec
+PPDK spec
+BS chloro num
+GDC abun
+PPDK abun
+Decarb abund
+RuBisCO abund
+BS chloro size
+MDH spec
+PEPC spec
+PEPC abun
+MDH abun
+RuBisCO spec
