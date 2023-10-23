@@ -56,15 +56,15 @@ for(expt in 1:5) {
       base.name = paste(c(fname[i], "-regularised"))
       post.name = paste(c(fname[i], "-regularised.txt"))
     } else if(oneshot == "yes") {
-      base.name = fname[i]
-      post.name = paste(c(fname[i], "-best.txt"))
+      base.name = post.name = fname[i]
+     # post.name = paste(c(fname[i], "-best.txt"))
     } else {
-      base.name = fname[i]
-      post.name = paste(c(fname[i], "-posterior.txt"))
+      base.name = post.name = fname[i]
+      #post.name = paste(c(fname[i], "-posterior.txt"))
     }
-      lik.name = paste(c("VerifyData/", base.name, "-lik.txt"), collapse="")
-      trans.name = paste(c("VerifyData/", base.name, "-trans.txt"), collapse="")
-      states.name = paste(c("VerifyData/", base.name, "-states.txt"), collapse="")
+      lik.name = paste(c("VerifyData/", base.name, "-lik.csv"), collapse="")
+      trans.name = paste(c("VerifyData/", base.name, "-trans.csv"), collapse="")
+      states.name = paste(c("VerifyData/", base.name, "-states.csv"), collapse="")
       bubble.name = paste(c("VerifyData/", post.name, "-bubbles.csv"), collapse="")
       thist.name = paste(c("VerifyData/", post.name, "-timehists.csv"), collapse="")
       routes.name = paste(c("VerifyData/", post.name, "-routes.txt"), collapse="")
@@ -89,16 +89,16 @@ for(expt in 1:5) {
     thdf = rbind(thdf, tmpdf)
     
     # read transition and state probabilities
-    trans.1 = read.csv(trans.name, sep=" ")
+    trans.1 = read.csv(trans.name)
     trans.1 = trans.1[!is.nan(trans.1$Probability),]
-    trans.s.1 = read.csv(states.name, sep=" ")
+    trans.s.1 = read.csv(states.name)
     trans.s.1 = trans.s.1[!is.nan(trans.s.1$Probability),]
     # produce plot using custom code
  #   g.cube[[i]] = plot.hypercube3(trans.1, statesdf=trans.s.1, 
  #                                 node.labels = FALSE, seg.labels = TRUE, threshold=5e-2)
     
     # set up metadata for ggraph plot
-    trans.1$Flux = trans.1$Probability*trans.s.1$Probability[trans.1$From+1]
+    #trans.1$Flux = trans.1$Probability*trans.s.1$Probability[trans.1$From+1]
     
     trans.p = trans.1[trans.1$Flux > 1e-2,]
     trans.g = graph_from_data_frame(trans.p)
