@@ -1,4 +1,10 @@
 #################
+
+# if we just want the HyperTraPS code without other dependencies, we only need Rcpp
+# library(Rcpp)
+# sourceCpp("hypertraps-r.cpp")
+
+# if we want various helper functions and ggplot functions in addition, use this
 source("hypertraps.R")
 
 m.1 = matrix(rep(c(0,0,0,0,0,
@@ -37,6 +43,9 @@ plotHypercube.summary(my.post.r)
 # retrieve output from externally-run experiment
 my.post.ext = readHyperinf("../VerifyData/test-cross-mod-2", 5, postlabel = "../VerifyData/test-cross-mod-2", fulloutput=TRUE)
 plotHypercube.summary(my.post.ext)
+
+# q-gram distance
+qgramdist(my.post, my.post.ext)
 
 ### various other demos
 # other plots

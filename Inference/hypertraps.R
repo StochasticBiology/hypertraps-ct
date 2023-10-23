@@ -4,6 +4,7 @@ library(ggpubr)
 library(ggraph)
 library(igraph)
 library(stringr)
+library(stringdist)
 
 DecToBin <- function(x, len) {
   s = c()
@@ -146,7 +147,7 @@ mylabel = function(label, suffix) {
   return(paste(c(label, suffix), collapse=""))
 }
 
-readHyperinf = function(label, L, postlabel = "", fulloutput=FALSE) {
+readHyperinf = function(label, L, postlabel = "", fulloutput=FALSE, regularised = FALSE) {
   rL = list()
   rL$label = label
   rL$L = L
@@ -199,6 +200,58 @@ writeHyperinf = function(wL, label, L, postlabel = "", fulloutput=FALSE, regular
     write.table(wL$betas, mylabel(postlabel, "-betas.txt"), row.names=FALSE, col.names = FALSE, sep=",", quote=FALSE)
     write.table(wL$times, mylabel(postlabel, "-times.txt"), row.names=FALSE, col.names = FALSE, sep=",", quote=FALSE)
   }
+}
+
+# construct the (probability-weighted) q-gram distance
+qgramdist = function(my.post.1, my.post.2) {
+   # pull routes and probabilities for first cube
+  routes = table(apply(my.post.1$routes, 1, paste, collapse=""))
+  L = ncol(my.post.1$routes)
+  route.set = rownames(routes)
+  route.probs = as.numeric(routes)/sum(as.numeric(routes))
+  df.1 = data.frame()
+  # loop through q-gram length
+  for(i in 2:L) {
+    # loop through routes found on the cube
+    for(j in 1:length(route.set)) {
+      # get q-grams from this route
+      qgramset = qgrams(route.set[j], q=i)
+      # sloppy. if this q-gram exists in our set, increase its score, otherwise add it
+      for(k in 1:ncol(qgramset)) {
+        ref = which(df.1$gram == colnames(qgramset)[k])
+        if(length(ref) == 0) {
+          df.1 = rbind(df.1, data.frame(gram = colnames(qgramset)[k], prob.2 = 0, prob.1 = qgramset[1,k]*route.probs[j]))
+        } else {
+          df.1$prob.1[ref] =  df.1$prob.1[ref] + qgramset[1,k]*route.probs[j]
+        }
+      }
+    }
+  }
+  
+  # now pull the second cube
+  routes = table(apply(my.post.2$routes, 1, paste, collapse=""))
+  route.set = rownames(routes)
+  route.probs = as.numeric(routes)/sum(as.numeric(routes))
+  # same loop as above
+  for(i in 2:L) {
+    for(j in 1:length(route.set)) {
+      qgramset = qgrams(route.set[j], q=i)
+      for(k in 1:ncol(qgramset)) {
+        ref = which(df.1$gram == colnames(qgramset)[k])
+        if(length(ref) == 0) {
+          df.1 = rbind(df.1, data.frame(gram = colnames(qgramset)[k], prob.1 = 0, prob.2 = qgramset[1,k]*route.probs[j]))
+        } else {
+          df.1$prob.2[ref] = df.1$prob.2[ref] + qgramset[1,k]*route.probs[j]
+        }
+      }
+    }
+  }
+  
+  # build a named list of q-gram scores and final value (for debugging/exploration)
+  returnlist = list()
+  returnlist$df = df.1
+  returnlist$val = sum(abs(df.1$prob.1-df.1$prob.2))
+  return(returnlist)
 }
 
 sourceCpp("hypertraps-r.cpp")
