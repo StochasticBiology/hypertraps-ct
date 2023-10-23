@@ -48,6 +48,28 @@ plotHypercube.graph = function(my.post, f.thresh = 0.05) {
   )
 }
 
+# XXX NEEDS MORE WORK!
+plotHypercube.sampledgraph = function(my.post) {
+  edge.from = edge.to = c()
+  for(i in 1:min(1000, nrow(my.post$routes))) {
+    state = 0
+    for(j in 1:ncol(my.post$routes)) {
+      edge.from = c(edge.from, state)
+      state = state + 2**my.post$routes[i,j]
+      edge.to = c(edge.to, state)
+    }
+  }
+  trans.g = graph_from_edgelist(as.matrix(cbind(edge.from, edge.to))+1)
+  bs = unlist(lapply(as.numeric(as.vector(V(trans.g)))-1, DecToBin, len=bigL))
+  V(trans.g)$binname = bs
+  layers = str_count(bs, "1")
+  return( ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link() +#aes(edge_width=Flux, edge_alpha=Flux)) + 
+            geom_node_point() + geom_node_label(aes(label=binname),size=2) +
+            scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
+            theme_graph() #aes(label=bs)) + theme_graph() 
+  )
+}
+
 plotHypercube.timehists = function(my.post, t.thresh = 20) {
   thdfp = data.frame()
   for(i in c(3,4)) {
