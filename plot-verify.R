@@ -6,7 +6,7 @@ library(gridExtra)
 fname = c("cross-0", "cross-1", "cross-2")
 bdf = data.frame()
 for(i in 1:length(fname)) {
-bubble.name = paste(c("VerifyData/", fname[i], "-posterior.txt-bubbles.csv"), collapse="")
+bubble.name = paste(c("VerifyData/", fname[i], "-bubbles.csv"), collapse="")
 tmpdf = read.csv(bubble.name)
 tmpdf$Expt=i
 bdf = rbind(bdf, tmpdf)
@@ -153,11 +153,11 @@ g.timehist = ggplot(rcdf[rcdf$V1!=0,]) +
   theme_light()
 
 #### time histograms for inferred cross case
-h1.df = read.csv("VerifyData/test-cross-ct-1-posterior.txt-timehists.csv")
+h1.df = read.csv("VerifyData/cross-0-timehists.csv")
 h1.df$expt=1
-h2.df = read.csv("VerifyData/test-cross-ct-2-posterior.txt-timehists.csv")
+h2.df = read.csv("VerifyData/cross-1-timehists.csv")
 h2.df$expt=2
-h3.df = read.csv("VerifyData/test-cross-ct-3-posterior.txt-timehists.csv")
+h3.df = read.csv("VerifyData/cross-2-timehists.csv")
 h3.df$expt=3
 h.df = rbind(h1.df, h2.df, h3.df)
 
