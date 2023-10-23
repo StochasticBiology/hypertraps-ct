@@ -12,6 +12,6 @@ gcc -o3 hypertraps.c -lm -o hypertraps.ce
 ./hypertraps.ce --obs ../Data/ovarian.txt --crosssectional --length 4 --kernel 4 --sa --label ../Data/ovarian-sa > ../Data/ovarian-sa.tmp &
 
 # other others
-./hypertraps.ce --obs ../Data/jallow_dataset_binary_with2s.csv --crosssectional --outputtransitions 0 --walkers 2 --kernel 3 --label ../Data/malaria
-./hypertraps.ce --obs ../Data/jallow_dataset_binary_with2s.csv --crosssectional --outputtransitions 0 --walkers 2 --kernel 3 --label ../Data/malaria-sa --sa
-./hypertraps.ce --obs ../Data/total-observations.txt-trans.txt --label ../Data/tools --length 4 --kernel 4
+./hypertraps.ce --obs ../Data/jallow_dataset_binary_with2s.csv --crosssectional --outputtransitions 0 --walkers 2 --kernel 3 --label ../Data/malaria > ../Data/malaria.tmp &
+./hypertraps.ce --obs ../Data/jallow_dataset_binary_with2s.csv --crosssectional --outputtransitions 0 --walkers 2 --kernel 3 --label ../Data/malaria-sa --sa > ../Data/malaria-sa.tmp &
+./hypertraps.ce --obs ../Data/total-observations.txt-trans.txt --label ../Data/tools --length 4 --kernel 4 > ../Data/tools.tmp &
