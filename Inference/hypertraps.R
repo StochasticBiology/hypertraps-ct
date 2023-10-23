@@ -70,6 +70,35 @@ plotHypercube.regularisation = function(my.post) {
          aes(x=params, y=AIC)) + geom_point() )
 }
 
+plotHypercube.motifs = function(my.post) {
+# motif plot
+rdf = data.frame()
+for(j in 1:ncol(my.post$routes)) {
+  startprob = 0
+  for(i in 0:max(my.post$routes)) {
+    thisprob = length(which(my.post$routes[,j]==i))/nrow(my.post$routes)
+    rdf = rbind(rdf, data.frame(Index=i, Time=j, Start=startprob, End=startprob+thisprob, Probability=thisprob))
+    startprob = startprob+thisprob
+  }
+}
+return(ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Index))) +
+  geom_text(aes(x=Time,y=(Start+End)/2,label=Index), color="#FFFFFF") + ylab("Probability") + theme_light())
+}
+
+plotHypercube.timeseries = function(my.post) {
+# time series illustration
+rtdf = data.frame()
+for(i in 1:(min(nrow(my.post$routes),1000))) {
+  prevtime = 0
+  for(j in 1:ncol(my.post$routes)) {
+    rtdf = rbind(rtdf, data.frame(Run=i, Step=j, Index=my.post$routes[i,j], PrevTime=prevtime, Time=my.post$times[i,j]))
+    prevtime = my.post$times[i,j]
+  }
+}
+return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
+  scale_x_continuous(trans="log") + theme_light())
+}
+
 plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20) {
   return (ggarrange(plotHypercube.lik.trace(my.post.r),
             plotHypercube.bubbles(my.post.r),

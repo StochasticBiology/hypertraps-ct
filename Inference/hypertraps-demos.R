@@ -31,10 +31,18 @@ plotHypercube.summary(my.post)
 writeHyperinf(my.post, "simpledemo", my.post$L, postlabel = "simpledemo", fulloutput=TRUE)
 
 # retrieve output from files
-my.post.r = readHyperinf("simpledemo", my.post$L, postlabel = "simpledemo", fulloutput=TRUE)
-plotHypercube.summary(my.post)
+my.post.r = readHyperinf("simpledemo", 5, postlabel = "simpledemo", fulloutput=TRUE)
+plotHypercube.summary(my.post.r)
+
+# retrieve output from externally-run experiment
+my.post.ext = readHyperinf("../VerifyData/test-cross-mod-2", 5, postlabel = "../VerifyData/test-cross-mod-2", fulloutput=TRUE)
+plotHypercube.summary(my.post.ext)
 
 ### various other demos
+# other plots
+plotHypercube.motifs(my.post)
+plotHypercube.timeseries(my.post)
+
 # regularisation
 my.post.regularise = HyperTraPS(m.2, initialstates_arg = m.1, regularise_arg = 1, walkers_arg = 20)
 plotHypercube.regularisation(my.post.regularise)
@@ -50,9 +58,6 @@ plotHypercube.summary(my.post.pli)
 # start with every edge parameterised, then regularise
 my.post.bigmodel.regularise = HyperTraPS(test.mat, model_arg = -1, regularise_arg = 1, walkers_arg = 20)
 plotHypercube.regularisation(my.post.bigmodel.regularise)
-
-ggarrange( ggplot(my.post))
-plot(my.post$regularisation$reg.process$params, my.post$regularisation$reg.process$AIC)
 
 # continuous time demo
 test.mat = as.matrix(read.table("../VerifyData/synth-cross-samples-1.txt"))
