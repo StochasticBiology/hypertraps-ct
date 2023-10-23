@@ -17,13 +17,20 @@ DecToBin <- function(x, len) {
 plotHypercube.lik.trace = function(my.post) {
   ### likelihood traces
   return(ggplot(my.post$lik.traces) + geom_line(aes(x=Step, y=LogLikelihood1)) +
-    geom_line(aes(x=Step, y=LogLikelihood2)))
+    geom_line(aes(x=Step, y=LogLikelihood2)) + theme_light() )
 }
 
-plotHypercube.bubbles = function(my.post) {
+plotHypercube.bubbles = function(my.post, reorder=FALSE) {
+  if(reorder == TRUE) {
+    toplot = my.post$bubbles
+    toplot$Name = factor(toplot$Name, levels=unique(toplot$Name))
+    return(ggplot(toplot, aes(x=Time, y=Name, size=Probability)) +
+             geom_point() +theme_light() )  
+  } else {
   ### bubble plot
   return(ggplot(my.post$bubbles, aes(x=Time, y=Name, size=Probability)) +
-    geom_point() )
+    geom_point() +theme_light() )
+  }
 }
   
 plotHypercube.graph = function(my.post, f.thresh = 0.05) {
@@ -67,7 +74,7 @@ plotHypercube.timehists = function(my.post, t.thresh = 20) {
 
 plotHypercube.regularisation = function(my.post) {
   return(ggplot(my.post.regularise$regularisation$reg.process, 
-         aes(x=params, y=AIC)) + geom_point() )
+         aes(x=params, y=AIC)) + geom_point() + theme_light() )
 }
 
 plotHypercube.motifs = function(my.post) {

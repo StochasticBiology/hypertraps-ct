@@ -68,7 +68,7 @@ my.post = HyperTraPS(test.mat,
                      endtimes_arg = test.end.times, 
                      outputinput_arg = 1)
 my.post.out = PosteriorAnalysis(my.post)
-plotHypercube(my.post, my.post.out)
+plotHypercube.bubbles(my.post, my.post.out)
 
 # tool use paper reproduction
 test.mat = as.matrix(read.table("../Data/total-observations.txt-trans.txt"))
@@ -79,10 +79,4 @@ ends = test.mat[seq(from=2, to=nrow(test.mat), by=2),]
 my.post.tools = HyperTraPS(ends, initialstates_arg = starts, 
                            length_index_arg = 4, outputinput= 1, 
                            featurenames_arg = my.names) 
-plotHypercube(my.post.tools)
-
-g.lik.trace = ggplot(my.post.tools$lik.traces) + geom_line(aes(x=sample.times, y=l.samples.1)) +
-  geom_line(aes(x=sample.times, y=l.samples.2))
-g.bubbles = ggplot(my.post.tools$Bubbles, aes(x=Time, y=factor(Name, levels=unique(my.post.tools$Bubbles$Name)), size=Probability)) +
-  geom_point() 
-ggarrange(g.lik.trace, g.bubbles, nrow=2)
+ggarrange(plotHypercube.lik.trace(my.post.tools), plotHypercube.bubbles(my.post.tools, reorder=TRUE), nrow=2)
