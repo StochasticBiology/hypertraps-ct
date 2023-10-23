@@ -1,7 +1,7 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 #define _USE_CODE_FOR_R 1
-#include "hypertraps-all.c"
+#include "hypertraps.c"
 
 List PosteriorAnalysis(List L,
 		       Nullable<CharacterVector> featurenames_arg);
@@ -137,7 +137,7 @@ List OutputStatesR(double *ntrans, int LEN, int model)
 			    Named("Flux") = flux_v);
   DataFrame Lfluxdf(Lflux);
 
-  List Lout = List::create(Named("States") = Ldf, Named("Edges") = Lfluxdf);
+  List Lout = List::create(Named("states") = Ldf, Named("trans") = Lfluxdf);
   
   //  fclose(fp);
   free(active);
@@ -301,7 +301,6 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 		Nullable<CharacterVector> featurenames_arg = R_NilValue)
 {
   int parents[_MAXN];
-  FILE *fp;
   int *matrix;
   int len, ntarg;
   double *trans, *ntrans, *gradients;
@@ -310,7 +309,6 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   double lik, nlik;
   int maxt;
   int seed;
-  char shotstr[200], bestshotstr[200], besttransstr[200], beststatesstr[200];
   double DELTA, MU;
   int NVAL;
   int expt;
@@ -326,7 +324,6 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   int losses;
   int apm_seed, old_apm_seed;
   int apm_type;
-  char likstr[100];
   double testval;
   char obsfile[1000], timefile[1000], endtimefile[1000], paramfile[1000];
   int searchmethod;
@@ -548,7 +545,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
       sprintf(labelstr, "%s-%i-%i-%i-%i-%i-%i-%i", obsfile, spectrumtype, searchmethod, seed, lengthindex, kernelindex, BANK, apm_type);
     }
   // prepare output files
-  sprintf(shotstr, "%s-posterior.txt", labelstr);
+  /*  sprintf(shotstr, "%s-posterior.txt", labelstr);
   fp = fopen(shotstr, "w"); fclose(fp);
   sprintf(bestshotstr, "%s-best.txt", labelstr);
   fp = fopen(bestshotstr, "w"); fclose(fp);
@@ -556,7 +553,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); fclose(fp);
   
   sprintf(besttransstr, "%s-trans.txt", labelstr);
-  sprintf(beststatesstr, "%s-states.txt", labelstr);
+  sprintf(beststatesstr, "%s-states.txt", labelstr);*/
   
   // initialise with an agnostic transition matrix
   if(readparams == 0)
@@ -626,8 +623,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 	  bestlik = lik;
 	  
 	  if(outputtransitions)
-	    {
-	      
+	    { 
 	      dynamics_output = OutputStatesR(trans, len, model);
 	    }
 	}
@@ -784,9 +780,9 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 	}
     }
 
-  List Lts = List::create(Named("sample.times") = t_output,
-			  Named("l.samples.1") = lik1_output,
-			  Named("l.samples.2") = lik2_output);
+  List Lts = List::create(Named("Step") = t_output,
+			  Named("LogLikelihood1") = lik1_output,
+			  Named("LogLikelihood2") = lik2_output);
   DataFrame Ltsdf(Lts);
 
   List L = List::create(Named("label") = labelstr ,
@@ -835,8 +831,6 @@ List PosteriorAnalysis(List L,
   double *ctrec, ctnorm;
   double *times, *betas;
   int *route;
-  FILE *fp1, *fp2, *fp3;
-  char fstr[200];
   int tlen;
   int verbose;
   double BINSCALE;
@@ -974,12 +968,12 @@ List PosteriorAnalysis(List L,
   // set up file outputs
   if(verbose)
     {
-      sprintf(fstr, "%s-routes.txt", labelstr);
+      /*      sprintf(fstr, "%s-routes.txt", labelstr);
       fp1 = fopen(fstr, "w");
       sprintf(fstr, "%s-betas.txt", labelstr);
       fp2 = fopen(fstr, "w");
       sprintf(fstr, "%s-times.txt", labelstr);
-      fp3 = fopen(fstr, "w");
+      fp3 = fopen(fstr, "w");*/
     }
   
   int NSAMPLES = ((posterior.nrow() - burnin)/(sampleperiod+1))*(NSAMP);
@@ -1113,28 +1107,6 @@ List PosteriorAnalysis(List L,
     fprintf(fp, "\n");
     }*/
 
-  // these appended comments give gnuplot commands for axis labels if required: both in original and mean-sorted orderings
-  // commented here, as we're shifting to csv format
-  /*  fprintf(fp, "# set xtics (");
-      for(i = 0; i < len; i++)
-      fprintf(fp, "\"%s\" %i%c", &names[FLEN*order[i]], i, (i == len-1 ? ')' : ','));
-      fprintf(fp, "\n");
-      fprintf(fp, "# default-order set xtics (");
-      for(i = 0; i < len; i++)
-      fprintf(fp, "\"%s\" %i%c", &names[FLEN*i], i, (i == len-1 ? ')' : ','));
-      fprintf(fp, "\n");
-
-      fprintf(fp, "# (");
-      for(i = 0; i < len; i++)
-      fprintf(fp, "%i, ", order[i]);
-      fprintf(fp, ")\n");
-
-      fprintf(fp, "# ");
-      for(i = 0; i < len; i++)
-      fprintf(fp, "%s %.4f, ", &names[FLEN*order[i]], mean[i]);
-      fprintf(fp, ")\n");
-
-      fclose(fp);*/
 
   // this stores the time histograms associated with acquisition times for each feature
   // remember here that we've scaled by BINSCALE to store in an integer-referenced array (see GetRoutes())
@@ -1175,11 +1147,11 @@ List PosteriorAnalysis(List L,
 
   List OutputL = L;
 
-  OutputL["Bubbles"] = Bubbledf;
-  OutputL["THist"] = THistdf;
-  OutputL["Routes"] = route_out;
-  OutputL["Betas"] = betas_out;
-  OutputL["Times"] = times_out;
+  OutputL["bubbles"] = Bubbledf;
+  OutputL["timehists"] = THistdf;
+  OutputL["routes"] = route_out;
+  OutputL["betas"] = betas_out;
+  OutputL["times"] = times_out;
 
   return OutputL;
 }
