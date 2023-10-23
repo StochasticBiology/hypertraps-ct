@@ -48,10 +48,10 @@ plotHypercube.graph = function(my.post, f.thresh = 0.05) {
   )
 }
 
-# XXX NEEDS MORE WORK!
-plotHypercube.sampledgraph = function(my.post) {
+plotHypercube.sampledgraph = function(my.post, max = 1000) {
   edge.from = edge.to = c()
-  for(i in 1:min(1000, nrow(my.post$routes))) {
+  bigL = my.post$L
+  for(i in 1:min(max, nrow(my.post$routes))) {
     state = 0
     for(j in 1:ncol(my.post$routes)) {
       edge.from = c(edge.from, state)
@@ -59,11 +59,18 @@ plotHypercube.sampledgraph = function(my.post) {
       edge.to = c(edge.to, state)
     }
   }
-  trans.g = graph_from_edgelist(as.matrix(cbind(edge.from, edge.to))+1)
-  bs = unlist(lapply(as.numeric(as.vector(V(trans.g)))-1, DecToBin, len=bigL))
+  df = data.frame(From=edge.from, To=edge.to)
+  dfu = unique(df)
+  dfu$Flux = 0
+  for(i in 1:nrow(dfu)) {
+    dfu$Flux[i] = length(which(df$From==dfu$From[i] & df$To==dfu$To[i]))
+  }
+  trans.g = graph_from_data_frame(dfu)
+  bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
+  #bs = unlist(lapply(as.numeric(as.vector(V(trans.g))), DecToBin, len=bigL))
   V(trans.g)$binname = bs
   layers = str_count(bs, "1")
-  return( ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link() +#aes(edge_width=Flux, edge_alpha=Flux)) + 
+  return( ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
             geom_node_point() + geom_node_label(aes(label=binname),size=2) +
             scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
             theme_graph() #aes(label=bs)) + theme_graph() 
@@ -129,10 +136,10 @@ return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,
 }
 
 plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20) {
-  return (ggarrange(plotHypercube.lik.trace(my.post.r),
-            plotHypercube.bubbles(my.post.r),
-            plotHypercube.graph(my.post.r, f.thresh),
-            plotHypercube.timehists(my.post.r, t.thresh), nrow=2, ncol=2) )
+  return (ggarrange(plotHypercube.lik.trace(my.post),
+            plotHypercube.bubbles(my.post),
+            plotHypercube.graph(my.post, f.thresh),
+            plotHypercube.timehists(my.post, t.thresh), nrow=2, ncol=2) )
 }
 
 mylabel = function(label, suffix) {
@@ -154,6 +161,12 @@ readHyperinf = function(label, L, postlabel = "", fulloutput=FALSE) {
   rL$dynamics = tmpL
   }
   
+  if(regularised == TRUE) {
+    tmpL = list()
+    rL$best = read.table(mylabel(label, "-regularised.txt"))
+    rL$reg.process = read.csv(mylabel(label, "-regularising.csv"))
+  }
+  
   if(postlabel != "") {
   rL$bubbles = read.csv(mylabel(postlabel, "-bubbles.csv"))
   rL$timehists = read.csv(mylabel(postlabel, "-timehists.csv"))
@@ -165,7 +178,7 @@ readHyperinf = function(label, L, postlabel = "", fulloutput=FALSE) {
   return(rL)
 }
 
-writeHyperinf = function(wL, label, L, postlabel = "", fulloutput=FALSE) {
+writeHyperinf = function(wL, label, L, postlabel = "", fulloutput=FALSE, regularised=FALSE) {
   write.table(t(wL$best), mylabel(label, "-best.txt"), row.names=FALSE, col.names=FALSE)
   write.table(wL$posterior.samples, mylabel(label, "-posterior.txt"), row.names=FALSE, col.names=FALSE)
   write.table(wL$lik.traces, mylabel(label, "-lik.csv"), row.names=FALSE, sep=",", quote=FALSE)
@@ -173,6 +186,10 @@ writeHyperinf = function(wL, label, L, postlabel = "", fulloutput=FALSE) {
   if(fulloutput == TRUE) {
     write.table(wL$dynamics$states, mylabel(label, "-states.csv"), row.names=FALSE, sep=",", quote=FALSE)
     write.table(wL$dynamics$trans, mylabel(label, "-trans.csv"), row.names=FALSE, sep=",", quote=FALSE)
+  }
+  
+  if(regularised == TRUE) {
+    
   }
   
   if(postlabel != "") {

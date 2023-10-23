@@ -80,3 +80,4 @@ my.post.tools = HyperTraPS(ends, initialstates_arg = starts,
                            length_index_arg = 4, outputinput= 1, 
                            featurenames_arg = my.names) 
 ggarrange(plotHypercube.lik.trace(my.post.tools), plotHypercube.bubbles(my.post.tools, reorder=TRUE), nrow=2)
+plotHypercube.sampledgraph(my.post.tools, max=100)
