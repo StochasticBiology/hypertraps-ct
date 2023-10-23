@@ -2,8 +2,7 @@
 HyperTraPS(-CT)
 ===============
 
-Large scale consolidation 23 Oct. To do -- sync regularisation output from C and Rcpp; check plots-tests-L; why are all plots in R demo coming out the same?
-
+Large scale consolidation 23 Oct. To do -- sync regularisation output from C and Rcpp; check plots-tests-L;
 Fall 2023 work
 -----
 
