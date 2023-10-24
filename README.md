@@ -53,6 +53,22 @@ HyperTraPS needs at least a set of observations. In R this should take the form 
 | Run HyperTraPS-CT with default settings | HyperTraPS(*matrix*, starttimes_arg=*vector*, endtimes_arg=*vector*) | ./hypertraps.ce --obs *filename* --times *filename* --endtimes *filename* |
 | Run HyperTraPS with all-edges model, then regularise | HyperTraPS(*matrix*, model_arg=-1, regularise_arg=1) | ./hypertraps.ce --obs *filename* --model -1 --regularise |
 
+Plots in R
+--------
+
+| Plot function | Description |
+|---------------|-------------|
+| `plotHypercube.lik.trace` | Trace of likelihood over inference run, calculate twice (to show consistency) |
+| `plotHypercube.bubbles` | "Bubble plot" of probability of acquiring trait *i* at ordinal step *j* |
+| `plotHypercube.motifs` | Motif-style plot of probability of acquiring trait *i* at ordinal step *j* |
+| `plotHypercube.graph` | Transition graph with edge weights showing probability flux (from full output) |
+| `plotHypercube.sampledgraph` | Transition graph with edge weights showing probability flux (from sampled paths) |
+| `plotHypercube.sampledgraph2` | As above, with mean and s.d. of absolute timings for each step |
+| `plotHypercube.timehists` | Histograms of absolute timings for each trait's acquisition |
+| `plotHypercube.regularisation` | Information criterion vs number of nonzero parameters during regularisation |
+| `plotHypercube.timeseries` | Time series of acquisitions across sampled routes |
+| `plotHypercube.summary` | Summary plot combining several of the above | 
+
 `./`
 ----
 Scripts wrapping the curation, inference, and analysis process for different case. In each case, datasets are produced and set in their own directory. The analysis code is then called to process these data, and plotting code follows.
