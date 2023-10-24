@@ -4,7 +4,8 @@ using namespace Rcpp;
 #include "hypertraps.c"
 
 List PosteriorAnalysis(List L,
-		       Nullable<CharacterVector> featurenames_arg);
+		       Nullable<CharacterVector> featurenames_arg,
+		       int use_regularised);
 List OutputStatesR(double *ntrans, int LEN, int model);
 List HyperTraPS(NumericMatrix matrix_arg,
 		Nullable<NumericMatrix> initialstates_arg,
@@ -459,8 +460,6 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   
   Rprintf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
-
-
   if(PLI == 1) {
     Rprintf("Running Phenotype Landscape Inference with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
   } else if(spectrumtype == 1) {
@@ -548,14 +547,14 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
     }
   // prepare output files
   /*  sprintf(shotstr, "%s-posterior.txt", labelstr);
-  fp = fopen(shotstr, "w"); fclose(fp);
-  sprintf(bestshotstr, "%s-best.txt", labelstr);
-  fp = fopen(bestshotstr, "w"); fclose(fp);
-  sprintf(likstr, "%s-lik.txt", labelstr);
-  fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); fclose(fp);
+      fp = fopen(shotstr, "w"); fclose(fp);
+      sprintf(bestshotstr, "%s-best.txt", labelstr);
+      fp = fopen(bestshotstr, "w"); fclose(fp);
+      sprintf(likstr, "%s-lik.txt", labelstr);
+      fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); fclose(fp);
   
-  sprintf(besttransstr, "%s-trans.txt", labelstr);
-  sprintf(beststatesstr, "%s-states.txt", labelstr);*/
+      sprintf(besttransstr, "%s-trans.txt", labelstr);
+      sprintf(beststatesstr, "%s-states.txt", labelstr);*/
   
   // initialise with an agnostic transition matrix
   if(readparams == 0)
@@ -607,7 +606,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 
   int NSAMPLES = (maxt-maxt/5)/SAMPLE-1;
   
-  NumericVector lik1_output, lik2_output, t_output;
+  NumericVector lik1_output, lik2_output, L_output, nparam_output, t_output;
   NumericVector best_output(NVAL);
   NumericMatrix posterior_output(NSAMPLES, NVAL);
   int sampleref = 0;
@@ -647,6 +646,8 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 	  lik1_output.push_back(nlik);
 	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
 	  lik2_output.push_back(nlik);
+	  L_output.push_back(len);
+	  nparam_output.push_back(NVAL);
 	  t_output.push_back(t);
 	}
 
@@ -783,6 +784,8 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
     }
 
   List Lts = List::create(Named("Step") = t_output,
+			  Named("L") = L_output,
+			  Named("nparam") = nparam_output,
 			  Named("LogLikelihood1") = lik1_output,
 			  Named("LogLikelihood2") = lik2_output);
   DataFrame Ltsdf(Lts);
@@ -805,7 +808,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   if(full_analysis_arg[0] == 0)
     return L;
   else
-    return PosteriorAnalysis(L, featurenames_arg);
+    return PosteriorAnalysis(L, featurenames_arg, regularise);
 }
 
 //' Extracts information from HyperTraPS-related posterior samples
@@ -814,7 +817,8 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 //' @return Named list containing summary data for feature acquisition ordering ("bubbles"), time histograms, sampled accumulation routes, and timings of these sampled routes.
 // [[Rcpp::export]]
 List PosteriorAnalysis(List L,
-		       Nullable<CharacterVector> featurenames_arg = R_NilValue)
+		       Nullable<CharacterVector> featurenames_arg = R_NilValue,
+		       int use_regularised = 0)
 {
   int *matrix;
   int len, ntarg;
@@ -889,7 +893,23 @@ List PosteriorAnalysis(List L,
   Rprintf("Bin scale is %f\n", BINSCALE);
 
 
-  NumericMatrix posterior = as<NumericMatrix>(L["posterior.samples"]);
+  NumericMatrix posterior;
+  if(use_regularised == 0)
+    {
+      posterior = as<NumericMatrix>(L["posterior.samples"]);
+      Rprintf("Using posterior samples with %i x %i entries\n", posterior.nrow(), posterior.ncol());
+    }
+  else
+    {
+      List tmpL = L["regularisation"];
+      NumericVector tmpV = tmpL["best"];
+      
+      NumericMatrix tmpM(1,tmpV.size());
+      for(i = 0; i < tmpV.size(); i++)
+	tmpM(0,i) = tmpV[i];
+      posterior = as<NumericMatrix>(tmpM);
+      Rprintf("Using best regularised params with %i x %i entries\n", posterior.nrow(), posterior.ncol());
+    }
   
   tlen = posterior.ncol();
   
@@ -971,11 +991,11 @@ List PosteriorAnalysis(List L,
   if(verbose)
     {
       /*      sprintf(fstr, "%s-routes.txt", labelstr);
-      fp1 = fopen(fstr, "w");
-      sprintf(fstr, "%s-betas.txt", labelstr);
-      fp2 = fopen(fstr, "w");
-      sprintf(fstr, "%s-times.txt", labelstr);
-      fp3 = fopen(fstr, "w");*/
+	      fp1 = fopen(fstr, "w");
+	      sprintf(fstr, "%s-betas.txt", labelstr);
+	      fp2 = fopen(fstr, "w");
+	      sprintf(fstr, "%s-times.txt", labelstr);
+	      fp3 = fopen(fstr, "w");*/
     }
   
   int NSAMPLES = ((posterior.nrow() - burnin)/(sampleperiod+1))*(NSAMP);

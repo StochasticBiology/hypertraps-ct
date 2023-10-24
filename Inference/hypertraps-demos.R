@@ -37,11 +37,11 @@ plotHypercube.summary(my.post)
 writeHyperinf(my.post, "simpledemo", my.post$L, postlabel = "simpledemo", fulloutput=TRUE)
 
 # retrieve output from files
-my.post.r = readHyperinf("simpledemo", 5, postlabel = "simpledemo", fulloutput=TRUE)
+my.post.r = readHyperinf("simpledemo", postlabel = "simpledemo", fulloutput=TRUE)
 plotHypercube.summary(my.post.r)
 
 # retrieve output from externally-run experiment
-my.post.ext = readHyperinf("../VerifyData/test-cross-mod-2", 5, postlabel = "../VerifyData/test-cross-mod-2", fulloutput=TRUE)
+my.post.ext = readHyperinf("../VerifyData/test-cross-mod-2", postlabel = "../VerifyData/test-cross-mod-2", fulloutput=TRUE)
 plotHypercube.summary(my.post.ext)
 
 # q-gram distance
@@ -51,10 +51,12 @@ qgramdist(my.post, my.post.ext)
 # other plots
 plotHypercube.motifs(my.post)
 plotHypercube.timeseries(my.post)
+plotHypercube.sampledgraph(my.post)
 
 # regularisation
 my.post.regularise = HyperTraPS(m.2, initialstates_arg = m.1, regularise_arg = 1, walkers_arg = 20)
 plotHypercube.regularisation(my.post.regularise)
+plotHypercube.summary(my.post.regularise)
 
 # simulated annealing output
 my.post.sa = HyperTraPS(test.mat, sa_arg = 1)

@@ -147,13 +147,13 @@ mylabel = function(label, suffix) {
   return(paste(c(label, suffix), collapse=""))
 }
 
-readHyperinf = function(label, L, postlabel = "", fulloutput=FALSE, regularised = FALSE) {
+readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = FALSE) {
   rL = list()
   rL$label = label
-  rL$L = L
+  rL$lik.traces = read.csv(mylabel(label, "-lik.csv"))
+  rL$L = rL$lik.traces$L[1]
   rL$best = read.table(mylabel(label, "-best.txt"))
   rL$posterior.samples = read.table(mylabel(label, "-posterior.txt"))
-  rL$lik.traces = read.csv(mylabel(label, "-lik.csv"))
   
   if(fulloutput == TRUE) {
   tmpL = list()
@@ -179,7 +179,7 @@ readHyperinf = function(label, L, postlabel = "", fulloutput=FALSE, regularised 
   return(rL)
 }
 
-writeHyperinf = function(wL, label, L, postlabel = "", fulloutput=FALSE, regularised=FALSE) {
+writeHyperinf = function(wL, label, postlabel = "", fulloutput=FALSE, regularised=FALSE) {
   write.table(t(wL$best), mylabel(label, "-best.txt"), row.names=FALSE, col.names=FALSE)
   write.table(wL$posterior.samples, mylabel(label, "-posterior.txt"), row.names=FALSE, col.names=FALSE)
   write.table(wL$lik.traces, mylabel(label, "-lik.csv"), row.names=FALSE, sep=",", quote=FALSE)
@@ -190,7 +190,8 @@ writeHyperinf = function(wL, label, L, postlabel = "", fulloutput=FALSE, regular
   }
   
   if(regularised == TRUE) {
-    
+    write.table(t(wL$regularisation$best), mylabel(label, "-regularised.txt"), row.names=FALSE, col.names=FALSE)
+    write.table(wL$regularisation$reg.process, mylabel(label, "-regularising.csv"), row.names=FALSE, sep=",", quote=FALSE)
   }
   
   if(postlabel != "") {

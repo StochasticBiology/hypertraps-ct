@@ -239,7 +239,7 @@ void OutputStatesTrans(char *label, double *ntrans, int LEN, int model)
   sprintf(transfile, "%s-trans.csv", label);
   sprintf(statefile, "%s-states.csv", label);
   
-    fp = fopen(transfile, "w");
+  fp = fopen(transfile, "w");
   fprintf(fp, "From,To,Probability,Flux\n");
  
   probs = (double*)malloc(sizeof(double)*mypow2(LEN));
@@ -1470,7 +1470,7 @@ int main(int argc, char *argv[])
       sprintf(bestshotstr, "%s-best.txt", labelstr);
       fp = fopen(bestshotstr, "w"); fclose(fp);
       sprintf(likstr, "%s-lik.csv", labelstr);
-      fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); fclose(fp);
+      fp = fopen(likstr, "w"); fprintf(fp, "Step,L,nparam,LogLikelihood1,LogLikelihood2\n"); fclose(fp);
   
       //      sprintf(besttransstr, "%s-trans.csv", labelstr);
       sprintf(beststatesstr, "%s", labelstr);
@@ -1569,7 +1569,7 @@ int main(int argc, char *argv[])
 	      fclose(fp);
 	      fp = fopen(likstr, "a");
 	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
-	      fprintf(fp, "%i,%f,", t, nlik);
+	      fprintf(fp, "%i,%i,%i,%f,", t, len, NVAL, nlik);
 	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
 	      fprintf(fp, "%f\n", nlik);
 	      fclose(fp);
@@ -1715,6 +1715,8 @@ int main(int argc, char *argv[])
       printf("\nRunning posterior analysis...\n");
       if(inference == 1)
         sprintf(postfile, "%s", shotstr);
+      if(regularise == 1)
+	sprintf(postfile, "%s-regularised.txt", labelstr);
       if(strcmp(postfile, "") == 0)
 	{
 	  printf("*** I need at least a file of posterior samples! ***\n\n");
