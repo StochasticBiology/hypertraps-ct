@@ -24,9 +24,8 @@ This will produce the executable `hypertraps.ce` (you can of course name it what
 
 For R work, you can load just the inference code using `Rcpp` alone with
 
-`library(Rcpp)  
-
-sourceCpp("hypertraps-r.cpp")`
+`library(Rcpp)`  
+`sourceCpp("hypertraps-r.cpp")`
 
 or, to attach some useful helper and plotting functions (which depend on more libraries), you can use
 
