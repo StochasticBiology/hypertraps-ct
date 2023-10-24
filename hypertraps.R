@@ -172,9 +172,9 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
   if(postlabel != "") {
   rL$bubbles = read.csv(mylabel(postlabel, "-bubbles.csv"))
   rL$timehists = read.csv(mylabel(postlabel, "-timehists.csv"))
-  rL$routes = read.table(mylabel(postlabel, "-routes.txt"))
-  rL$betas = read.table(mylabel(postlabel, "-betas.txt"))
-  rL$times = read.table(mylabel(postlabel, "-times.txt")) 
+  rL$routes = read.table(mylabel(postlabel, "-routes.txt"), sep=",")
+  rL$betas = read.table(mylabel(postlabel, "-betas.txt"), sep=",")
+  rL$times = read.table(mylabel(postlabel, "-times.txt"), sep=",") 
   }
   
   return(rL)
