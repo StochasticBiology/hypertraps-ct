@@ -163,7 +163,7 @@ plotHypercube.motifs = function(my.post) {
            geom_text(aes(x=Time,y=(Start+End)/2,label=Index), color="#FFFFFF") + ylab("Probability") + theme_light())
 }
 
-plotHypercube.timeseries = function(my.post) {
+plotHypercube.timeseries = function(my.post, log.axis = TRUE) {
   # time series illustration
   rtdf = data.frame()
   for(i in 1:(min(nrow(my.post$routes),1000))) {
@@ -173,8 +173,13 @@ plotHypercube.timeseries = function(my.post) {
       prevtime = my.post$times[i,j]
     }
   }
+  if(log.axis == TRUE) {
   return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
             scale_x_continuous(trans="log") + theme_light())
+  } else {
+    ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
+      theme_light()
+  }
 }
 
 plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20) {
