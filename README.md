@@ -2,6 +2,9 @@
 
 Hypercubic transition path sampling: Flexible inference of accumulation pathways, in discrete or continuous time, under different model structures, using combinations of longitudinal, cross-sectional, and phylogenetically-linked observations.
 
+General content
+=========
+
 Requirements
 ------
 For the command-line-only version, you'll just need the ability to compile and run C code.
@@ -84,6 +87,9 @@ Plots in R
 
 All but the last are demonstrated here:
 ![image](https://github.com/StochasticBiology/hypertraps-ct/assets/50171196/153ed0d7-88ea-4dc2-a3bc-0c24b25923db)
+
+Specific content for introduction paper
+=======
 
 `./`
 ----
