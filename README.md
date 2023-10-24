@@ -4,6 +4,7 @@ HyperTraPS(-CT)
 
 Parameterisation
 
+
 | Argument | R | Command-line | Default |
 |----------|---|--------------|---------|
 | Input data | matrix_arg=*matrix* | --obs *filename* | None (required) |
@@ -23,6 +24,10 @@ Parameterisation
 | Regularise model (0/1) | regularise_arg=*N* | --regularise | 0 |
 
 
+| Command | Description |
+| --- | --- |
+| git status | List all new or modified files |
+| git diff | Show file differences that haven't been staged |
 
 
 Large scale consolidation 23 Oct. To do -- sync regularisation output from C and Rcpp; check plots-tests-L;
