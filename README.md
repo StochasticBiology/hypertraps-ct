@@ -2,13 +2,11 @@
 HyperTraPS(-CT)
 ===============
 
-Parameterisation
-
-
 | Argument | R | Command-line | Default |
 |----------|---|--------------|---------|
 | Input data | matrix_arg=*matrix* | --obs *filename* | None (required) |
-| Precursor states | initialstates_arg=*matrix* | | None |
+| Precursor states | initialstates_arg=*matrix* | (odd-element rows in "Input data") | None |
+| Cross-sectional observations | (assumed if "Precursor states" absent) | --crosssectional | 0 |
 | Time window start | starttimes_arg=*vector* | --times *filename* | 0 |
 | Time window end | endtimes_arg=*vector* | --endtimes *filename* | Inf |
 | Model structure | model_arg=*N* | --model *N* | 2 |
@@ -23,12 +21,11 @@ Parameterisation
 | Use PLI (0/1) | PLI_arg=*N* | --PLI | 0 |
 | Regularise model (0/1) | regularise_arg=*N* | --regularise | 0 |
 
-
-| Command | Description |
-| --- | --- |
-| git status | List all new or modified files |
-| git diff | Show file differences that haven't been staged |
-
+| Task | R | Command-line |
+|------|---|--------------|
+| Run HyperTraPS with default settings | HyperTraPS(*matrix*) | ./hypertraps.ce --obs *filename* |
+| Run HyperTraPS-CT with default settings | HyperTraPS(*matrix*, starttimes_arg=*vector*, endtimes_arg=*vector*) | ./hypertraps.ce --obs *filename* --times *filename* --endtimes *filename* |
+| Run HyperTraPS with all-edges model, then regularise | HyperTraPS(*matrix*, model_arg=-1, regularise_arg=1) | ./hypertraps.ce --obs *filename* --model -1 --regularise |
 
 Large scale consolidation 23 Oct. To do -- sync regularisation output from C and Rcpp; check plots-tests-L;
 Fall 2023 work
