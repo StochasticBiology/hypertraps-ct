@@ -109,8 +109,9 @@ malaria.names = as.vector(read.table("RawData/malaria-names.txt", sep=","))[[1]]
 
 my.post.malaria = HyperTraPS(malaria.mat, 
                         length_index_arg = 3, outputinput= 1, 
+                        kernel_index_arg = 2,
                         walkers_arg = 20,
-                        featurenames_arg = c4.names) 
+                        featurenames_arg = malaria.names) 
 ggarrange(plotHypercube.lik.trace(my.post.malaria), plotHypercube.bubbles(my.post.malaria, reorder=TRUE), nrow=2)
 
 # tool use paper reproduction
