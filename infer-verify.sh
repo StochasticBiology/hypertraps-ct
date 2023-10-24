@@ -14,17 +14,17 @@ gcc -o3 randomcube.c -lm -o randomcube.ce
 ./randomcube.ce
 cp synth* ../VerifyData
 
-cd ../Inference
+cd ..
 
 # compile and run hypertraps code
 gcc -o3 hypertraps.c -lm -o hypertraps.ce
 
 # two-pathway ("cross") case studies
-./hypertraps.ce --obs ../VerifyData/synth-cross-samples-0.txt --times ../VerifyData/synth-cross-times-0.txt --seed 1 --length 4 --kernel 5 --label ../VerifyData/cross-0 > ../VerifyData/cross03125.tmp &
-./hypertraps.ce --obs ../VerifyData/synth-cross-samples-1.txt --times ../VerifyData/synth-cross-times-1.txt --seed 1 --length 4 --kernel 5 --label ../VerifyData/cross-1 > ../VerifyData/cross13125.tmp &
-./hypertraps.ce --obs ../VerifyData/synth-cross-samples-2.txt --times ../VerifyData/synth-cross-times-2.txt --seed 1 --length 4 --kernel 5 --label ../VerifyData/cross-2 > ../VerifyData/cross23125.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-0.txt --times VerifyData/synth-cross-times-0.txt --seed 1 --length 4 --kernel 5 --label VerifyData/cross-0 > VerifyData/cross03125.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --times VerifyData/synth-cross-times-1.txt --seed 1 --length 4 --kernel 5 --label VerifyData/cross-1 > VerifyData/cross13125.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-2.txt --times VerifyData/synth-cross-times-2.txt --seed 1 --length 4 --kernel 5 --label VerifyData/cross-2 > VerifyData/cross23125.tmp &
 
 # specific L=3 cubes with easy and hard parameterisations
-./hypertraps.ce --obs ../VerifyData/synth-easycube-data.txt --times ../VerifyData/synth-easycube-time.txt --seed 1 --length 4 --kernel 5 --label ../VerifyData/easycube > ../VerifyData/hardcube3125.tmp &
-./hypertraps.ce --obs ../VerifyData/synth-hardcube-data.txt --times ../VerifyData/synth-hardcube-time.txt --seed 1 --length 4 --kernel 5 --label ../VerifyData/hardcube > ../VerifyData/hardcube3125.tmp &
+./hypertraps.ce --obs VerifyData/synth-easycube-data.txt --times VerifyData/synth-easycube-time.txt --seed 1 --length 4 --kernel 5 --label VerifyData/easycube > VerifyData/hardcube3125.tmp &
+./hypertraps.ce --obs VerifyData/synth-hardcube-data.txt --times VerifyData/synth-hardcube-time.txt --seed 1 --length 4 --kernel 5 --label VerifyData/hardcube > VerifyData/hardcube3125.tmp &
 
