@@ -103,7 +103,7 @@ plotHypercube.timehists = function(my.post, t.thresh = 20) {
 }
 
 plotHypercube.regularisation = function(my.post) {
-  return(ggplot(my.post.regularise$regularisation$reg.process, 
+  return(ggplot(my.post$regularisation$reg.process, 
          aes(x=params, y=AIC)) + geom_point() + theme_light() )
 }
 
