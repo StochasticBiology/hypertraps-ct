@@ -2,6 +2,29 @@
 HyperTraPS(-CT)
 ===============
 
+Parameterisation
+
+| Argument | R | Command-line | Default |
+-------------------------------
+| Input data | matrix_arg=*matrix* | --obs *filename* | None (required) |
+| Precursor states | initialstates_arg=*matrix* | | None |
+| Time window start | starttimes_arg=*vector* | --times *filename* | 0 |
+| Time window end | endtimes_arg=*vector* | --endtimes *filename* | Inf |
+| Model structure | model_arg=*N* | --model *N* | 2 |
+| Number of walkers | walkers_arg=*N* | --walkers *N* | 200 |
+| Inference chain length | length_index_arg=*N* | --length *N* | 3 |
+| Perturbation kernel | kernel_index_arg=*N* | --kernel *N*| 5 |
+| Random seed | seed_arg=*N* | --seed *N* | 1 |
+| Gains (0) or losses (1) | losses_arg=*N* | --losses *N* | 0 |
+| Use APM (0/1) | apm_type_arg=*N* | --apm | 0 |
+| Use SA (0/1) | sa_arg=*N* | --sa | 0 |
+| Use SGD (0/1) | sgd_arg=*N* | --sgd | 0 |
+| Use PLI (0/1) | PLI_arg=*N* | --PLI | 0 |
+| Regularise model (0/1) | regularise_arg=*N* | --regularise | 0 |
+
+
+
+
 Large scale consolidation 23 Oct. To do -- sync regularisation output from C and Rcpp; check plots-tests-L;
 Fall 2023 work
 -----
