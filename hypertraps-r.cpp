@@ -606,7 +606,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 
   int NSAMPLES = (maxt-maxt/5)/SAMPLE-1;
   
-  NumericVector lik1_output, lik2_output, L_output, nparam_output, t_output;
+  NumericVector lik1_output, lik2_output, L_output, model_output, nparam_output, t_output;
   NumericVector best_output(NVAL);
   NumericMatrix posterior_output(NSAMPLES, NVAL);
   int sampleref = 0;
@@ -647,6 +647,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
 	  lik2_output.push_back(nlik);
 	  L_output.push_back(len);
+	  model_output.push_back(model);
 	  nparam_output.push_back(NVAL);
 	  t_output.push_back(t);
 	}
@@ -785,6 +786,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 
   List Lts = List::create(Named("Step") = t_output,
 			  Named("L") = L_output,
+  			  Named("model") = model_output,
 			  Named("nparam") = nparam_output,
 			  Named("LogLikelihood1") = lik1_output,
 			  Named("LogLikelihood2") = lik2_output);
@@ -792,6 +794,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 
   List L = List::create(Named("label") = labelstr ,
 			Named("L") = len,
+			Named("model") = model,
 			Named("best") = best_output,
 			Named("posterior.samples") = posterior_output,
 			Named("lik.traces") = Ltsdf);
@@ -853,11 +856,11 @@ List PosteriorAnalysis(List L,
   verbose = 0;
   filelabel = 0;
   seed = 0;
-  model = 2;
+  model = L["model"];
   burnin = 0;
   sampleperiod = 0;
-  sprintf(postfile, "rcpp");
-  sprintf(labelfile, "");
+  strcpy(postfile, "rcpp");
+  strcpy(labelfile, "");
   
   Rprintf("\nHyperTraPS(-CT) posterior analysis\n\n");
 

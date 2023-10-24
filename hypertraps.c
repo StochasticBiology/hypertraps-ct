@@ -197,7 +197,8 @@ void ReadMatrix(double *trans, int len, int model, char *fname)
   int NVAL;
   int i;
   FILE *fp;
-
+  int tmp;
+  
   fp = fopen(fname, "r");
   if(fp == NULL)
     {
@@ -214,7 +215,7 @@ void ReadMatrix(double *trans, int len, int model, char *fname)
 	  printf("Couldn't find sufficient parameters in file %s\n", fname);
 	  myexit(0);
 	}
-      fscanf(fp, "%lf", &(trans[i]));
+      tmp = fscanf(fp, "%lf", &(trans[i]));
     }
   fclose(fp);
 }
@@ -1067,7 +1068,9 @@ void Label(char *names, int len, char *fname)
 {
   int i, j;
   FILE *fp;
-  
+  char *tmp;
+
+  tmp = (char*)malloc(sizeof(char)*1000);
   fp = fopen(fname, "r");
   if(fp == NULL)
     {
@@ -1081,7 +1084,7 @@ void Label(char *names, int len, char *fname)
     {
       i = 0;
       do{
-	fgets(&names[i*FLEN], FLEN, fp);
+	tmp = fgets(&names[i*FLEN], FLEN, fp);
 	for(j = 0; j < FLEN; j++)
 	  {
 	    if(names[i*FLEN+j] == '\n')
@@ -1091,6 +1094,7 @@ void Label(char *names, int len, char *fname)
       }while(!feof(fp));
       fclose(fp);
     }
+  free(tmp);
 }
 
 
@@ -1157,7 +1161,7 @@ int main(int argc, char *argv[])
   int outputtransitions;
   int readparams;
   int PLI;
-
+  
   int posterior_analysis;
   int allruns;
   int *rec, *order;
@@ -1208,8 +1212,8 @@ int main(int argc, char *argv[])
   BINSCALE = 10;
   burnin = 0;
   sampleperiod = 0;
-  sprintf(postfile, "");
-  sprintf(labelfile, "");
+  strcpy(postfile, "");
+  strcpy(labelfile, "");
   
   // deal with command-line arguments
   for(i = 1; i < argc; i+=2)
@@ -1386,7 +1390,7 @@ int main(int argc, char *argv[])
 	    }
 	  while(!feof(fp))
 	    {
-	      fscanf(fp, "%lf", &(tau1s[ntau]));
+	      tmp = fscanf(fp, "%lf", &(tau1s[ntau]));
 	      if(!feof(fp)) { ntau++; }
 	    }
 	  fclose(fp);
@@ -1407,7 +1411,7 @@ int main(int argc, char *argv[])
 	      ntau = 0;
 	      while(!feof(fp))
 		{
-		  fscanf(fp, "%lf", &(tau2s[ntau]));
+		  tmp = fscanf(fp, "%lf", &(tau2s[ntau]));
 		  if(tau2s[ntau] < tau1s[ntau])
 		    {
 		      printf("End time %f was less than start time %f!\n", tau2s[ntau], tau1s[ntau]);
@@ -1470,7 +1474,7 @@ int main(int argc, char *argv[])
       sprintf(bestshotstr, "%s-best.txt", labelstr);
       fp = fopen(bestshotstr, "w"); fclose(fp);
       sprintf(likstr, "%s-lik.csv", labelstr);
-      fp = fopen(likstr, "w"); fprintf(fp, "Step,L,nparam,LogLikelihood1,LogLikelihood2\n"); fclose(fp);
+      fp = fopen(likstr, "w"); fprintf(fp, "Step,L,model,nparam,LogLikelihood1,LogLikelihood2\n"); fclose(fp);
   
       //      sprintf(besttransstr, "%s-trans.csv", labelstr);
       sprintf(beststatesstr, "%s", labelstr);
@@ -1569,7 +1573,7 @@ int main(int argc, char *argv[])
 	      fclose(fp);
 	      fp = fopen(likstr, "a");
 	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
-	      fprintf(fp, "%i,%i,%i,%f,", t, len, NVAL, nlik);
+	      fprintf(fp, "%i,%i,%i,%i,%f,", t, len, model, NVAL, nlik);
 	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
 	      fprintf(fp, "%f\n", nlik);
 	      fclose(fp);
@@ -1834,7 +1838,7 @@ int main(int argc, char *argv[])
 	{
 	  // read in single posterior sample
 	  for(i = 0; i < NVAL; i++)
-      	    fscanf(fp, "%lf", &ntrans[i]);
+      	    tmp = fscanf(fp, "%lf", &ntrans[i]);
 	  
 	  // this if statement controls which samples get processed
 	  // if we want to include burn-in or subsampling, can put it here

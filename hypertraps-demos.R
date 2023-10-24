@@ -40,12 +40,11 @@ writeHyperinf(my.post, "simpledemo", my.post$L, postlabel = "simpledemo", fullou
 my.post.r = readHyperinf("simpledemo", postlabel = "simpledemo", fulloutput=TRUE)
 plotHypercube.summary(my.post.r)
 
-# retrieve output from externally-run experiment
-my.post.ext = readHyperinf("../VerifyData/test-cross-mod-2", postlabel = "../VerifyData/test-cross-mod-2", fulloutput=TRUE)
-plotHypercube.summary(my.post.ext)
+# run an example with fewer walkers
+my.post.sparse = HyperTraPS(m.2, initialstates_arg = m.1, starttimes_arg = times, featurenames_arg = c("A", "B", "C", "D", "E"), walkers_arg = 2); 
 
 # q-gram distance
-qgramdist(my.post, my.post.ext)
+qgramdist(my.post, my.post.sparse)
 
 ### various other demos
 # other plots
@@ -59,31 +58,20 @@ plotHypercube.regularisation(my.post.regularise)
 plotHypercube.summary(my.post.regularise)
 
 # simulated annealing output
-my.post.sa = HyperTraPS(test.mat, sa_arg = 1)
+my.post.sa = HyperTraPS(m.2, initialstates_arg = m.1, sa_arg = 1)
 plotHypercube.summary(my.post.sa)
 
 # phenotypic landscape inference
-my.post.pli = HyperTraPS(test.mat, PLI_arg = 1)
+my.post.pli = HyperTraPS(m.2, initialstates_arg = m.1, PLI_arg = 1)
 plotHypercube.summary(my.post.pli)
 
 # start with every edge parameterised, then regularise
-my.post.bigmodel.regularise = HyperTraPS(test.mat, model_arg = -1, regularise_arg = 1, walkers_arg = 20)
+my.post.bigmodel.regularise = HyperTraPS(m.2, initialstates_arg = m.1, model_arg = -1, regularise_arg = 1, walkers_arg = 20)
 plotHypercube.regularisation(my.post.bigmodel.regularise)
 
-# continuous time demo
-test.mat = as.matrix(read.table("../VerifyData/synth-cross-samples-1.txt"))
-test.start.times = rep(0.1,nrow(test.mat))
-test.end.times = rep(0.2,nrow(test.mat))
-my.post = HyperTraPS(test.mat, 
-                     starttimes_arg = test.start.times, 
-                     endtimes_arg = test.end.times, 
-                     outputinput_arg = 1)
-my.post.out = PosteriorAnalysis(my.post)
-plotHypercube.bubbles(my.post, my.post.out)
-
 # tool use paper reproduction
-test.mat = as.matrix(read.table("../Data/total-observations.txt-trans.txt"))
-my.names = as.vector(read.table("../Data/tools-names.txt"))[[1]]
+test.mat = as.matrix(read.table("RawData/total-observations.txt-trans.txt"))
+my.names = as.vector(read.table("RawData/tools-names.txt"))[[1]]
 starts = test.mat[seq(from=1, to=nrow(test.mat), by=2),]
 ends = test.mat[seq(from=2, to=nrow(test.mat), by=2),]
 

@@ -152,6 +152,7 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
   rL$label = label
   rL$lik.traces = read.csv(mylabel(label, "-lik.csv"))
   rL$L = rL$lik.traces$L[1]
+  rL$model = rL$lik.traces$model[1]
   rL$best = read.table(mylabel(label, "-best.txt"))
   rL$posterior.samples = read.table(mylabel(label, "-posterior.txt"))
   
