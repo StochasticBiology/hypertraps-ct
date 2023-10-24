@@ -3,6 +3,16 @@
 
 Hypercubic transition path sampling: Flexible inference of accumulation pathways, in discrete or continuous time, under different model structures, using combinations of longitudinal, cross-sectional, and phylogenetically-linked observations.
 
+Requirements
+------
+For the command-line-only version, you'll just need the ability to compile and run C code.
+
+For the R version without helper and plotting functions, you'll need R and the `Rcpp` library.
+
+For those helper and plotting functions, you'll need R with these libraries: `Rcpp`, `ggplot2`, `ggpubr`, `ggraph`, `igraph`, `stringr`, `stringdist`.
+
+For the specific scientific case studies involving mitochondrial and tuberculosis evolution, the data wrangling also needs Python with `ETE3`.
+
 Setting up and running
 -----------
 
@@ -15,6 +25,7 @@ This will produce the executable `hypertraps.ce` (you can of course name it what
 For R work, you can load just the inference code using `Rcpp` alone with
 
 `library(Rcpp)  
+
 sourceCpp("hypertraps-r.cpp")`
 
 or, to attach some useful helper and plotting functions (which depend on more libraries), you can use
@@ -22,6 +33,10 @@ or, to attach some useful helper and plotting functions (which depend on more li
 `source("hypertraps.R")`
 
 The core function in R is then `HyperTraPS` which can then be run from the R console with various arguments below.
+
+Demonstration
+-----------
+A good place to start is `hypertraps-demos.R`, where the basic form of R commands for HyperTraPS, most of the more interesting arguments that can be provided, and several scientific case studies are demonstrated. 
 
 Arguments to HyperTraPS
 ------
