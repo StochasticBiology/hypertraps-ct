@@ -5,7 +5,7 @@ HyperTraPS(-CT)
 Parameterisation
 
 | Argument | R | Command-line | Default |
--------------------------------
+|----------|---|--------------|---------|
 | Input data | matrix_arg=*matrix* | --obs *filename* | None (required) |
 | Precursor states | initialstates_arg=*matrix* | | None |
 | Time window start | starttimes_arg=*vector* | --times *filename* | 0 |
