@@ -6,16 +6,19 @@ Hypercubic transition path sampling: Flexible inference of accumulation pathways
 Setting up and running
 -----------
 
-This repo contains code to run HyperTraPS and its variants either from the command line or via R. First, pull the repo down and set the working directory to its root. For command-line work, compile the `hypertraps.c` source code, with (for example): 
+This repo contains code to run HyperTraPS and its variants either from the command line or via R. First, pull the repo down and set the working directory to its root. For command-line work, compile the `hypertraps.c` source code, with (for example):
+
 `gcc -o3 hypertraps.c -lm -o hypertraps.ce`
 
 This will produce the executable `hypertraps.ce` (you can of course name it whatever you like), which can then be run from the command line with various arguments below.
 
 For R work, you can load just the inference code using `Rcpp` alone with
-`library(Rcpp)
+
+`library(Rcpp)  
 sourceCpp("hypertraps-r.cpp")`
 
 or, to attach some useful helper and plotting functions (which depend on more libraries), you can use
+
 `source("hypertraps.R")`
 
 The core function in R is then `HyperTraPS` which can then be run from the R console with various arguments below.
