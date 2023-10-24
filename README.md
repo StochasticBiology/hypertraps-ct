@@ -58,7 +58,7 @@ Plots in R
 
 | Plot function | Description |
 |---------------|-------------|
-| `plotHypercube.lik.trace` | Trace of likelihood over inference run, calculate twice (to show consistency) |
+| `plotHypercube.lik.trace` | Trace of likelihood over inference run, calculated twice (to show consistency or lack thereof) |
 | `plotHypercube.bubbles` | "Bubble plot" of probability of acquiring trait *i* at ordinal step *j* |
 | `plotHypercube.motifs` | Motif-style plot of probability of acquiring trait *i* at ordinal step *j* |
 | `plotHypercube.graph` | Transition graph with edge weights showing probability flux (from full output) |
