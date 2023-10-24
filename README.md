@@ -111,6 +111,7 @@ Code to generate synthetic test datasets
 `RawData/`
 ----------
   * Phylogenies and feature lists for MRO and TB
+  * Feature lists and name sets for previously published case studies: C4 photosynthesis evolution, ovarian cancer progression, severe malaria clinical progression, tool use evolution
 
 `Process/`
 ----------
