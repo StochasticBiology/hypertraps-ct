@@ -30,8 +30,12 @@ m.2 = matrix(rep(c(1,0,0,0,0,
 times = rep(c(0.1, 0.2, 0.3, 0.4, 0.5), 10)
 
 ### simple demo
-my.post = HyperTraPS(m.2, initialstates_arg = m.1, starttimes_arg = times, featurenames_arg = c("A", "B", "C", "D", "E")); 
+my.post = HyperTraPS(m.2, initialstates_arg = m.1, 
+                     starttimes_arg = times, endtimes_arg = times, 
+                     length_index_arg = 4,
+                     featurenames_arg = c("A", "B", "C", "D", "E")); 
 plotHypercube.summary(my.post)
+plotHypercube.sampledgraph2(my.post, thresh=0.1)
 
 # write output to files
 writeHyperinf(my.post, "simpledemo", my.post$L, postlabel = "simpledemo", fulloutput=TRUE)
@@ -41,16 +45,23 @@ my.post.r = readHyperinf("simpledemo", postlabel = "simpledemo", fulloutput=TRUE
 plotHypercube.summary(my.post.r)
 
 # run an example with fewer walkers
-my.post.sparse = HyperTraPS(m.2, initialstates_arg = m.1, starttimes_arg = times, featurenames_arg = c("A", "B", "C", "D", "E"), walkers_arg = 2); 
+my.post.sparse = HyperTraPS(m.2, initialstates_arg = m.1, 
+                            starttimes_arg = times, endtimes_arg = times,
+                            featurenames_arg = c("A", "B", "C", "D", "E"), walkers_arg = 2); 
+plotHypercube.summary(my.post.sparse)
 
-# q-gram distance
+# q-gram distance between experiments
 qgramdist(my.post, my.post.sparse)
+
+# direct time run (no time window specified)
+my.post.dt = HyperTraPS(m.2, initialstates_arg = m.1, featurenames_arg = c("A", "B", "C", "D", "E")); 
+plotHypercube.summary(my.post.dt)
 
 ### various other demos
 # other plots
 plotHypercube.motifs(my.post)
 plotHypercube.timeseries(my.post)
-plotHypercube.sampledgraph(my.post)
+plotHypercube.sampledgraph2(my.post)
 
 # regularisation
 my.post.regularise = HyperTraPS(m.2, initialstates_arg = m.1, regularise_arg = 1, walkers_arg = 20)
@@ -69,14 +80,46 @@ plotHypercube.summary(my.post.pli)
 my.post.bigmodel.regularise = HyperTraPS(m.2, initialstates_arg = m.1, model_arg = -1, regularise_arg = 1, walkers_arg = 20)
 plotHypercube.regularisation(my.post.bigmodel.regularise)
 
-# tool use paper reproduction
-test.mat = as.matrix(read.table("RawData/total-observations.txt-trans.txt"))
-my.names = as.vector(read.table("RawData/tools-names.txt"))[[1]]
-starts = test.mat[seq(from=1, to=nrow(test.mat), by=2),]
-ends = test.mat[seq(from=2, to=nrow(test.mat), by=2),]
+#### short-form examples from past studies
 
-my.post.tools = HyperTraPS(ends, initialstates_arg = starts, 
+# ovarian cancer case study reproduction
+cgh.mat = readLines("RawData/ovarian.txt")
+cgh.mat = do.call(rbind, lapply(strsplit(cgh.mat, ""), as.numeric))
+cgh.names = as.vector(read.table("RawData/ovarian-names.txt", sep=","))[[1]]
+
+my.post.cgh = HyperTraPS(cgh.mat, 
+                        length_index_arg = 4, outputinput= 1, 
+                        featurenames_arg = cgh.names) 
+ggarrange(plotHypercube.lik.trace(my.post.cgh), plotHypercube.bubbles(my.post.cgh), nrow=2)
+
+# C4 paper reproduction
+c4.mat = as.matrix(read.table("RawData/c4-curated.csv", sep=","))
+c4.names = as.vector(read.table("RawData/c4-trait-names.txt", sep=","))[[1]]
+
+my.post.c4 = HyperTraPS(c4.mat, 
+                        length_index_arg = 4, outputinput= 1, 
+                        featurenames_arg = c4.names) 
+ggarrange(plotHypercube.lik.trace(my.post.c4), plotHypercube.bubbles(my.post.c4, reorder=TRUE), nrow=2)
+
+# malaria paper reproduction
+malaria.df = read.csv("RawData/jallow_dataset_binary_with2s.csv")
+malaria.mat = as.matrix(malaria.df[,2:ncol(malaria.df)])
+malaria.names = as.vector(read.table("RawData/malaria-names.txt", sep=","))[[1]]
+
+my.post.malaria = HyperTraPS(malaria.mat, 
+                        length_index_arg = 3, outputinput= 1, 
+                        walkers_arg = 20,
+                        featurenames_arg = c4.names) 
+ggarrange(plotHypercube.lik.trace(my.post.malaria), plotHypercube.bubbles(my.post.malaria, reorder=TRUE), nrow=2)
+
+# tool use paper reproduction
+tools.mat = as.matrix(read.table("RawData/total-observations.txt-trans.txt"))
+tools.names = as.vector(read.table("RawData/tools-names.txt"))[[1]]
+tools.starts = tools.mat[seq(from=1, to=nrow(tools.mat), by=2),]
+tools.ends = tools.mat[seq(from=2, to=nrow(tools.mat), by=2),]
+
+my.post.tools = HyperTraPS(tools.ends, initialstates_arg = tools.starts, 
                            length_index_arg = 4, outputinput= 1, 
-                           featurenames_arg = my.names) 
+                           featurenames_arg = tools.names) 
 ggarrange(plotHypercube.lik.trace(my.post.tools), plotHypercube.bubbles(my.post.tools, reorder=TRUE), nrow=2)
 plotHypercube.sampledgraph(my.post.tools, max=100)
