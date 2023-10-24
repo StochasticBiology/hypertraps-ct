@@ -78,6 +78,47 @@ plotHypercube.sampledgraph = function(my.post, max = 1000) {
   )
 }
 
+plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05) {
+  edge.from = edge.to = edge.time = edge.change = c()
+  bigL = my.post$L
+  nsamps = min(max, nrow(my.post$routes))
+  for(i in 1:nsamps) {
+    state = 0
+    for(j in 1:ncol(my.post$routes)) {
+      edge.from = c(edge.from, state)
+      state = state + 2**my.post$routes[i,j]
+      edge.to = c(edge.to, state)
+      edge.change = c(edge.change, my.post$routes[i,j])
+      edge.time = c(edge.time, my.post$times[i,j])
+    }
+  }
+  df = data.frame(From=edge.from, To=edge.to, Change=edge.change, Time=edge.time)
+  dfu = unique(df)
+  dfu$Flux = dfu$MeanT = dfu$SDT = NA
+  for(i in 1:nrow(dfu)) {
+    this.set = which(df$From==dfu$From[i] & df$To==dfu$To[i])
+    dfu$Flux[i] = length(this.set)
+    dfu$MeanT[i] = mean(df$Time[this.set])
+    if(length(this.set) > 1) {
+      dfu$SDT[i] = sd(df$Time[this.set])
+    }
+    dfu$label[i] = paste(c("+", dfu$Change[i], ": ", signif(dfu$MeanT[i], digits=2), "+-", signif(dfu$SDT[i], digits=2)), collapse="")
+  }
+  dfu = dfu[dfu$Flux > thresh*nsamps,]
+  trans.g = graph_from_data_frame(dfu)
+  bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
+  #bs = unlist(lapply(as.numeric(as.vector(V(trans.g))), DecToBin, len=bigL))
+  V(trans.g)$binname = bs
+  layers = str_count(bs, "1")
+  
+  return(  ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label), label_colour="black", color="#AAAAFF") + 
+             geom_node_point() + geom_node_label(aes(label=binname),size=2) +
+             scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
+             theme_graph()
+  )
+}
+
+
 plotHypercube.timehists = function(my.post, t.thresh = 20) {
   thdfp = data.frame()
   for(i in c(3,4)) {
@@ -103,37 +144,37 @@ plotHypercube.timehists = function(my.post, t.thresh = 20) {
 }
 
 plotHypercube.regularisation = function(my.post) {
-  return(ggplot(my.post.regularise$regularisation$reg.process, 
-         aes(x=params, y=AIC)) + geom_point() + theme_light() )
+  return(ggplot(my.post$regularisation$reg.process, 
+                aes(x=params, y=AIC)) + geom_point() + theme_light() )
 }
 
 plotHypercube.motifs = function(my.post) {
-# motif plot
-rdf = data.frame()
-for(j in 1:ncol(my.post$routes)) {
-  startprob = 0
-  for(i in 0:max(my.post$routes)) {
-    thisprob = length(which(my.post$routes[,j]==i))/nrow(my.post$routes)
-    rdf = rbind(rdf, data.frame(Index=i, Time=j, Start=startprob, End=startprob+thisprob, Probability=thisprob))
-    startprob = startprob+thisprob
+  # motif plot
+  rdf = data.frame()
+  for(j in 1:ncol(my.post$routes)) {
+    startprob = 0
+    for(i in 0:max(my.post$routes)) {
+      thisprob = length(which(my.post$routes[,j]==i))/nrow(my.post$routes)
+      rdf = rbind(rdf, data.frame(Index=i, Time=j, Start=startprob, End=startprob+thisprob, Probability=thisprob))
+      startprob = startprob+thisprob
+    }
   }
-}
-return(ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Index))) +
-  geom_text(aes(x=Time,y=(Start+End)/2,label=Index), color="#FFFFFF") + ylab("Probability") + theme_light())
+  return(ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Index))) +
+           geom_text(aes(x=Time,y=(Start+End)/2,label=Index), color="#FFFFFF") + ylab("Probability") + theme_light())
 }
 
 plotHypercube.timeseries = function(my.post) {
-# time series illustration
-rtdf = data.frame()
-for(i in 1:(min(nrow(my.post$routes),1000))) {
-  prevtime = 0
-  for(j in 1:ncol(my.post$routes)) {
-    rtdf = rbind(rtdf, data.frame(Run=i, Step=j, Index=my.post$routes[i,j], PrevTime=prevtime, Time=my.post$times[i,j]))
-    prevtime = my.post$times[i,j]
+  # time series illustration
+  rtdf = data.frame()
+  for(i in 1:(min(nrow(my.post$routes),1000))) {
+    prevtime = 0
+    for(j in 1:ncol(my.post$routes)) {
+      rtdf = rbind(rtdf, data.frame(Run=i, Step=j, Index=my.post$routes[i,j], PrevTime=prevtime, Time=my.post$times[i,j]))
+      prevtime = my.post$times[i,j]
+    }
   }
-}
-return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
-  scale_x_continuous(trans="log") + theme_light())
+  return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
+            scale_x_continuous(trans="log") + theme_light())
 }
 
 plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20) {
@@ -152,6 +193,7 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
   rL$label = label
   rL$lik.traces = read.csv(mylabel(label, "-lik.csv"))
   rL$L = rL$lik.traces$L[1]
+  rL$model = rL$lik.traces$model[1]
   rL$best = read.table(mylabel(label, "-best.txt"))
   rL$posterior.samples = read.table(mylabel(label, "-posterior.txt"))
   
@@ -171,9 +213,9 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
   if(postlabel != "") {
   rL$bubbles = read.csv(mylabel(postlabel, "-bubbles.csv"))
   rL$timehists = read.csv(mylabel(postlabel, "-timehists.csv"))
-  rL$routes = read.table(mylabel(postlabel, "-routes.txt"))
-  rL$betas = read.table(mylabel(postlabel, "-betas.txt"))
-  rL$times = read.table(mylabel(postlabel, "-times.txt")) 
+  rL$routes = read.table(mylabel(postlabel, "-routes.txt"), sep=",")
+  rL$betas = read.table(mylabel(postlabel, "-betas.txt"), sep=",")
+  rL$times = read.table(mylabel(postlabel, "-times.txt"), sep=",") 
   }
   
   return(rL)
