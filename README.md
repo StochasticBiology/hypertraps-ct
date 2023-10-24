@@ -82,6 +82,9 @@ Plots in R
 | `plotHypercube.timeseries` | Time series of acquisitions across sampled routes |
 | `plotHypercube.summary` | Summary plot combining several of the above | 
 
+All but the last are demonstrated here:
+![image](https://github.com/StochasticBiology/hypertraps-ct/assets/50171196/153ed0d7-88ea-4dc2-a3bc-0c24b25923db)
+
 `./`
 ----
 Scripts wrapping the curation, inference, and analysis process for different case. In each case, datasets are produced and set in their own directory. The analysis code is then called to process these data, and plotting code follows.
