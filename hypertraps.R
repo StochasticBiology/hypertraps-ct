@@ -103,7 +103,7 @@ plotHypercube.timehists = function(my.post, t.thresh = 20) {
 }
 
 plotHypercube.regularisation = function(my.post) {
-  return(ggplot(my.post$regularisation$reg.process, 
+  return(ggplot(my.post.regularise$regularisation$reg.process, 
          aes(x=params, y=AIC)) + geom_point() + theme_light() )
 }
 
@@ -152,7 +152,6 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
   rL$label = label
   rL$lik.traces = read.csv(mylabel(label, "-lik.csv"))
   rL$L = rL$lik.traces$L[1]
-  rL$model = rL$lik.traces$model[1]
   rL$best = read.table(mylabel(label, "-best.txt"))
   rL$posterior.samples = read.table(mylabel(label, "-posterior.txt"))
   
@@ -172,9 +171,9 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
   if(postlabel != "") {
   rL$bubbles = read.csv(mylabel(postlabel, "-bubbles.csv"))
   rL$timehists = read.csv(mylabel(postlabel, "-timehists.csv"))
-  rL$routes = read.table(mylabel(postlabel, "-routes.txt"), sep=",")
-  rL$betas = read.table(mylabel(postlabel, "-betas.txt"), sep=",")
-  rL$times = read.table(mylabel(postlabel, "-times.txt"), sep=",") 
+  rL$routes = read.table(mylabel(postlabel, "-routes.txt"))
+  rL$betas = read.table(mylabel(postlabel, "-betas.txt"))
+  rL$times = read.table(mylabel(postlabel, "-times.txt")) 
   }
   
   return(rL)
