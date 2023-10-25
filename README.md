@@ -72,18 +72,18 @@ HyperTraPS needs at least a set of observations. In R this should take the form 
 Plots in R
 --------
 
-| Plot function | Description |
-|---------------|-------------|
-| `plotHypercube.lik.trace` | Trace of likelihood over inference run, calculated twice (to show consistency or lack thereof) |
-| `plotHypercube.bubbles` | "Bubble plot" of probability of acquiring trait *i* at ordinal step *j* |
-| `plotHypercube.motifs` | Motif-style plot of probability of acquiring trait *i* at ordinal step *j* |
-| `plotHypercube.graph` | Transition graph with edge weights showing probability flux (from full output) |
-| `plotHypercube.sampledgraph` | Transition graph with edge weights showing probability flux (from sampled paths) |
-| `plotHypercube.sampledgraph2` | As above, with mean and s.d. of absolute timings for each step |
-| `plotHypercube.timehists` | Histograms of absolute timings for each trait's acquisition |
-| `plotHypercube.regularisation` | Information criterion vs number of nonzero parameters during regularisation |
-| `plotHypercube.timeseries` | Time series of acquisitions across sampled routes |
-| `plotHypercube.summary` | Summary plot combining several of the above | 
+| Plot function | Description | Options and defaults |
+|---------------|-------------|---------|
+| `plotHypercube.lik.trace` | Trace of likelihood over inference run, calculated twice (to show consistency or lack thereof) | |
+| `plotHypercube.bubbles` | "Bubble plot" of probability of acquiring trait *i* at ordinal step *j* | transpose=FALSE (horizontal and vertical axis), reorder=FALSE (order traits by mean acquisition ordering) |
+| `plotHypercube.motifs` | Motif-style plot of probability of acquiring trait *i* at ordinal step *j* | |
+| `plotHypercube.graph` | Transition graph with edge weights showing probability flux (from full output) | thresh=0.05 (minimum threshold of flux for drawing an edge) |
+| `plotHypercube.sampledgraph` | Transition graph with edge weights showing probability flux (from sampled paths) | thresh=0.05 (minimum threshold of flux for drawing an edge), max=1000 (maximum number of sampled routes to consider) |
+| `plotHypercube.sampledgraph2` | As above, with mean and s.d. of absolute timings for each step | thresh=0.05 (minimum threshold of flux for drawing an edge), max=1000 (maximum number of sampled routes to consider), no.times=FALSE (avoid annotating edges with time information) |
+| `plotHypercube.timehists` | Histograms of absolute timings for each trait's acquisition | |
+| `plotHypercube.regularisation` | Information criterion vs number of nonzero parameters during regularisation | |
+| `plotHypercube.timeseries` | Time series of acquisitions across sampled routes | |
+| `plotHypercube.summary` | Summary plot combining several of the above | |
 
 All but the last are demonstrated here:
 ![image](https://github.com/StochasticBiology/hypertraps-ct/assets/50171196/153ed0d7-88ea-4dc2-a3bc-0c24b25923db)
