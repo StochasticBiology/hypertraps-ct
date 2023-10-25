@@ -41,7 +41,7 @@ plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
   }
 }
 
-plotHypercube.graph = function(my.post, thresh = 0.05) {
+plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE) {
   ### produce hypercube subgraph
   bigL = my.post$L
   trans.p = my.post$dynamics$trans[my.post$dynamics$trans$Flux > thresh,]
@@ -49,14 +49,17 @@ plotHypercube.graph = function(my.post, thresh = 0.05) {
   bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
   V(trans.g)$binname = bs
   layers = str_count(bs, "1")
-  return( ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
-            geom_node_point() + geom_node_label(aes(label=binname),size=2) +
-            scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
+  this.plot =  ggraph(trans.g, layout="sugiyama", layers=layers) + 
+            geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
+           scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
             theme_graph() #aes(label=bs)) + theme_graph() 
-  )
+  if(node.labels == TRUE) {
+    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
+  }
+  return(this.plot)
 }
 
-plotHypercube.sampledgraph = function(my.post, max = 1000, thresh = 0.05) {
+plotHypercube.sampledgraph = function(my.post, max = 1000, thresh = 0.05, node.labels = TRUE) {
   edge.from = edge.to = c()
   bigL = my.post$L
   nsamps = min(max, nrow(my.post$routes))
@@ -80,14 +83,16 @@ plotHypercube.sampledgraph = function(my.post, max = 1000, thresh = 0.05) {
   #bs = unlist(lapply(as.numeric(as.vector(V(trans.g))), DecToBin, len=bigL))
   V(trans.g)$binname = bs
   layers = str_count(bs, "1")
-  return( ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
-            geom_node_point() + geom_node_label(aes(label=binname),size=2) +
+  this.plot = ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
             scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
             theme_graph() #aes(label=bs)) + theme_graph() 
-  )
+  if(node.labels == TRUE) {
+    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
+  }
+  return(this.plot)
 }
 
-plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05, no.times = FALSE) {
+plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05, node.labels = TRUE, no.times = FALSE) {
   edge.from = edge.to = edge.time = edge.change = c()
   bigL = my.post$L
   nsamps = min(max, nrow(my.post$routes))
@@ -125,11 +130,13 @@ plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05, no.ti
   V(trans.g)$binname = bs
   layers = str_count(bs, "1")
   
-  return(  ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label), label_colour="black", color="#AAAAFF") + 
-             geom_node_point() + geom_node_label(aes(label=binname),size=2) +
+  this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label), label_colour="black", color="#AAAAFF") + 
              scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
              theme_graph()
-  )
+  if(node.labels == TRUE) {
+    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
+  }
+  return(this.plot)
 }
 
 
