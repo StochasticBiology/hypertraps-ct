@@ -63,6 +63,8 @@ HyperTraPS needs at least a set of observations. In R this should take the form 
 | Use PLI (0/1) | PLI_arg=*N* | --PLI | 0 |
 | Regularise model (0/1) | regularise_arg=*N* | --regularise | 0 |
 
+So some example calls are (see the various demo scripts for more):
+
 | Task | R | Command-line |
 |------|---|--------------|
 | Run HyperTraPS with default settings | HyperTraPS(*matrix*) | ./hypertraps.ce --obs *filename* |
