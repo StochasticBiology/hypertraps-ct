@@ -18,41 +18,49 @@ DecToBin <- function(x, len) {
 plotHypercube.lik.trace = function(my.post) {
   ### likelihood traces
   return(ggplot(my.post$lik.traces) + geom_line(aes(x=Step, y=LogLikelihood1)) +
-    geom_line(aes(x=Step, y=LogLikelihood2)) + theme_light() )
+           geom_line(aes(x=Step, y=LogLikelihood2)) + theme_light() )
 }
 
-plotHypercube.bubbles = function(my.post, reorder=FALSE) {
+plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
+  toplot = my.post$bubbles
   if(reorder == TRUE) {
-    toplot = my.post$bubbles
     toplot$Name = factor(toplot$Name, levels=unique(toplot$Name))
-    return(ggplot(toplot, aes(x=Time, y=Name, size=Probability)) +
-             geom_point() +theme_light() )  
+  }
+  if(transpose == TRUE) {
+    toplot$x = toplot$Name
+    toplot$y = toplot$Time
   } else {
-  ### bubble plot
-  return(ggplot(my.post$bubbles, aes(x=Time, y=Name, size=Probability)) +
-    geom_point() +theme_light() )
+    toplot$x = toplot$Time
+    toplot$y = toplot$Name
+  }
+  this.plot = ggplot(toplot, aes(x=x, y=y, size=Probability)) + geom_point() +theme_light()
+  if(transpose == TRUE){
+    return(this.plot + theme(axis.text.x = element_text(angle=90)) )
+  } else {
+    return(this.plot)
   }
 }
-  
-plotHypercube.graph = function(my.post, f.thresh = 0.05) {
+
+plotHypercube.graph = function(my.post, thresh = 0.05) {
   ### produce hypercube subgraph
   bigL = my.post$L
-  trans.p = my.post$dynamics$trans[my.post$dynamics$trans$Flux > f.thresh,]
+  trans.p = my.post$dynamics$trans[my.post$dynamics$trans$Flux > thresh,]
   trans.g = graph_from_data_frame(trans.p)
   bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
   V(trans.g)$binname = bs
   layers = str_count(bs, "1")
   return( ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
-    geom_node_point() + geom_node_label(aes(label=binname),size=2) +
-    scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
-    theme_graph() #aes(label=bs)) + theme_graph() 
+            geom_node_point() + geom_node_label(aes(label=binname),size=2) +
+            scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
+            theme_graph() #aes(label=bs)) + theme_graph() 
   )
 }
 
-plotHypercube.sampledgraph = function(my.post, max = 1000) {
+plotHypercube.sampledgraph = function(my.post, max = 1000, thresh = 0.05) {
   edge.from = edge.to = c()
   bigL = my.post$L
-  for(i in 1:min(max, nrow(my.post$routes))) {
+  nsamps = min(max, nrow(my.post$routes))
+  for(i in 1:nsamps) {
     state = 0
     for(j in 1:ncol(my.post$routes)) {
       edge.from = c(edge.from, state)
@@ -66,6 +74,7 @@ plotHypercube.sampledgraph = function(my.post, max = 1000) {
   for(i in 1:nrow(dfu)) {
     dfu$Flux[i] = length(which(df$From==dfu$From[i] & df$To==dfu$To[i]))
   }
+  dfu = dfu[dfu$Flux > thresh*nsamps,]
   trans.g = graph_from_data_frame(dfu)
   bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
   #bs = unlist(lapply(as.numeric(as.vector(V(trans.g))), DecToBin, len=bigL))
@@ -78,7 +87,7 @@ plotHypercube.sampledgraph = function(my.post, max = 1000) {
   )
 }
 
-plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05) {
+plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05, no.times = FALSE) {
   edge.from = edge.to = edge.time = edge.change = c()
   bigL = my.post$L
   nsamps = min(max, nrow(my.post$routes))
@@ -102,7 +111,12 @@ plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05) {
     if(length(this.set) > 1) {
       dfu$SDT[i] = sd(df$Time[this.set])
     }
-    dfu$label[i] = paste(c("+", dfu$Change[i], ": ", signif(dfu$MeanT[i], digits=2), "+-", signif(dfu$SDT[i], digits=2)), collapse="")
+    if(no.times == TRUE) {
+      dfu$label[i] = paste(c("+", dfu$Change[i]), collapse="")
+    } else {
+      dfu$label[i] = paste(c("+", dfu$Change[i], ": ", signif(dfu$MeanT[i], digits=2), "+-", signif(dfu$SDT[i], digits=2)), collapse="") 
+    }
+    
   }
   dfu = dfu[dfu$Flux > thresh*nsamps,]
   trans.g = graph_from_data_frame(dfu)
@@ -174,8 +188,8 @@ plotHypercube.timeseries = function(my.post, log.axis = TRUE) {
     }
   }
   if(log.axis == TRUE) {
-  return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
-            scale_x_continuous(trans="log") + theme_light())
+    return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
+              scale_x_continuous(trans="log") + theme_light())
   } else {
     ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
       theme_light()
@@ -184,9 +198,9 @@ plotHypercube.timeseries = function(my.post, log.axis = TRUE) {
 
 plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20) {
   return (ggarrange(plotHypercube.lik.trace(my.post),
-            plotHypercube.bubbles(my.post),
-            plotHypercube.graph(my.post, f.thresh),
-            plotHypercube.timehists(my.post, t.thresh), nrow=2, ncol=2) )
+                    plotHypercube.bubbles(my.post),
+                    plotHypercube.graph(my.post, f.thresh),
+                    plotHypercube.timehists(my.post, t.thresh), nrow=2, ncol=2) )
 }
 
 mylabel = function(label, suffix) {
@@ -203,10 +217,10 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
   rL$posterior.samples = read.table(mylabel(label, "-posterior.txt"))
   
   if(fulloutput == TRUE) {
-  tmpL = list()
-  tmpL$states = read.csv(mylabel(label, "-states.csv"))
-  tmpL$trans = read.csv(mylabel(label, "-trans.csv"))
-  rL$dynamics = tmpL
+    tmpL = list()
+    tmpL$states = read.csv(mylabel(label, "-states.csv"))
+    tmpL$trans = read.csv(mylabel(label, "-trans.csv"))
+    rL$dynamics = tmpL
   }
   
   if(regularised == TRUE) {
@@ -216,11 +230,11 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
   }
   
   if(postlabel != "") {
-  rL$bubbles = read.csv(mylabel(postlabel, "-bubbles.csv"))
-  rL$timehists = read.csv(mylabel(postlabel, "-timehists.csv"))
-  rL$routes = read.table(mylabel(postlabel, "-routes.txt"), sep=",")
-  rL$betas = read.table(mylabel(postlabel, "-betas.txt"), sep=",")
-  rL$times = read.table(mylabel(postlabel, "-times.txt"), sep=",") 
+    rL$bubbles = read.csv(mylabel(postlabel, "-bubbles.csv"))
+    rL$timehists = read.csv(mylabel(postlabel, "-timehists.csv"))
+    rL$routes = read.table(mylabel(postlabel, "-routes.txt"), sep=",")
+    rL$betas = read.table(mylabel(postlabel, "-betas.txt"), sep=",")
+    rL$times = read.table(mylabel(postlabel, "-times.txt"), sep=",") 
   }
   
   return(rL)
@@ -252,7 +266,7 @@ writeHyperinf = function(wL, label, postlabel = "", fulloutput=FALSE, regularise
 
 # construct the (probability-weighted) q-gram distance
 qgramdist = function(my.post.1, my.post.2) {
-   # pull routes and probabilities for first cube
+  # pull routes and probabilities for first cube
   routes = table(apply(my.post.1$routes, 1, paste, collapse=""))
   L = ncol(my.post.1$routes)
   route.set = rownames(routes)
