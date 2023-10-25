@@ -53,8 +53,9 @@ for(expt in 1:5) {
     bdf = thdf = data.frame()
     # set up filenames for input
     if(oneshot=="regularised") {
-      base.name = paste(c(fname[i], "-regularised"))
-      post.name = paste(c(fname[i], "-regularised.txt"))
+        base.name = post.name = fname[i]
+      #base.name = paste(c(fname[i], "-regularised"))
+      #post.name = paste(c(fname[i], "-regularised.txt"))
     } else if(oneshot == "yes") {
       base.name = post.name = fname[i]
      # post.name = paste(c(fname[i], "-best.txt"))
@@ -125,17 +126,6 @@ for(expt in 1:5) {
     }
     g.motif[[i]] = ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Index))) +
       geom_text(aes(x=Time,y=(Start+End)/2,label=Index), color="#FFFFFF") + ylab("Probability") + theme_light()
-    
-    # cluster routes and produce heatmap
-    routes.str = apply(routes, 1, paste, collapse="")
-    routes.tab = table(routes.str)
-    r.str.df = data.frame(routes=rownames(routes.tab), counts=as.vector(routes.tab))
-    big.routes = r.str.df$routes[r.str.df$counts>2]
-    routes.str.uniq = unique(big.routes)
-    sdm = stringdistmatrix(routes.str.uniq, routes.str.uniq, method='jw',p=0.1)
-    rownames(sdm) = routes.str.uniq
-    colnames(sdm) = routes.str.uniq
-    g.pheatmap[[i]] = as.ggplot(pheatmap(sdm))
  
     # get trajectories from regularisation, if appropriate
    if(oneshot=="regularised") {
@@ -151,15 +141,15 @@ for(expt in 1:5) {
   sf = 2
   png(out.name, width=2000*sf, height=800*sf, res=72*sf)
   if(oneshot == "regularised") {
-  grid.arrange(g.reglik[[1]], g.regBIC[[1]], g.bubbles[[1]], g.gcube[[1]], g.motif[[1]], g.pheatmap[[1]], 
-               g.reglik[[2]], g.regBIC[[2]], g.bubbles[[2]], g.gcube[[2]], g.motif[[2]], g.pheatmap[[2]],
-               g.reglik[[3]], g.regBIC[[3]], g.bubbles[[3]], g.gcube[[3]], g.motif[[3]], g.pheatmap[[3]], 
+  grid.arrange(g.reglik[[1]], g.regBIC[[1]], g.bubbles[[1]], g.gcube[[1]], g.motif[[1]], 
+               g.reglik[[2]], g.regBIC[[2]], g.bubbles[[2]], g.gcube[[2]], g.motif[[2]],
+               g.reglik[[3]], g.regBIC[[3]], g.bubbles[[3]], g.gcube[[3]], g.motif[[3]], 
                #           g.lik[[4]], g.bubbles[[4]], g.gcube[[4]], g.motif[[4]], g.pheatmap[[4]], 
                nrow=3)
   } else {
-    grid.arrange(g.lik[[1]], g.bubbles[[1]], g.gcube[[1]], g.motif[[1]], g.pheatmap[[1]], 
-                 g.lik[[2]], g.bubbles[[2]], g.gcube[[2]], g.motif[[2]], g.pheatmap[[2]],
-                 g.lik[[3]], g.bubbles[[3]], g.gcube[[3]], g.motif[[3]], g.pheatmap[[3]], 
+    grid.arrange(g.lik[[1]], g.bubbles[[1]], g.gcube[[1]], g.motif[[1]], 
+                 g.lik[[2]], g.bubbles[[2]], g.gcube[[2]], g.motif[[2]],
+                 g.lik[[3]], g.bubbles[[3]], g.gcube[[3]], g.motif[[3]], 
                  #           g.lik[[4]], g.bubbles[[4]], g.gcube[[4]], g.motif[[4]], g.pheatmap[[4]], 
                  nrow=3)
   }
