@@ -35,6 +35,34 @@ or, to attach some useful helper and plotting functions (which depend on more li
 
 The core function in R is then `HyperTraPS` which can then be run from the R console with various arguments below.
 
+Output
+------
+
+At the command line, HyperTraPS will output information about the progress of a run to the screen, and produce a set of files containing outputs from and descriptions of the inference process.
+
+In R, HyperTraPS will output information about the progress of a run to the console, and return a named list containing outputs from and descriptions of the inference process.
+
+The files from the command line version can be read into R (for plotting, analysis, etc) using `readHyperinf` from `hypertraps.R`. This reads a collection of output files and returns a named list. Similar, the named list structure in R can be written to files (for storage) using `writeHyperinf` from `hypertraps.R`. This takes a named list and produces the corresponding file set.
+
+The output structures are
+
+| Information | R | File output | Notes |
+|-------------|---|-------------|-------|
+| Number of features, model type, number of parameters, and likelihood traces over the run | *list*$lik.traces | *label*-lik.csv | |
+| Best parameterisation found during run | *list*$best | *label*-best.txt | |
+| (Posterior) samples of parameterisation | *list*$posterior.samples | *label*-posterior.txt | |
+| Probabilities for individual states | *list*$dynamics$states | *label*-states.csv | Only produced for L < 16 |
+| Probabilities for individual transitions | *list*$dynamics$trans | *label*-trans.csv | Only produced for L < 16 |
+| Best parameterisation after regularisation | *list*$regularisation$best | *label*-regularised.txt | Optional |
+| Number of parameters, likelihood, and information criteria during regularisation | *list*$regularisation$reg.process | *label*-regularising.csv | Optional |
+| "Bubble" probabilities of trait *i* acquisition at ordinal time *j* | *list*$bubbles | *label*-bubbles.csv | |
+| Histograms of times of trait *i* acquisition | *list*$timehists | *label*-timehists.csv | |
+| Individual sampled routes of accumulation | *list*$routes | *label*-routes.txt | |
+| Transition times for individual sampled routes of accumulation | *list*$times | *label*-times.txt | |
+| Dwelling statistics for individual sampled routes of accumulation | *list*$betas | *label*-betas.txt | |
+
+These various outputs can be further interrogated and/or used in the plotting functions below.
+
 Demonstration
 -----------
 A good place to start is `hypertraps-demos.R`, where the basic form of R commands for HyperTraPS, most of the more interesting arguments that can be provided, and several scientific case studies are demonstrated. 
