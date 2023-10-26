@@ -306,7 +306,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   int parents[_MAXN];
   int *matrix;
   int len, ntarg;
-  double *trans, *ntrans, *gradients;
+  double *trans, *ntrans, *besttrans, *gradients;
   int t;
   int i, j;
   double lik, nlik;
@@ -538,6 +538,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   // allocate memory and initialise output file
   trans = (double*)malloc(sizeof(double)*NVAL); 
   ntrans = (double*)malloc(sizeof(double)*NVAL);
+  besttrans = (double*)malloc(sizeof(double)*NVAL);
   gradients = (double*)malloc(sizeof(double)*NVAL);
   tmpmat = (double*)malloc(sizeof(double)*NVAL);
 
@@ -620,12 +621,12 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
       if(lik > bestlik || t == 0)
 	{
 	  for(i = 0; i < NVAL; i++)
-	    best_output[i] = trans[i];
+	    best_output[i] = besttrans[i] = trans[i];
 	  bestlik = lik;
 	  
 	  if(outputtransitions)
 	    { 
-	      dynamics_output = OutputStatesR(trans, len, model);
+	      dynamics_output = OutputStatesR(besttrans, len, model);
 	    }
 	}
 
@@ -804,7 +805,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 
   if(regularise)
     {
-      List regL = RegulariseR(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
+      List regL = RegulariseR(matrix, len, ntarg, besttrans, parents, tau1s, tau2s, model, PLI);
       L["regularisation"] = regL;
     }
 

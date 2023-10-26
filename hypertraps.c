@@ -764,6 +764,8 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 	      printf("I got a negative value for I1 (%e) or I2 (%e), which shouldn't happen and suggests a lack of numerical convergence. This can happen with large numbers of features. I'm stopping to avoid unreliable posteriors; consider running without continuous time option.\n", sumI1, sumI2);
 	      myexit(0);
 	    }
+
+	  // debugging example, run --obs VerifyData/synth-bigcross-90-hard-samples.txt --times VerifyData/synth-bigcross-90-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-90-db --spectrumverbose
 	  
 	  analyticI1 += (prob_path*sumI1);
 	  analyticI2 += (prob_path*sumI2);
@@ -1114,7 +1116,7 @@ int main(int argc, char *argv[])
   FILE *fp;
   int *matrix;
   int len, ntarg;
-  double *trans, *ntrans, *gradients;
+  double *trans, *ntrans, *gradients, *besttrans;
   int t;
   int i, j;
   char ch;
@@ -1461,6 +1463,7 @@ int main(int argc, char *argv[])
       // allocate memory and initialise output file
       trans = (double*)malloc(sizeof(double)*NVAL); 
       ntrans = (double*)malloc(sizeof(double)*NVAL);
+      besttrans = (double*)malloc(sizeof(double)*NVAL);
       gradients = (double*)malloc(sizeof(double)*NVAL);
       tmpmat = (double*)malloc(sizeof(double)*NVAL);
 
@@ -1548,7 +1551,10 @@ int main(int argc, char *argv[])
 	      bestlik = lik;
 	      fp = fopen(bestshotstr, "w");
 	      for(i = 0; i < NVAL; i++)
-		fprintf(fp, "%f ", trans[i]);
+		{
+		  fprintf(fp, "%f ", trans[i]);
+		  besttrans[i] = trans[i];
+		}
 	      fprintf(fp, "\n");
 	      fclose(fp);
 
@@ -1712,7 +1718,7 @@ int main(int argc, char *argv[])
     }
   if(regularise)
     {
-      Regularise(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, labelstr, PLI);
+      Regularise(matrix, len, ntarg, besttrans, parents, tau1s, tau2s, model, labelstr, PLI);
     }
   if(posterior_analysis)
     {
