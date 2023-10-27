@@ -46,7 +46,7 @@ In R, the `HyperTraPS` function requires at least a matrix describing "after" st
 
 For example,
 
-`0 0 1`
+`0 0 1`  
 `0 1 1`
 
 would reflect cross-sectional observations of states 001 and 011, implicitly corresponding to transitions 000->001 and 000->011.
@@ -55,7 +55,7 @@ At the command-line, a single file containing a matrix of observations must be p
 
 For example,
 
-`0 0 1`
+`0 0 1`  
 `0 1 1`
 
 *without* the `--crosssectional` flag would be interpreted as a transition 001->011 (odd row -> even row). *With* the `--crosssectional` flag this would be interpreted as two independent observations, corresponding (as in the R case) to transitions 000->001 and 000->011.
