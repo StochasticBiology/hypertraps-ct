@@ -51,7 +51,7 @@ For example, the matrix
 
 would reflect cross-sectional observations of states 001 and 011, implicitly corresponding to transitions 000->001 and 000->011. A matrix of "before" states may be specified via `initialstates_arg`, for example,
 
-`0 0 1`
+`0 0 1`  
 `0 0 1`
 
 which would now reflect the transitions 001->001 (i.e. remaining in state 001) and 001->011.
