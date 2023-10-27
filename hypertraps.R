@@ -119,7 +119,7 @@ plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05, node.
     if(no.times == TRUE) {
       dfu$label[i] = paste(c("+", dfu$Change[i]), collapse="")
     } else {
-      dfu$label[i] = paste(c("+", dfu$Change[i], ": ", signif(dfu$MeanT[i], digits=2), "+-", signif(dfu$SDT[i], digits=2)), collapse="") 
+      dfu$label[i] = paste(c("+", dfu$Change[i], ": ", signif(dfu$MeanT[i], digits=2), " +- ", signif(dfu$SDT[i], digits=2)), collapse="") 
     }
     
   }
@@ -212,7 +212,8 @@ plotHypercube.timeseries = function(my.post, log.axis = TRUE) {
 plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20) {
   return (ggarrange(plotHypercube.lik.trace(my.post),
                     plotHypercube.bubbles(my.post),
-                    plotHypercube.graph(my.post, f.thresh),
+                    plotHypercube.sampledgraph2(my.post, thresh = f.thresh, use.arc=FALSE, edge.label.size=3) + 
+                      theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1)),
                     plotHypercube.timehists(my.post, t.thresh), nrow=2, ncol=2) )
 }
 

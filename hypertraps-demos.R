@@ -35,7 +35,8 @@ my.post = HyperTraPS(m.2, initialstates_arg = m.1,
                      length_index_arg = 4,
                      featurenames_arg = c("A", "B", "C", "D", "E")); 
 plotHypercube.summary(my.post)
-plotHypercube.sampledgraph2(my.post, thresh=0.1)
+plotHypercube.sampledgraph2(my.post, thresh=0.1, use.arc=FALSE, edge.label.size=3) + 
+  theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1))
 
 # write output to files
 writeHyperinf(my.post, "simpledemo", my.post$L, postlabel = "simpledemo", fulloutput=TRUE)
@@ -50,9 +51,6 @@ my.post.sparse = HyperTraPS(m.2, initialstates_arg = m.1,
                             featurenames_arg = c("A", "B", "C", "D", "E"), walkers_arg = 2); 
 plotHypercube.summary(my.post.sparse)
 
-# q-gram distance between experiments
-qgramdist(my.post, my.post.sparse)
-
 # direct time run (no time window specified)
 my.post.dt = HyperTraPS(m.2, initialstates_arg = m.1, featurenames_arg = c("A", "B", "C", "D", "E")); 
 plotHypercube.summary(my.post.dt)
@@ -61,7 +59,7 @@ plotHypercube.summary(my.post.dt)
 # other plots
 plotHypercube.motifs(my.post)
 plotHypercube.timeseries(my.post)
-plotHypercube.sampledgraph2(my.post)
+plotHypercube.graph(my.post)
 
 # regularisation
 my.post.regularise = HyperTraPS(m.2, initialstates_arg = m.1, regularise_arg = 1, walkers_arg = 20)
