@@ -487,7 +487,9 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   
   // initialise and allocate
   maxt = pow(10, lengthindex);
-  if(maxt <= 10000) SAMPLE = 100; else SAMPLE = 1000;
+  SAMPLE = 1000;
+  if(maxt <= 10000) SAMPLE = 100;
+  if(maxt <= 100) SAMPLE = 1;
 
   if(_EVERYITERATION)
     SAMPLE = 1;
