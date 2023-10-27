@@ -5,7 +5,11 @@ using namespace Rcpp;
 
 List PosteriorAnalysis(List L,
 		       Nullable<CharacterVector> featurenames_arg,
-		       int use_regularised);
+		       int use_regularised,
+		       int limited_output);
+List RegulariseR(int *matrix,
+		 int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, int PLI,
+		 int limited_output);
 List OutputStatesR(double *ntrans, int LEN, int model);
 List HyperTraPS(NumericMatrix matrix_arg,
 		Nullable<NumericMatrix> initialstates_arg,
@@ -148,7 +152,7 @@ List OutputStatesR(double *ntrans, int LEN, int model)
   return Lout;
 }
 
-List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, int PLI)
+List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, int PLI, int limited_output)
 {
   int i, j;
   int NVAL;
@@ -182,12 +186,14 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
   lik_v.push_back(lik);
   AIC_v.push_back(AIC);
   BIC_v.push_back(BIC);
-  
-  printf("Regularising...\npruning ");
+
+  if(!limited_output)
+    Rprintf("Regularising...\npruning ");
   // remove parameters stepwise
   for(j = 0; j < NVAL; j++)
     {
-      printf("%i of %i\n", j+1, NVAL); 
+      if(!limited_output)
+	Rprintf("%i of %i\n", j+1, NVAL); 
       // find parameter that retains highest likelihood when removed
       biggest = 0;
       for(i = 0; i < NVAL; i++)
@@ -301,6 +307,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 		NumericVector PLI_arg = 0,
 		NumericVector walkers_arg = 200,
 		NumericVector full_analysis_arg = 1,
+		NumericVector limited_output_arg = 0,
 		Nullable<CharacterVector> featurenames_arg = R_NilValue)
 {
   int parents[_MAXN];
@@ -343,7 +350,8 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   int outputtransitions;
   int readparams;
   int PLI;
-
+  int limited_output;
+  
   // default values
   spectrumtype = 0;
   lengthindex = length_index_arg[0];
@@ -355,6 +363,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   seed = seed_arg[0];
   searchmethod = 0;
   BANK = walkers_arg[0];
+  limited_output = limited_output_arg[0];
   
   if(sgd_arg[0] == 1) searchmethod = 1;
   if(sa_arg[0] == 1) searchmethod = 2;
@@ -457,21 +466,24 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 	  tau2s[i] = INFINITY;
 	}
     }
-  
-  Rprintf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
-  if(PLI == 1) {
-    Rprintf("Running Phenotype Landscape Inference with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
-  } else if(spectrumtype == 1) {
-    Rprintf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
-  } else {
-    Rprintf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
-  }
-  switch(searchmethod) {
-  case 0: Rprintf("Using MH MCMC\n"); break;
-  case 1: Rprintf("Using SGD\n"); break;
-  case 2: Rprintf("Using SA\n"); break;
-  } 
+  if(!limited_output)
+    {
+      Rprintf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
+
+      if(PLI == 1) {
+	Rprintf("Running Phenotype Landscape Inference with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
+      } else if(spectrumtype == 1) {
+	Rprintf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
+      } else {
+	Rprintf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
+      }
+      switch(searchmethod) {
+      case 0: Rprintf("Using MH MCMC\n"); break;
+      case 1: Rprintf("Using SGD\n"); break;
+      case 2: Rprintf("Using SA\n"); break;
+      } 
+    }
   
   // initialise and allocate
   maxt = pow(10, lengthindex);
@@ -514,24 +526,28 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
       if(losses == 1) Rprintf("(where 1 is absence)\n\n");
       if(losses == 0) Rprintf("(where 1 is presence)\n\n");
     }
-    
-  if(spectrumtype == 0)
-    {
-      Rprintf("Number of features is %i, I found %i observation pairs\n", len, ntarg/2);
-    }
-  else
-    {
-      Rprintf("Number of features is %i, I found %i observation pairs and %i timing pairs\n", len, ntarg/2, ntarg/2);
-      if(len > 30)
-	{
-	  Rprintf("*** CAUTION: continuous time calculations sometimes fail to converge for large (>30) feature sets. This can lead to NaNs appearing, which will stop the simulation. Consider running without continuous time option.\n");
-	}
-    }
-  Rprintf("\n");
 
+  if(!limited_output)
+    {
+      if(spectrumtype == 0)
+	{
+	  Rprintf("Number of features is %i, I found %i observation pairs\n", len, ntarg/2);
+	}
+      else
+	{
+	  Rprintf("Number of features is %i, I found %i observation pairs and %i timing pairs\n", len, ntarg/2, ntarg/2);
+	  if(len > 30)
+	    {
+	      Rprintf("*** CAUTION: continuous time calculations sometimes fail to converge for large (>30) feature sets. This can lead to NaNs appearing, which will stop the simulation. Consider running without continuous time option.\n");
+	    }
+	}
+      Rprintf("\n");
+    }
+  
   if(len > 15 && outputtransitions == 1)
     {
-      Rprintf("*** More than 15 features, meaning we'd need a lot of space to output transition and state information. I'm switching off this output.\n");
+      if(!limited_output)
+	Rprintf("*** More than 15 features, meaning we'd need a lot of space to output transition and state information. I'm switching off this output.\n");
       outputtransitions = 0;
     }
   
@@ -560,12 +576,14 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
   // initialise with an agnostic transition matrix
   if(readparams == 0)
     {
-      Rprintf("Starting with simple initial param guess\n");
+      if(!limited_output)
+	Rprintf("Starting with simple initial param guess\n");
       InitialMatrix(trans, len, model, 0);
     }
   else
     {
-      Rprintf("Starting with supplied parameterisation\n");
+      if(!limited_output)
+	Rprintf("Starting with supplied parameterisation\n");
       ReadMatrix(trans, len, model, paramfile);
     }
 
@@ -761,7 +779,7 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 	  time(&end_t);
 	  gettimeofday(&t_stop, NULL);
 	  diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
-	  if(t == 0)
+	  if(t == 0 && !limited_output)
 	    Rprintf("Using SGD: one gradient calculation took %e seconds\n\n", diff_t);
   
 	  for(i = 0; i < NVAL; i++)
@@ -772,7 +790,8 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 	    }
 	  
 	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
-	  Rprintf("Iteration %i likelihood %f previous-likelihood %f\n", t, nlik, lik);
+	  if(!limited_output)
+	    Rprintf("Iteration %i likelihood %f previous-likelihood %f\n", t, nlik, lik);
 	  lik = nlik;
 	}
       //      if(t % SAMPLE == 0) printf("NaN count %i of %i\n", nancount, t);
@@ -780,7 +799,8 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
       // output information periodically
       if(t % TMODULE == 0 && searchmethod != 1)
 	{
-	  Rprintf("Iteration %i likelihood %f total-acceptance %f recent-acceptance %f trial-likelihood %f\n", t, lik, acc/(acc+rej), lacc/(lacc+lrej), nlik);
+	  if(!limited_output)
+	    Rprintf("Iteration %i likelihood %f total-acceptance %f recent-acceptance %f trial-likelihood %f\n", t, lik, acc/(acc+rej), lacc/(lacc+lrej), nlik);
 	  lacc = lrej = 0;
 	}
     }
@@ -805,14 +825,14 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 
   if(regularise)
     {
-      List regL = RegulariseR(matrix, len, ntarg, besttrans, parents, tau1s, tau2s, model, PLI);
+      List regL = RegulariseR(matrix, len, ntarg, besttrans, parents, tau1s, tau2s, model, PLI, limited_output);
       L["regularisation"] = regL;
     }
 
   if(full_analysis_arg[0] == 0)
     return L;
   else
-    return PosteriorAnalysis(L, featurenames_arg, regularise);
+    return PosteriorAnalysis(L, featurenames_arg, regularise, limited_output);
 }
 
 //' Extracts information from HyperTraPS-related posterior samples
@@ -822,7 +842,8 @@ List HyperTraPS(NumericMatrix matrix_arg, //NumericVector len_arg, NumericVector
 // [[Rcpp::export]]
 List PosteriorAnalysis(List L,
 		       Nullable<CharacterVector> featurenames_arg = R_NilValue,
-		       int use_regularised = 0)
+		       int use_regularised = 0,
+		       int limited_output = 0)
 {
   int *matrix;
   int len, ntarg;
@@ -862,8 +883,9 @@ List PosteriorAnalysis(List L,
   sampleperiod = 0;
   strcpy(postfile, "rcpp");
   strcpy(labelfile, "");
-  
-  Rprintf("\nHyperTraPS(-CT) posterior analysis\n\n");
+
+  if(!limited_output)
+    Rprintf("\nHyperTraPS(-CT) posterior analysis\n\n");
 
   // deal with command-line arguments
   /*  for(i = 1; i < argc; i+=2)
@@ -892,16 +914,18 @@ List PosteriorAnalysis(List L,
       Rprintf("*** Posterior analysis isn't meaningful for a zero-parameter model ***\n\n");
       return 0;
       }*/
-
-  Rprintf("Verbose flag is %i\n", verbose);
-  Rprintf("Bin scale is %f\n", BINSCALE);
-
+  if(!limited_output)
+    {
+      Rprintf("Verbose flag is %i\n", verbose);
+      Rprintf("Bin scale is %f\n", BINSCALE);
+    }
 
   NumericMatrix posterior;
   if(use_regularised == 0)
     {
       posterior = as<NumericMatrix>(L["posterior.samples"]);
-      Rprintf("Using posterior samples with %i x %i entries\n", posterior.nrow(), posterior.ncol());
+      if(!limited_output)
+	Rprintf("Using posterior samples with %i x %i entries\n", posterior.nrow(), posterior.ncol());
     }
   else
     {
@@ -912,7 +936,8 @@ List PosteriorAnalysis(List L,
       for(i = 0; i < tmpV.size(); i++)
 	tmpM(0,i) = tmpV[i];
       posterior = as<NumericMatrix>(tmpM);
-      Rprintf("Using best regularised params with %i x %i entries\n", posterior.nrow(), posterior.ncol());
+      if(!limited_output)
+	Rprintf("Using best regularised params with %i x %i entries\n", posterior.nrow(), posterior.ncol());
     }
   
   tlen = posterior.ncol();
@@ -933,7 +958,8 @@ List PosteriorAnalysis(List L,
       return 0;
     }
 
-  Rprintf("Based on %s with %i params per model and model %i, there are %i features\n", postfile, tlen, model, len);
+  if(!limited_output)
+    Rprintf("Based on %s with %i params per model and model %i, there are %i features\n", postfile, tlen, model, len);
 
   NumericVector passedL = as<NumericVector>(L["L"]); 
   if(len != passedL[0]) {
@@ -989,7 +1015,8 @@ List PosteriorAnalysis(List L,
   if(filelabel == 0)
     sprintf(labelstr, "%s", postfile);
 
-  Rprintf("Output label is %s\n", labelstr);
+  if(!limited_output)
+    Rprintf("Output label is %s\n", labelstr);
   
   // set up file outputs
   if(verbose)
@@ -1059,13 +1086,16 @@ List PosteriorAnalysis(List L,
       fclose(fp3);
       } */
 
+  if(!limited_output)
+    {
+      Rprintf("allruns is %i\n", allruns);
 
-  Rprintf("allruns is %i\n", allruns);
+      // output various summaries
+      for(i = 0; i < len; i++)
+	Rprintf("%i %f\n", i, fmeanstore[i]/allruns);
 
-  // output various summaries
-  for(i = 0; i < len; i++)
-    Rprintf("%i %f\n", i, fmeanstore[i]/allruns);
-
+    }
+      
   // compute mean orderings
   // rec[t*len+i] is prob of obtaining i at time t
 
