@@ -35,6 +35,37 @@ or, to attach some useful helper and plotting functions (which depend on more li
 
 The core function in R is then `HyperTraPS` which can then be run from the R console with various arguments below.
 
+Input
+------
+
+HyperTraPS deals fundamentally with *transitions between states labelled by binary strings*. This allows us to work with cross-sectional, longitudinally, and phylogenetically-coupled samples.
+
+The fundamental data element that goes into HyperTraPS is an observed transition from a "before" state to an "after" state. In the case of cross-sectional data, the "before" state is assumed to be the state of all zeroes (0000...), corresponding to a state which has not acquired any features. For longitudinal and/or phylogenetic observations, "before" and "after" states must be specified.
+
+In R, the `HyperTraPS` function requires at least a matrix describing "after" states. If a matrix supplying "before" states is absent, the data are assumed to be cross-sectional.
+
+For example,
+
+`0 0 1`
+`0 1 1`
+
+would reflect cross-sectional observations of states 001 and 011, implicitly corresponding to transitions 000->001 and 000->011.
+
+At the command-line, a single file containing a matrix of observations must be provided. There are two options. First, if data are cross-sectional, the file should contain just the set of "after" states, and the `--crosssectional` flag should be used. Second, if data are in the form of transitions, the matrix should contain the "before" states as *odd* rows (starting from row 1) and the "after" states as *even* rows.
+
+For example,
+
+`0 0 1`
+`0 1 1`
+
+*without* the `--crosssectional` flag would be interpreted as a transition 001->011 (odd row -> even row). *With* the `--crosssectional` flag this would be interpreted as two independent observations, corresponding (as in the R case) to transitions 000->001 and 000->011.
+
+The digit 2 can be used to reflect uncertainty in a state. For example,
+
+`0 2 1`
+
+corresponds to an observation where the first feature is absent, the second feature may be present or absent, and the third feature is present.
+
 Output
 ------
 
