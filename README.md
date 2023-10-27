@@ -149,7 +149,7 @@ Plots in R
 | `plotHypercube.motifs` | Motif-style plot of probability of acquiring trait *i* at ordinal step *j* | |
 | `plotHypercube.graph` | Transition graph with edge weights showing probability flux (from full output) | thresh=0.05 (minimum threshold of flux for drawing an edge) |
 | `plotHypercube.sampledgraph` | Transition graph with edge weights showing probability flux (from sampled paths) | thresh=0.05 (minimum threshold of flux for drawing an edge), max=1000 (maximum number of sampled routes to consider) |
-| `plotHypercube.sampledgraph2` | As above, with mean and s.d. of absolute timings for each step | thresh=0.05 (minimum threshold of flux for drawing an edge), max=1000 (maximum number of sampled routes to consider), no.times=FALSE (avoid annotating edges with time information) |
+| `plotHypercube.sampledgraph2` | As above, with mean and s.d. of absolute timings for each step | thresh=0.05 (minimum threshold of flux for drawing an edge), max=1000 (maximum number of sampled routes to consider), no.times=FALSE (avoid annotating edges with time information), use.arc=TRUE (arc edge format -- looks messier but less prone to overlapping edge labels), node.labels=TRUE (binary labels for nodes), edge.label.size=2 (font size for edge labels) |
 | `plotHypercube.timehists` | Histograms of absolute timings for each trait's acquisition | |
 | `plotHypercube.regularisation` | Information criterion vs number of nonzero parameters during regularisation | |
 | `plotHypercube.timeseries` | Time series of acquisitions across sampled routes | |
