@@ -52,7 +52,7 @@ plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE) {
   this.plot =  ggraph(trans.g, layout="sugiyama", layers=layers) + 
             geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
            scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
-            theme_graph() #aes(label=bs)) + theme_graph() 
+    theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
     this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
   }
@@ -85,7 +85,7 @@ plotHypercube.sampledgraph = function(my.post, max = 1000, thresh = 0.05, node.l
   layers = str_count(bs, "1")
   this.plot = ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
             scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
-            theme_graph() #aes(label=bs)) + theme_graph() 
+    theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
     this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
   }
@@ -133,11 +133,11 @@ plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05, node.
   if(use.arc == TRUE) {
   this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label), label_size = edge.label.size, label_colour="black", color="#AAAAFF") + 
              scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
-             theme_graph()
+             theme_graph(base_family="sans")
   } else {
     this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=label), label_size = edge.label.size, label_colour="black", color="#AAAAFF") + 
       scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
-      theme_graph()
+      theme_graph(base_family="sans")
   }
   if(node.labels == TRUE) {
     this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
@@ -213,7 +213,7 @@ plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20) {
   return (ggarrange(plotHypercube.lik.trace(my.post),
                     plotHypercube.bubbles(my.post),
                     plotHypercube.sampledgraph2(my.post, thresh = f.thresh, use.arc=FALSE, edge.label.size=3) + 
-                      theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1)),
+                      theme(legend.position="none") + expand_limits(x = c(-1, 4)),
                     plotHypercube.timehists(my.post, t.thresh), nrow=2, ncol=2) )
 }
 

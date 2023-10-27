@@ -91,7 +91,7 @@ my.post.cgh = HyperTraPS(cgh.mat,
                         featurenames_arg = cgh.names) 
 ggarrange(plotHypercube.lik.trace(my.post.cgh), 
           plotHypercube.bubbles(my.post.cgh, reorder=TRUE), 
-          plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE), nrow=3)
+          plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE, node.labels=FALSE, us), ncol=3)
 plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE)
 
 # C4 paper reproduction
