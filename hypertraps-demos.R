@@ -87,11 +87,11 @@ cgh.mat = do.call(rbind, lapply(strsplit(cgh.mat, ""), as.numeric))
 cgh.names = as.vector(read.table("RawData/ovarian-names.txt", sep=","))[[1]]
 
 my.post.cgh = HyperTraPS(cgh.mat, 
-                        length_index_arg = 4, outputinput= 1, 
+                        length_index_arg = 4, outputinput_arg = 1, 
                         featurenames_arg = cgh.names) 
 ggarrange(plotHypercube.lik.trace(my.post.cgh), 
           plotHypercube.bubbles(my.post.cgh, reorder=TRUE), 
-          plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE, node.labels=FALSE, us), ncol=3)
+          plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE, node.labels=FALSE, use.arc=FALSE), ncol=3)
 plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE)
 
 # C4 paper reproduction
