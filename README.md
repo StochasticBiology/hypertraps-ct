@@ -44,7 +44,7 @@ The fundamental data element that goes into HyperTraPS is an observed transition
 
 In R, the `HyperTraPS` function requires at least a matrix describing "after" states. If a matrix supplying "before" states is absent, the data are assumed to be cross-sectional.
 
-For example,
+For example, the matrix
 
 `0 0 1`  
 `0 1 1`
