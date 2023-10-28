@@ -3,6 +3,12 @@ title: "Demonstration of HyperTraPS in R"
 output: html_document
 ---
 
+HyperTraPS (hypercubic transition path sampling) is a family of algorithms for inferring the dynamics of "accumulation" processes. These are processes where a set of binary features are acquired over time.
+
+HyperTraPS will take a set of observed states, described by binary strings recording the presence/absence of each feature. It may optionally take initial states from which these states are reached, and information on the timings associated with each observation. It returns various summaries of which feature are acquired and when, and how these features influence each other.
+
+### Loading the software
+
 If we just want the HyperTraPS code without other dependencies, we only need Rcpp, and can use the following
 
 ```{r}
@@ -18,7 +24,9 @@ source("hypertraps.R")
 
 ### Simple demo 
 
-Construct simple synthetic dataset, including timings, for the "cross" double-pathway system
+Here we'll construct a simple synthetic dataset. The `m.1` matrix will store a set of initial states, and the `m.2` matrix will store a set of later observed states. The first row of `m.1`, for example, stores the state 00000, where no features have been acquired. The first row of `m.2` stores 10000, where the first of five features has been acquired.
+
+The times correspond to each observation, so the transition 00000->10000 described by those first rows has an associated time of 0.1 (in whatever units we are working with).
 
 ```{r}
 m.1 = matrix(rep(c(0,0,0,0,0,
@@ -44,7 +52,7 @@ m.2 = matrix(rep(c(1,0,0,0,0,
 times = rep(c(0.1, 0.2, 0.3, 0.4, 0.5), 10)
 ```
 
-Run HyperTraPS with start and end observations, start and end timings, and feature labels
+Let's run HyperTraPS with these "before" and "after" observations. By using `times` as both the start and end time arguments, we say that each transition takes precisely that associated time -- we could allow broader time windows to capture uncertainty in timing. Finally, we provide labels for the five individual features involved.
 
 ```{r}
 my.post = HyperTraPS(m.2, initialstates_arg = m.1, 
@@ -52,13 +60,13 @@ my.post = HyperTraPS(m.2, initialstates_arg = m.1,
                      featurenames_arg = c("A", "B", "C", "D", "E")) 
 ```
 
-"Bubble" plot summary. The size of a circle at point x,y gives the probability that feature y is acquired at ordinal time x.
+Here's a "bubble" plot summary of the inferred dynamics. The size of a circle at point x,y gives the probability that feature y is acquired at ordinal time x.
 
 ```{r}
 plotHypercube.bubbles(my.post)
 ```
 
-Sampled routes on the hypercubic space. Each edge is a transition, corresponding to the acquisition of a new feature. The edges are labelled by the feature acquired and the statistics of the time taken (mean +- s.d.). The edge width gives the probability flux through that transition.
+This plot shows a set of sampled routes on the hypercubic space. Each edge is a transition, corresponding to the acquisition of a new feature. The edges are labelled by the feature acquired and the statistics of the time taken (mean +- s.d.). The edge width gives the probability flux through that transition.
 
 ```{r}
 plotHypercube.sampledgraph2(my.post)
@@ -66,13 +74,13 @@ plotHypercube.sampledgraph2(my.post)
 
 ### Input/output between R data structure and file format
 
-Write output to files
+We can write the output of HyperTraPS to a set of files for storage and later retrieval
 
 ```{r}
 writeHyperinf(my.post, "simpledemo", my.post$L, postlabel = "simpledemo", fulloutput=TRUE)
 ```
 
-Retrieve output from files
+We can retrieve output from files, which may have been previously written as above, or may have come from running HyperTraPS at the command line.
 
 ```{r}
 my.post.r = readHyperinf("simpledemo", postlabel = "simpledemo", fulloutput=TRUE)
@@ -80,7 +88,9 @@ my.post.r = readHyperinf("simpledemo", postlabel = "simpledemo", fulloutput=TRUE
 
 ### Other visualisations
 
-Motif plot, containing the same data as the bubble plots but via differen visualisation
+Next we'll look at some other ways of visualising the output of HyperTraPS.
+
+Motif plot, containing the same data as the bubble plots but via different visualisation
 
 ```{r}
 plotHypercube.motifs(my.post)
@@ -94,7 +104,9 @@ plotHypercube.timeseries(my.post)
 
 ### Other functional examples
 
-Run an example with fewer walkers
+HyperTraPS allows substantial flexibility in how evolutionary pathways are inferred, how likelihoods are estimated, and other aspects of the approach. 
+
+If we want to sacrifice some accuracy in estimating likelihood for computational speed, we can run an example with fewer walkers sampling pathways (`walkers_arg`)
 
 ```{r}
 my.post.sparse = HyperTraPS(m.2, initialstates_arg = m.1, 
@@ -103,7 +115,7 @@ my.post.sparse = HyperTraPS(m.2, initialstates_arg = m.1,
                             limited_output_arg = 1)
 ```
 
-Stepwise regularisation
+We can ask HyperTraPS to perform stepwise regularisation after fitting a model, pruning extraneous parameters (`regularise_arg`). The regularisation plot shows how the information criterion behaves as we prune back parameters -- the minimum gives us our optimal model.
 
 ```{r}
 my.post.regularise = HyperTraPS(m.2, initialstates_arg = m.1, regularise_arg = 1,
@@ -113,7 +125,7 @@ plotHypercube.regularisation(my.post.regularise)
 plotHypercube.summary(my.post.regularise)
 ```
 
-Use simulated annealing to get a maximum likelihood estimate rather than a Bayesian picture
+We can use simulated annealing to get a maximum likelihood estimate rather than a Bayesian picture (`sa_arg`)
 
 ```{r}
 my.post.sa = HyperTraPS(m.2, initialstates_arg = m.1, sa_arg = 1,
@@ -121,7 +133,7 @@ my.post.sa = HyperTraPS(m.2, initialstates_arg = m.1, sa_arg = 1,
 plotHypercube.summary(my.post.sa)
 ```
 
-Use "phenotype landscape inference" -- unbiased sampling. This takes longer but is more flexible with uncertain data
+We can also use "phenotype landscape inference" -- an unbiased sampling method, unlike the (corrected) bias sampling in HyperTraPS (`PLI_arg`). This takes longer but is more flexible with uncertain data
 
 ```{r}
 my.post.pli = HyperTraPS(m.2, initialstates_arg = m.1, PLI_arg = 1,
@@ -129,7 +141,7 @@ my.post.pli = HyperTraPS(m.2, initialstates_arg = m.1, PLI_arg = 1,
 plotHypercube.summary(my.post.pli)
 ```
 
-HyperTraPS supports different parameter structures. This approach allows every edge on the hypercube to have its own independent parameters, then regularises to remove extraneous parameters
+HyperTraPS supports different parameter structures (`model_arg`). By default we use an "L2" parameterisation, where each feature can individually influence the acquisition of every other feature. "L1" has features completely independent; "L0" has all features identical. "L3" allows *pairs* of features to influence each feature's acquisition; "L4" allows *triplets* of features to influence each feature's acquisition. This approach, labelled -1, allows every edge on the hypercube to have its own independent parameters -- corresponding to the most flexible possible picture, where arbitrary sets of features influence other features. We then regularise as above (`regularise_arg`) to remove extraneous parameters
 
 ```{r}
 my.post.bigmodel.regularise = HyperTraPS(m.2, initialstates_arg = m.1, model_arg = -1,
@@ -140,9 +152,9 @@ plotHypercube.regularisation(my.post.bigmodel.regularise)
 
 ### Scientific examples
 
-A set of short-form examples from past studies -- should run in a few minutes and give approximations to the original results
+A set of short-form examples from past studies -- these should run in a few minutes and give approximations to the original results. In each case we read the observed states from a file (these are present in different formats, so different curation steps are involved in each case), and feature labels from another file. Then we run HyperTraPS and plot some summaries of the output.
 
-1. Ovarian cancer case study: traits are chromosomal aberrations, observations are independent patient samples
+1. Ovarian cancer case study: traits are chromosomal aberrations, observations are independent patient samples.
 
 ```{r}
 cgh.mat = readLines("RawData/ovarian.txt")
@@ -159,7 +171,9 @@ ggarrange(plotHypercube.lik.trace(my.post.cgh),
 plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE)
 ```
 
-2. C4 photosynthesis case study: traits are physical/genetic features associated with C4, observations are (incomplete) phylogenetically independent intermediate species
+2. C4 photosynthesis case study: traits are physical/genetic features associated with C4, observations are (incomplete) phylogenetically independent intermediate species.
+
+This case study involves some uncertain data, which are present as "2"s in the source data -- labelling features which may be 0 or 1.
 
 ```{r}
 c4.mat = as.matrix(read.table("RawData/c4-curated.csv", sep=","))
@@ -202,10 +216,11 @@ my.post.tools = HyperTraPS(tools.ends, initialstates_arg = tools.starts,
                            featurenames_arg = tools.names,
                            limited_output_arg = 1) 
 ggarrange(plotHypercube.lik.trace(my.post.tools), plotHypercube.bubbles(my.post.tools, reorder=TRUE, transpose=TRUE), nrow=2)
-plotHypercube.sampledgraph2(my.post.tools, node.labels = FALSE, max=100)
+plotHypercube.sampledgraph2(my.post.tools, node.labels = FALSE, max=100, no.times=TRUE) + theme(legend.position = "none")
 ```
 
-Plot summaries of all scientific case studies
+Here we can plot quick summaries of all scientific case studies
+
 ```{r}
 ggarrange( plotHypercube.bubbles(my.post.cgh, reorder=TRUE) + xlab("Order") + ylab("Aberration") + ggtitle("Ovarian cancer progression"),
            plotHypercube.bubbles(my.post.c4, reorder=TRUE) + xlab("Order") + ylab("C4 feature") + ggtitle("C4 photosynthesis"),
