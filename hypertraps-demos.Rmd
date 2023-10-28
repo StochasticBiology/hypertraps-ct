@@ -60,16 +60,36 @@ my.post = HyperTraPS(m.2, initialstates_arg = m.1,
                      featurenames_arg = c("A", "B", "C", "D", "E")) 
 ```
 
-Here's a "bubble" plot summary of the inferred dynamics. The size of a circle at point x,y gives the probability that feature y is acquired at ordinal time x.
+That output takes us through the HyperTraPS process. First, the arguments provided to the function call are described, then the algorithm chosen (MH MCMC) and a summary of the input data is given. To estimate runtime, HyperTraPS reports the time taken for a single likelihood calculation, then scales this by the estimated number of calculations required to give a runtime estimate. Here this is only 1.17 seconds, but for chains long enough for satisfactory convergence (and more complicated systems) this may be dramatically longer.
+
+Because we didn't turn off output, HyperTraPS periodically outputs information about the run as it goes. Every 100th step, it outputs: the likelihood of the current parameterisation; the step acceptance rate through the whole run; the step acceptance rate since the last output; the likelihood of the most recent proposal. These can help design efficient MCMC approaches: if the acceptance rate is too low and/or the recent proposal likelihood is much lower than the current, consider a smaller perturbation kernel. It also helps us see when the chain is "burned in" -- when the likelihood fluctuates, rather than consistently increasing, we're probably more stable.
+
+After the MCMC run, the posterior analysis begins, and outputs a few details. These include the size of the posterior sample set being explored, the model being used, and a quick summary of the mean acquisition orderings of each feature. These are really just checks for debugging; not much useful information can be seen from them.
+
+Now -- visualising the results.
+
+*Transition graph plot.* This plot shows a set of sampled routes on the hypercubic space. Each edge is a transition, corresponding to the acquisition of a new feature. The edges are labelled by the feature acquired and the statistics of the time taken (mean +- s.d.). The edge width gives the probability flux through that transition.
+
+```{r}
+plotHypercube.sampledgraph2(my.post)
+```
+
+*Bubble plot.* This plot summarises the inferred dynamics of features, forgetting specific states. The size of a circle at point x,y gives the probability that feature y is acquired at ordinal time x.
 
 ```{r}
 plotHypercube.bubbles(my.post)
 ```
 
-This plot shows a set of sampled routes on the hypercubic space. Each edge is a transition, corresponding to the acquisition of a new feature. The edges are labelled by the feature acquired and the statistics of the time taken (mean +- s.d.). The edge width gives the probability flux through that transition.
+*Timing histograms.* Histograms of acquisition time for each feature, and probability that each feature is not acquired within a given time threshold (here, 20).
 
 ```{r}
-plotHypercube.sampledgraph2(my.post)
+plotHypercube.timehists(my.post)
+```
+
+*Time series plot.* Each step up the vertical axis corresponds to the acquisition of a new feature. The horizontal axis gives the time of the corresponding event, and the colour labels the feature that was acquired.
+
+```{r}
+plotHypercube.timeseries(my.post)
 ```
 
 ### Input/output between R data structure and file format
@@ -84,22 +104,6 @@ We can retrieve output from files, which may have been previously written as abo
 
 ```{r}
 my.post.r = readHyperinf("simpledemo", postlabel = "simpledemo", fulloutput=TRUE)
-```
-
-### Other visualisations
-
-Next we'll look at some other ways of visualising the output of HyperTraPS.
-
-Motif plot, containing the same data as the bubble plots but via different visualisation
-
-```{r}
-plotHypercube.motifs(my.post)
-```
-
-Time series plot. Each step up the vertical axis corresponds to the acquisition of a new feature. The horizontal axis gives the time of the corresponding event, and the colour labels the feature that was acquired.
-
-```{r}
-plotHypercube.timeseries(my.post)
 ```
 
 ### Other functional examples
@@ -184,7 +188,7 @@ my.post.c4 = HyperTraPS(c4.mat,
                         losses_arg = 1,
                         featurenames_arg = c4.names,
                         limited_output_arg = 1) 
-ggarrange(plotHypercube.lik.trace(my.post.c4), plotHypercube.bubbles(my.post.c4, reorder=TRUE), nrow=2)
+plotHypercube.bubbles(my.post.c4, reorder=TRUE)
 ```
 
 3. Severe malaria disease progression case study: traits are clinical features, observations are (incomplete) independent patient presentations
@@ -200,7 +204,7 @@ my.post.malaria = HyperTraPS(malaria.mat,
                         walkers_arg = 20,
                         featurenames_arg = malaria.names,
                         limited_output_arg = 1) 
-ggarrange(plotHypercube.lik.trace(my.post.malaria), plotHypercube.bubbles(my.post.malaria, reorder=TRUE, transpose=TRUE), nrow=2)
+plotHypercube.bubbles(my.post.malaria, reorder=TRUE, transpose=TRUE)
 ```
 
 4. Tool use evolution case study: traits are modes of tool use, observations are phylogenetically coupled species observations (phylogeny has been accounted for, giving transition pairs)
@@ -215,16 +219,7 @@ my.post.tools = HyperTraPS(tools.ends, initialstates_arg = tools.starts,
                            length_index_arg = 3, 
                            featurenames_arg = tools.names,
                            limited_output_arg = 1) 
-ggarrange(plotHypercube.lik.trace(my.post.tools), plotHypercube.bubbles(my.post.tools, reorder=TRUE, transpose=TRUE), nrow=2)
+plotHypercube.bubbles(my.post.tools, reorder=TRUE, transpose=TRUE)
 plotHypercube.sampledgraph2(my.post.tools, node.labels = FALSE, max=100, no.times=TRUE) + theme(legend.position = "none")
-```
-
-Here we can plot quick summaries of all scientific case studies
-
-```{r}
-ggarrange( plotHypercube.bubbles(my.post.cgh, reorder=TRUE) + xlab("Order") + ylab("Aberration") + ggtitle("Ovarian cancer progression"),
-           plotHypercube.bubbles(my.post.c4, reorder=TRUE) + xlab("Order") + ylab("C4 feature") + ggtitle("C4 photosynthesis"),
-           plotHypercube.bubbles(my.post.malaria, reorder=TRUE, transpose=TRUE) + xlab("Symptom") + ylab("Order") + ggtitle("Severe malaria progression"),
-           plotHypercube.bubbles(my.post.tools, reorder=TRUE, transpose=TRUE) + xlab("Tool use mode") + ylab("Order") + ggtitle("Tool use emergence"))
 ```
 
