@@ -78,6 +78,27 @@ plotHypercube.summary(my.post.pli)
 my.post.bigmodel.regularise = HyperTraPS(m.2, initialstates_arg = m.1, model_arg = -1, regularise_arg = 1, walkers_arg = 20)
 plotHypercube.regularisation(my.post.bigmodel.regularise)
 
+# this example demonstrates different model choices -- the data is generated using a process where pairs of features influence other features
+# the (inappropriate) L^1 and L^2 parameterisations cannot capture this, but the "all edge" (model -1) and L^3 parameterisations can
+logic.mat = readLines("Verify/hi-order.txt")
+logic.mat = do.call(rbind, lapply(strsplit(logic.mat, ""), as.numeric))
+logic.starts = logic.mat[seq(from=1, to=nrow(logic.mat), by=2),]
+logic.ends = logic.mat[seq(from=2, to=nrow(logic.mat), by=2),]
+logic.post.m1 = HyperTraPS(logic.ends, initialstates_arg = logic.starts, length_index_arg = 4, model_arg = -1, walkers_arg = 20)
+logic.post.1 = HyperTraPS(logic.ends, initialstates_arg = logic.starts, length_index_arg = 4, model_arg = 1, walkers_arg = 20)
+logic.post.2 = HyperTraPS(logic.ends, initialstates_arg = logic.starts, length_index_arg = 4, model_arg = 2, walkers_arg = 20)
+logic.post.3 = HyperTraPS(logic.ends, initialstates_arg = logic.starts, length_index_arg = 4, model_arg = 3, walkers_arg = 20)
+
+ggarrange(plotHypercube.graph(logic.post.m1) + ggtitle("All edges") + theme(legend.position="none"),
+          plotHypercube.graph(logic.post.1) + ggtitle("L") + theme(legend.position="none"),
+          plotHypercube.graph(logic.post.2)+ ggtitle("L^2") + theme(legend.position="none"),
+          plotHypercube.graph(logic.post.3)+ ggtitle("L^3") + theme(legend.position="none"))
+# compare likelihoods across model structures
+c(max(logic.post.m1$lik.traces$LogLikelihood1),
+  max(logic.post.1$lik.traces$LogLikelihood1),
+  max(logic.post.2$lik.traces$LogLikelihood1),
+  max(logic.post.3$lik.traces$LogLikelihood1))
+
 #### short-form examples from past studies -- should run in a few minutes and give approximations to the original results
 
 # ovarian cancer case study reproduction
