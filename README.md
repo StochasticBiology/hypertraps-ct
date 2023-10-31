@@ -145,15 +145,15 @@ Plots in R
 | Plot function | Description | Options and defaults |
 |---------------|-------------|---------|
 | `plotHypercube.lik.trace` | Trace of likelihood over inference run, calculated twice (to show consistency or lack thereof) | |
-| `plotHypercube.bubbles` | "Bubble plot" of probability of acquiring trait *i* at ordinal step *j* | transpose=FALSE (horizontal and vertical axis), reorder=FALSE (order traits by mean acquisition ordering) |
+| `plotHypercube.bubbles` | "Bubble plot" of probability of acquiring trait *i* at ordinal step *j* | *transpose*=FALSE (horizontal and vertical axis), *reorder*=FALSE (order traits by mean acquisition ordering) |
 | `plotHypercube.motifs` | Motif-style plot of probability of acquiring trait *i* at ordinal step *j* | |
-| `plotHypercube.graph` | Transition graph with edge weights showing probability flux (from full output) | thresh=0.05 (minimum threshold of flux for drawing an edge) |
-| `plotHypercube.sampledgraph` | Transition graph with edge weights showing probability flux (from sampled paths) | thresh=0.05 (minimum threshold of flux for drawing an edge), max=1000 (maximum number of sampled routes to consider) |
-| `plotHypercube.sampledgraph2` | As above, with mean and s.d. of absolute timings for each step | thresh=0.05 (minimum threshold of flux for drawing an edge), max=1000 (maximum number of sampled routes to consider), no.times=FALSE (avoid annotating edges with time information), use.arc=TRUE (arc edge format -- looks messier but less prone to overlapping edge labels), node.labels=TRUE (binary labels for nodes), edge.label.size=2 (font size for edge labels) |
+| `plotHypercube.graph` | Transition graph with edge weights showing probability flux (from full output) | *thresh*=0.05 (minimum threshold of flux for drawing an edge) |
+| `plotHypercube.sampledgraph` | Transition graph with edge weights showing probability flux (from sampled paths) | *thresh*=0.05 (minimum threshold of flux for drawing an edge), max=1000 (maximum number of sampled routes to consider) |
+| `plotHypercube.sampledgraph2` | As above, with mean and s.d. of absolute timings for each step | *thresh*=0.05 (minimum threshold of flux for drawing an edge), *max*=1000 (maximum number of sampled routes to consider), *no.times*=FALSE (avoid annotating edges with time information), *use.arc*=TRUE (arc edge format -- looks messier but less prone to overlapping edge labels), *node.labels*=TRUE (binary labels for nodes), *edge.label.size*=2 (font size for edge labels) |
 | `plotHypercube.timehists` | Histograms of absolute timings for each trait's acquisition | |
 | `plotHypercube.regularisation` | Information criterion vs number of nonzero parameters during regularisation | |
 | `plotHypercube.timeseries` | Time series of acquisitions across sampled routes | |
-| `plotHypercube.summary` | Summary plot combining several of the above | |
+| `plotHypercube.summary` | Summary plot combining several of the above | *f.thresh*=0.05 (flux threshold for graph plot), *t.thresh*=20 (time threshold for time histograms), *continuous.time*=TRUE (plot continuous time summary information) |
 
 All but the last are demonstrated here:
 ![image](https://github.com/StochasticBiology/hypertraps-ct/assets/50171196/153ed0d7-88ea-4dc2-a3bc-0c24b25923db)
