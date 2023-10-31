@@ -10,14 +10,14 @@ convname = function(str) {
 for(expt in c(1,2)) {
   
 if(expt == 1) {
-my.tree = read.tree("Data/mro-ncbi-tree.phy")
-my.data = read.csv("Data/mro-barcodes.csv")
+my.tree = read.tree("../Data/mro-ncbi-tree.phy")
+my.data = read.csv("../Data/mro-barcodes.csv")
 my.tree$tip.label = convname(my.tree$tip.label)
 my.data$Organism = convname(my.data$Organism)
 }
   if(expt == 2) {
-my.tree = read.tree("Data/ng.2878-S2.txt")
-my.data = read.csv("Data/tuberculosis-v5-header-19-29.csv")
+my.tree = read.tree("../Data/ng.2878-S2.txt")
+my.data = read.csv("../Data/tuberculosis-v5-header-19-29.csv")
 my.data$Organism = my.data$Isolate
   }
   
