@@ -49,11 +49,11 @@ plotHypercube.summary(my.post.r)
 my.post.sparse = HyperTraPS(m.2, initialstates = m.1, 
                             starttimes = times, endtimes = times,
                             featurenames = c("A", "B", "C", "D", "E"), walkers = 2); 
-plotHypercube.summary(my.post.sparse)
+plotHypercube.summary(my.post.sparse, t.thresh = 2)
 
 # direct time run (no time window specified)
 my.post.dt = HyperTraPS(m.2, initialstates = m.1, featurenames = c("A", "B", "C", "D", "E")); 
-plotHypercube.summary(my.post.dt)
+plotHypercube.summary(my.post.dt, continuous.time = FALSE)
 
 ### various other demos
 # other plots
@@ -76,7 +76,7 @@ plotHypercube.summary(my.post.pli, continuous.time = FALSE)
 
 # start with every edge parameterised, then regularise
 my.post.bigmodel.regularise = HyperTraPS(m.2, initialstates = m.1, model = -1, regularise = 1, walkers = 20)
-plotHypercube.regularisation(my.post.bigmodel.regularise, continuous.time = FALSE)
+plotHypercube.regularisation(my.post.bigmodel.regularise)
 
 # this example demonstrates different model choices -- the data is generated using a process where pairs of features influence other features
 # the (inappropriate) L^1 and L^2 parameterisations cannot capture this, but the "all edge" (model -1) and L^3 parameterisations can
