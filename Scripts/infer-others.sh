@@ -1,3 +1,8 @@
+# run HyperTraPS for various existing scientific case studies
+
+# get back to root
+cd ..
+
 gcc -o3 hypertraps.c -lm -o hypertraps.ce
 
 # C4 via MCMC, PLI, SA
