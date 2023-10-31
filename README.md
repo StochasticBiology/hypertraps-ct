@@ -42,28 +42,30 @@ HyperTraPS deals fundamentally with *transitions between states labelled by bina
 
 The fundamental data element that goes into HyperTraPS is an observed transition from a "before" state to an "after" state. In the case of cross-sectional data, the "before" state is assumed to be the state of all zeroes (0000...), corresponding to a state which has not acquired any features. For longitudinal and/or phylogenetic observations, "before" and "after" states must be specified.
 
-In R, the `HyperTraPS` function requires at least a matrix describing "after" states -- this is the required first argument. If a matrix supplying "before" states is absent, the data are assumed to be cross-sectional.
+HyperTraPS requires at least a matrix describing "after" states -- this is a required argument. In R, it is passed as a matrix; at the command line, it is passed as a file.
 
-For example, the matrix
+If a matrix supplying "before" states is absent, the data are assumed to be cross-sectional. For example, the matrix
 
 `0 0 1`  
 `0 1 1`
 
-would reflect cross-sectional observations of states 001 and 011, implicitly corresponding to transitions 000->001 and 000->011. A matrix of "before" states may be specified via `initialstates_arg`, for example,
+would reflect cross-sectional observations of states 001 and 011, implicitly corresponding to transitions 000->001 and 000->011.
+
+A matrix of "before" states may be specified as a matrix in R or a file at the command line, using `initialstates`. For example, including the initial states
 
 `0 0 1`  
 `0 0 1`
 
-which would now reflect the transitions 001->001 (i.e. remaining in state 001) and 001->011.
+with the above observations would now reflect the transitions 001->001 (i.e. remaining in state 001) and 001->011.
 
-At the command-line, a single file containing a matrix of observations must be provided. There are two options. First, if data are cross-sectional, the file should contain just the set of "after" states, and the `--crosssectional` flag should be used. Second, if data are in the form of transitions, the matrix should contain the "before" states as *odd* rows (starting from row 1) and the "after" states as *even* rows.
+For compatibility with older studies, a different input format is possible at the command-line. When a single file containing a matrix of observations is provided, it is by default assumed that this gives cross-sectional observations. But the `--transitionformat` flag can be used to interpret this matrix as paired "before" and "after" observations. Now, the matrix should contain the "before" states as *odd* rows (starting from row 1) and the "after" states as *even* rows.
 
 For example,
 
 `0 0 1`  
 `0 1 1`
 
-*without* the `--crosssectional` flag would be interpreted as a transition 001->011 (odd row -> even row). *With* the `--crosssectional` flag this would be interpreted as two independent observations, corresponding (as in the R case) to transitions 000->001 and 000->011.
+with the `--transitionformat` flag would be interpreted as a transition 001->011 (odd row -> even row). Without the `--transitionformat` flag this would be interpreted as two independent observations, corresponding (as in the R case) to transitions 000->001 and 000->011.
 
 The digit 2 can be used to reflect uncertainty in a state. For example,
 
@@ -73,7 +75,7 @@ corresponds to an observation where the first feature is absent, the second feat
 
 For continuous-time inference, HyperTraPS works with a time window for each observed transition, specified via a start time and an end time. If the start time and end time are equal, the transition is specified as taking exactly that time. If start time = 0 and end time = Inf, the transition can take any amount of time, which is mathematically equivalent to the case without continuous time. In general, the start and end times specify an allowed set of durations for the given transition, allowing uncertain timings to be accounted for.
 
-In R, these start and end times are vectors specified by `starttimes_arg` and `endtimes_arg`. At the command line, they are stored in files accessed by the `--times` and `--endtimes` flags. In both cases, absent start times means that all start times are assumed to be zero; absent end times means that all end times are assumed to be Inf.
+In R, these start and end times are vectors specified by `starttimes` and `endtimes`. At the command line, they are stored in files accessed by the `--starttimes` and `--endtimes` flags. In both cases, absent start times means that all start times are assumed to be zero; absent end times means that all end times are assumed to be Inf.
 
 Output
 ------
