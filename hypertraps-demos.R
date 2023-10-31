@@ -64,19 +64,19 @@ plotHypercube.graph(my.post)
 # regularisation
 my.post.regularise = HyperTraPS(m.2, initialstates = m.1, regularise = 1, walkers = 20)
 plotHypercube.regularisation(my.post.regularise)
-plotHypercube.summary(my.post.regularise)
+plotHypercube.summary(my.post.regularise, continuous.time = FALSE)
 
 # simulated annealing output
 my.post.sa = HyperTraPS(m.2, initialstates = m.1, sa = 1)
-plotHypercube.summary(my.post.sa)
+plotHypercube.summary(my.post.sa, continuous.time = FALSE)
 
 # phenotypic landscape inference
 my.post.pli = HyperTraPS(m.2, initialstates = m.1, pli = 1)
-plotHypercube.summary(my.post.pli)
+plotHypercube.summary(my.post.pli, continuous.time = FALSE)
 
 # start with every edge parameterised, then regularise
 my.post.bigmodel.regularise = HyperTraPS(m.2, initialstates = m.1, model = -1, regularise = 1, walkers = 20)
-plotHypercube.regularisation(my.post.bigmodel.regularise)
+plotHypercube.regularisation(my.post.bigmodel.regularise, continuous.time = FALSE)
 
 # this example demonstrates different model choices -- the data is generated using a process where pairs of features influence other features
 # the (inappropriate) L^1 and L^2 parameterisations cannot capture this, but the "all edge" (model -1) and L^3 parameterisations can

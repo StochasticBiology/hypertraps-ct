@@ -209,12 +209,19 @@ plotHypercube.timeseries = function(my.post, log.axis = TRUE) {
   }
 }
 
-plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20) {
+plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, continuous.time = TRUE) {
+  if(continuous.time == TRUE) {
   return (ggarrange(plotHypercube.lik.trace(my.post),
                     plotHypercube.bubbles(my.post),
                     plotHypercube.sampledgraph2(my.post, thresh = f.thresh, use.arc=FALSE, edge.label.size=3) + 
                       theme(legend.position="none") + expand_limits(x = c(-1, 4)),
                     plotHypercube.timehists(my.post, t.thresh), nrow=2, ncol=2) )
+  } else {
+    return (ggarrange(plotHypercube.lik.trace(my.post),
+                      plotHypercube.bubbles(my.post),
+                      plotHypercube.sampledgraph2(my.post, thresh = f.thresh, use.arc=FALSE, edge.label.size=3, no.times = TRUE) + 
+                        theme(legend.position="none") + expand_limits(x = c(-1, 4)) ) )
+  }
 }
 
 mylabel = function(label, suffix) {

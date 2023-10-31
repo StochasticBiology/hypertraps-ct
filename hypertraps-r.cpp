@@ -286,7 +286,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
 //' @param outputinput Option to output the input data
 //' @param regularise Regularise
 //' @param model Model structure
-//' @param PLI Phenotype landscape inference
+//' @param pli Phenotype landscape inference
 //' @return A named list of objects from the inference process, containing parameter samples from the inference process, the maximum likelihood parameterisation, likelihood samples, and the sampling times.
 // [[Rcpp::export]]
 List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_arg,
