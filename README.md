@@ -65,7 +65,7 @@ For example,
 `0 0 1`  
 `0 1 1`
 
-with the `--transitionformat` flag would be interpreted as a transition 001->011 (odd row -> even row). Without the `--transitionformat` flag this would be interpreted as two independent observations, corresponding (as above) to transitions 000->001 and 000->011. The `--transitionformat` flag is only available at the command line; within R, data structures in transition format can readily be arranged to suit the dual-matrix format (some examples in `hypertraps-demos.R`).
+with the `--transitionformat` flag would be interpreted as a transition 001->011 (odd row -> even row). Without the `--transitionformat` flag this would be interpreted as two independent observations, corresponding (as in the R case) to transitions 000->001 and 000->011.
 
 The digit 2 can be used to reflect uncertainty in a state. For example,
 
@@ -117,10 +117,10 @@ HyperTraPS needs at least a set of observations. In R this should take the form 
 | Argument | R | Command-line | Default |
 |----------|---|--------------|---------|
 | Input data | obs=*matrix* | --obs *filename* | None (required) |
-| Precursor states | initialstates=*matrix* | --initialstates *filename* | None |
-| Transition format observations | (not available) | --transitionformat | (off) |
+| Precursor states | initialstates=*matrix* | --initialstates *filename* | None; on command line can also be specified as odd-element rows in "Input data" |
+| Cross-sectional observations | (assumed if "Precursor states" absent) | --crosssectional | 0 |
 | Time window start | starttimes=*vector* | --times *filename* | 0 |
-| Time window end | endtimes=*vector* | --endtimes *filename* | Inf |
+| Time window end | endtimes=*vector* | --endtimes *filename* | starttimes if present (i.e. precisely specified times); otherwise Inf |
 | Model structure | model=*N* | --model *N* | 2 |
 | Number of walkers | walkers=*N* | --walkers *N* | 200 |
 | Inference chain length | length=*N* | --length *N* | 3 |

@@ -445,9 +445,9 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	  tau1s[i] = 0;
       }
       if(!endtimes.isNotNull()) {
-	Rprintf("Start timings, but not end timings, specified. Assuming t = inf ends.\n");
+	Rprintf("Start timings, but not end timings, specified. Assuming that start times *are* end timings (i.e. precisely specified times).\n");
 	for(i = 0; i < ntarg/2; i++)
-	  tau2s[i] = INFINITY;
+	  tau2s[i] = tau1s[i];
       }
       for(i = 0; i < ntarg/2; i++)
 	{

@@ -63,24 +63,24 @@ gcc -o3 hypertraps.c -lm -o hypertraps.ce
 
 ## continuous time
 # different sampling walkers
-./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --times VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-1 > VerifyData/t-simple-ct-1.tmp &
-./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --times VerifyData/synth-cross-times-1.txt --length 4 --walkers 2000 --label VerifyData/test-cross-ct-2 > VerifyData/t-simple-ct-2.tmp &
-./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --times VerifyData/synth-cross-times-1.txt --length 4 --walkers 20 --label VerifyData/test-cross-ct-3 > VerifyData/t-simple-ct-3.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --starttimes VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-1 > VerifyData/t-simple-ct-1.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --starttimes VerifyData/synth-cross-times-1.txt --length 4 --walkers 2000 --label VerifyData/test-cross-ct-2 > VerifyData/t-simple-ct-2.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --starttimes VerifyData/synth-cross-times-1.txt --length 4 --walkers 20 --label VerifyData/test-cross-ct-3 > VerifyData/t-simple-ct-3.tmp &
 # different optimisers
-./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --times VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-sa --sa > VerifyData/t-simple-ct-sa.tmp &
-./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --times VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-sgd --sgd > VerifyData/t-simple-ct-sgd.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --starttimes VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-sa --sa > VerifyData/t-simple-ct-sa.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --starttimes VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-sgd --sgd > VerifyData/t-simple-ct-sgd.tmp &
 # different parameter structures
-./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --times VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-mod--1 --model -1 > VerifyData/t-simple-ct-mod--1.tmp &
-./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --times VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-mod-0 --model 0 > VerifyData/t-simple-ct-mod-0.tmp &
-./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --times VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-mod-1 --model 1 > VerifyData/t-simple-ct-mod-1.tmp &
-./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --times VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-mod-2 --model 2 > VerifyData/t-simple-ct-mod-2.tmp &
-./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --times VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-mod-3 --model 3 > VerifyData/t-simple-ct-mod-3.tmp &
-./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --times VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-mod-4 --model 4 > VerifyData/t-simple-ct-mod-4.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --starttimes VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-mod--1 --model -1 > VerifyData/t-simple-ct-mod--1.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --starttimes VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-mod-0 --model 0 > VerifyData/t-simple-ct-mod-0.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --starttimes VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-mod-1 --model 1 > VerifyData/t-simple-ct-mod-1.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --starttimes VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-mod-2 --model 2 > VerifyData/t-simple-ct-mod-2.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --starttimes VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-mod-3 --model 3 > VerifyData/t-simple-ct-mod-3.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --starttimes VerifyData/synth-cross-times-1.txt --length 4 --label VerifyData/test-cross-ct-mod-4 --model 4 > VerifyData/t-simple-ct-mod-4.tmp &
 
 ## different parameter space sizes
 # cross-cube observations
-./hypertraps.ce --obs VerifyData/synth-bigcross-10-hard-samples.txt --times VerifyData/synth-bigcross-10-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-10 > VerifyData/t-bigcross-hard-ct-10.tmp &
-./hypertraps.ce --obs VerifyData/synth-bigcross-30-hard-samples.txt --times VerifyData/synth-bigcross-30-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-30 > VerifyData/t-bigcross-hard-ct-30.tmp &
-./hypertraps.ce --obs VerifyData/synth-bigcross-50-hard-samples.txt --times VerifyData/synth-bigcross-50-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-50 > VerifyData/t-bigcross-hard-ct-50.tmp &
-./hypertraps.ce --obs VerifyData/synth-bigcross-70-hard-samples.txt --times VerifyData/synth-bigcross-70-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-70 > VerifyData/t-bigcross-hard-ct-70.tmp &
-./hypertraps.ce --obs VerifyData/synth-bigcross-90-hard-samples.txt --times VerifyData/synth-bigcross-90-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-90 > VerifyData/t-bigcross-hard-ct-90.tmp &
+./hypertraps.ce --obs VerifyData/synth-bigcross-10-hard-samples.txt --starttimes VerifyData/synth-bigcross-10-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-10 > VerifyData/t-bigcross-hard-ct-10.tmp &
+./hypertraps.ce --obs VerifyData/synth-bigcross-30-hard-samples.txt --starttimes VerifyData/synth-bigcross-30-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-30 > VerifyData/t-bigcross-hard-ct-30.tmp &
+./hypertraps.ce --obs VerifyData/synth-bigcross-50-hard-samples.txt --starttimes VerifyData/synth-bigcross-50-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-50 > VerifyData/t-bigcross-hard-ct-50.tmp &
+./hypertraps.ce --obs VerifyData/synth-bigcross-70-hard-samples.txt --starttimes VerifyData/synth-bigcross-70-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-70 > VerifyData/t-bigcross-hard-ct-70.tmp &
+./hypertraps.ce --obs VerifyData/synth-bigcross-90-hard-samples.txt --starttimes VerifyData/synth-bigcross-90-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-90 > VerifyData/t-bigcross-hard-ct-90.tmp &
