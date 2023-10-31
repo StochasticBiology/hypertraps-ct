@@ -21,11 +21,11 @@ DecToBin <- function(x, len) {
 fname = c("tb-dt-1", "tb-dt-2", "tb-ct-1", "tb-ct-2")
 bdf = thdf = data.frame()
 for(i in 1:length(fname)) {
-  bubble.name = paste(c("Data/", fname[i], "-posterior.txt-bubbles.csv"), collapse="")
+  bubble.name = paste(c("../Data/", fname[i], "-bubbles.csv"), collapse="")
   tmpdf = read.csv(bubble.name)
   tmpdf$Expt=i
   bdf = rbind(bdf, tmpdf)
-  thist.name = paste(c("Data/", fname[i], "-posterior.txt-timehists.csv"), collapse="")
+  thist.name = paste(c("../Data/", fname[i], "-timehists.csv"), collapse="")
   tmpdf = read.csv(thist.name)
   tmpdf$Expt=i
   thdf = rbind(thdf, tmpdf)
@@ -68,10 +68,10 @@ ggplot(thdfp[thdfp$Expt>2,], aes(x=Time, y=Probability, color=factor(Expt))) +
   theme_light() #+ scale_x_continuous(trans="log10")
 
 # read transition and state probabilities
-trans.1 = read.csv("Data/tb-dt-1-trans.txt", sep=" ")
+trans.1 = read.csv("../Data/tb-dt-1-trans.txt", sep=" ")
 trans.1 = trans.1[!is.nan(trans.1$Probability),]
 
-trans.s.1 = read.csv("Data/tb-dt-1-states.txt", sep=" ")
+trans.s.1 = read.csv("../Data/tb-dt-1-states.txt", sep=" ")
 trans.s.1 = trans.s.1[!is.nan(trans.s.1$Probability),]
 
 # set up metadata for ggraph plot
@@ -95,8 +95,8 @@ g.tb.cube = ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(a
 g.tb.summary = grid.arrange(g.tb.bubbles, g.tb.thist, g.tb.thist2, nrow=3)
 
 ######## routes analysis TB
-routes = read.table("Data/tb-ct-1-posterior.txt-routes.txt")
-routetimes = read.table("Data/tb-ct-1-posterior.txt-times.txt")
+routes = read.table("../Data/tb-ct-1-routes.txt")
+routetimes = read.table("../Data/tb-ct-1-times.txt")
 
 # motif plot
 rdf = data.frame()
@@ -130,14 +130,14 @@ dev.off()
 
 #### bubble and hypercube plots for MRO experiments
 
-fname = c("mro-3", "mro-4", "mro-5", "mro-6")
+fname = c("mro-3", "mro-4") #, "mro-5", "mro-6")
 bdf = thdf = data.frame()
 for(i in 1:length(fname)) {
-  bubble.name = paste(c("Data/", fname[i], "-posterior.txt-bubbles.csv"), collapse="")
+  bubble.name = paste(c("../Data/", fname[i], "-bubbles.csv"), collapse="")
   tmpdf = read.csv(bubble.name)
   tmpdf$Expt=i
   bdf = rbind(bdf, tmpdf)
-  thist.name = paste(c("Data/", fname[i], "-posterior.txt-timehists.csv"), collapse="")
+  thist.name = paste(c("../Data/", fname[i], "-timehists.csv"), collapse="")
   tmpdf = read.csv(thist.name)
   tmpdf$Expt=i
   thdf = rbind(thdf, tmpdf)
@@ -176,8 +176,8 @@ g.mro.thist2 = ggplot(thdfp[thdfp$Time == thresh,], aes(x=OriginalIndex, y=Proba
 
 grid.arrange(g.mro.thist, g.mro.thist2, nrow=2)
 
-trans.1 = read.csv("Data/mro-1-trans.txt", sep=" ")
-trans.s.1 = read.csv("Data/mro-1-states.txt", sep=" ")
+trans.1 = read.csv("../Data/mro-1-trans.txt", sep=" ")
+trans.s.1 = read.csv("../Data/mro-1-states.txt", sep=" ")
 # set up metadata for ggraph plot
 trans.1$Flux = trans.1$Probability*trans.s.1$Probability[trans.1$From+1]
 
@@ -198,8 +198,8 @@ g.mro.cube = ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(
 g.mro.summary = grid.arrange(g.mro.bubbles, g.mro.thist, g.mro.thist2, ncol=1)
 
 #### routes analysis MRO
-routes = read.table("Data/mro-3-posterior.txt-routes.txt")
-routetimes = read.table("Data/mro-3-posterior.txt-times.txt")
+routes = read.table("../Data/mro-3-routes.txt")
+routetimes = read.table("../Data/mro-3-times.txt")
 
 # motif plot
 rdf = data.frame()

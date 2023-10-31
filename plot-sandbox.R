@@ -63,12 +63,12 @@ for(expt in 1:5) {
       base.name = post.name = fname[i]
       #post.name = paste(c(fname[i], "-posterior.txt"))
     }
-      lik.name = paste(c("VerifyData/", base.name, "-lik.csv"), collapse="")
-      trans.name = paste(c("VerifyData/", base.name, "-trans.csv"), collapse="")
-      states.name = paste(c("VerifyData/", base.name, "-states.csv"), collapse="")
-      bubble.name = paste(c("VerifyData/", post.name, "-bubbles.csv"), collapse="")
-      thist.name = paste(c("VerifyData/", post.name, "-timehists.csv"), collapse="")
-      routes.name = paste(c("VerifyData/", post.name, "-routes.txt"), collapse="")
+      lik.name = paste(c("../VerifyData/", base.name, "-lik.csv"), collapse="")
+      trans.name = paste(c("../VerifyData/", base.name, "-trans.csv"), collapse="")
+      states.name = paste(c("../VerifyData/", base.name, "-states.csv"), collapse="")
+      bubble.name = paste(c("../VerifyData/", post.name, "-bubbles.csv"), collapse="")
+      thist.name = paste(c("../VerifyData/", post.name, "-timehists.csv"), collapse="")
+      routes.name = paste(c("../VerifyData/", post.name, "-routes.txt"), collapse="")
    
     # read likelihood trace and produce plot
     lik.df = read.csv(lik.name)
@@ -129,7 +129,7 @@ for(expt in 1:5) {
  
     # get trajectories from regularisation, if appropriate
    if(oneshot=="regularised") {
-      reg.name = paste(c("VerifyData/", fname[i], "-regularising.csv"), collapse="")
+      reg.name = paste(c("../VerifyData/", fname[i], "-regularising.csv"), collapse="")
       reg.df = read.csv(reg.name)
       g.reglik[[i]] = ggplot(reg.df) + geom_line(aes(x=nparam, y=log.lik)) + theme_light()
         g.regBIC[[i]] = ggplot(reg.df) + geom_line(aes(x=nparam, y=BIC)) + theme_light() 

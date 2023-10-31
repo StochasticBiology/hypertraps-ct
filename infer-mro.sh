@@ -1,3 +1,9 @@
+# infer mitochondrion-related organelle evolutionary dynamics
+# ensure prepare-all.sh has been run to wrangle data
+
+# get back to root
+cd ..
+
 gcc -o3 hypertraps.c -lm -o hypertraps.ce
 
 ### NCBI, discrete time

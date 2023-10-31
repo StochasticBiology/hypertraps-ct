@@ -3,7 +3,7 @@ library(ggpubr)
 
 gset = list()
 for(L in c(10, 30, 50, 70, 90)) {
-  fname = paste(c("VerifyData/test-bigcross-hard-", L, "-posterior.txt-bubbles.csv"), collapse="")
+  fname = paste(c("../VerifyData/test-bigcross-hard-", L, "-posterior.txt-bubbles.csv"), collapse="")
   df = read.csv(fname)
   gset[[length(gset)+1]] = ggplot(df, aes(x=Time, y=OriginalIndex, 
                                           size=sqrt(Probability)/sqrt(max(Probability)), 
@@ -18,7 +18,7 @@ dev.off()
 
 gset2 = list()
 for(L in c(10, 30, 50, 70, 90)) {
-  fname = paste(c("VerifyData/test-bigcross-hard-", L, "-posterior.txt-bubbles.csv"), collapse="")
+  fname = paste(c("../VerifyData/test-bigcross-hard-", L, "-posterior.txt-bubbles.csv"), collapse="")
   df = read.csv(fname)
   new.df = data.frame(sTime=rep(1:10, each=10), sIndex=rep(1:10, rep=10), sProbability=0)
   for(i in 1:nrow(df)) {

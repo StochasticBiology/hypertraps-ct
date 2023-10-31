@@ -1,3 +1,6 @@
+# get back to root
+cd ..
+
 # generate synthetic datasets
 mkdir VerifyData/
 cd Verify

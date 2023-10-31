@@ -1,3 +1,8 @@
+# prepare and wrangle data for TB and MRO case studies
+
+# get back to root
+cd ..
+
 # shift raw data to folder for manipulation
 mkdir Data/
 cp RawData/* Data/

@@ -1,5 +1,8 @@
 # perform various more technical tests about optimisation and convergence for different sampling and optimisation schemes
 
+# get back to root
+cd ..
+
 mkdir VerifyData/
 cd Verify
 gcc -o3 generate-cross.c -lm -o generate-cross.ce

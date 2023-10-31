@@ -6,7 +6,7 @@ library(gridExtra)
 fname = c("cross-0", "cross-1", "cross-2")
 bdf = data.frame()
 for(i in 1:length(fname)) {
-bubble.name = paste(c("VerifyData/", fname[i], "-bubbles.csv"), collapse="")
+bubble.name = paste(c("../VerifyData/", fname[i], "-bubbles.csv"), collapse="")
 tmpdf = read.csv(bubble.name)
 tmpdf$Expt=i
 bdf = rbind(bdf, tmpdf)
@@ -19,7 +19,7 @@ g.bubbles = ggplot(bdf, aes(x=Time+Expt/10, y=OriginalIndex, size=Probability, c
 
 ### easy cube with gains not losses with new code
 
-df = read.csv("VerifyData/easycube-posterior.txt", header=FALSE, sep=" ")
+df = read.csv("../VerifyData/easycube-posterior.txt", header=FALSE, sep=" ")
 
 # old parameterisation
 #colnames(df) = c("t0on0", "t1on1", "t2on2", "na0", "t0on1", "t0on2", "t1on0", "na1", "t1on2", "t2on0", "t2on1", "na2")
@@ -61,7 +61,7 @@ edges.df$label = ""
 for(i in 1:nrow(edges.df)) {
   edges.df$label[i] = paste(c(signif(means[i], digits=2), "+-", signif(sds[i], digits=2)), collapse="")
 }
-true.df = read.csv("VerifyData/synth-easycube.txt", header=FALSE, sep=" ")
+true.df = read.csv("../VerifyData/synth-easycube.txt", header=FALSE, sep=" ")
 edges.df$truelabel = ""
 for(i in 1:nrow(edges.df)) {
   edges.df$truelabel[i] = true.df$V3[true.df$V1==edge.src[i] & true.df$V2==edge.dst[i]]
@@ -77,7 +77,7 @@ g.easy = ggplot() + geom_segment(data=edges.df, aes(x=x,y=y,xend=xend,yend=yend)
 
 ### hard cube with gains not losses with new code
 
-df = read.csv("VerifyData/hardcube-posterior.txt", header=FALSE, sep=" ")
+df = read.csv("../VerifyData/hardcube-posterior.txt", header=FALSE, sep=" ")
 
 # old parameterisation
 #colnames(df) = c("t0on0", "t1on1", "t2on2", "na0", "t0on1", "t0on2", "t1on0", "na1", "t1on2", "t2on0", "t2on1", "na2")
@@ -119,7 +119,7 @@ edges.df$label = ""
 for(i in 1:nrow(edges.df)) {
   edges.df$label[i] = paste(c(signif(means[i], digits=2), "+-", signif(sds[i], digits=2)), collapse="")
 }
-true.df = read.csv("VerifyData/synth-hardcube.txt", header=FALSE, sep=" ")
+true.df = read.csv("../VerifyData/synth-hardcube.txt", header=FALSE, sep=" ")
 edges.df$truelabel = ""
 for(i in 1:nrow(edges.df)) {
   edges.df$truelabel[i] = signif(true.df$V3[true.df$V1==edge.src[i] & true.df$V2==edge.dst[i]], digits=3)
@@ -144,7 +144,7 @@ g.hard.hist = ggplot(hist.df, aes(x=log(probscale),fill=factor(edge))) +
 
 #### analytic vs sampling simulation
 
-rcdf = read.csv("Verify/randomcubes.txt", header=FALSE, sep=" ")
+rcdf = read.csv("../Verify/randomcubes.txt", header=FALSE, sep=" ")
 g.timehist = ggplot(rcdf[rcdf$V1!=0,]) + 
   geom_line(aes(x=V2,y=V3, color=factor(V1))) +
   geom_point(aes(x=V2,y=V4, color=factor(V1)), size=5, alpha=0.2) +
@@ -153,11 +153,11 @@ g.timehist = ggplot(rcdf[rcdf$V1!=0,]) +
   theme_light()
 
 #### time histograms for inferred cross case
-h1.df = read.csv("VerifyData/cross-0-timehists.csv")
+h1.df = read.csv("../VerifyData/cross-0-timehists.csv")
 h1.df$expt=1
-h2.df = read.csv("VerifyData/cross-1-timehists.csv")
+h2.df = read.csv("../VerifyData/cross-1-timehists.csv")
 h2.df$expt=2
-h3.df = read.csv("VerifyData/cross-2-timehists.csv")
+h3.df = read.csv("../VerifyData/cross-2-timehists.csv")
 h3.df$expt=3
 h.df = rbind(h1.df, h2.df, h3.df)
 
