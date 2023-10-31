@@ -55,9 +55,9 @@ times = rep(c(0.1, 0.2, 0.3, 0.4, 0.5), 10)
 Let's run HyperTraPS with these "before" and "after" observations. By using `times` as both the start and end time arguments, we say that each transition takes precisely that associated time -- we could allow broader time windows to capture uncertainty in timing. Finally, we provide labels for the five individual features involved.
 
 ```{r}
-my.post = HyperTraPS(m.2, initialstates_arg = m.1, 
-                     starttimes_arg = times, endtimes_arg = times,
-                     featurenames_arg = c("A", "B", "C", "D", "E")) 
+my.post = HyperTraPS(m.2, initialstates = m.1, 
+                     starttimes = times, endtimes = times,
+                     featurenames = c("A", "B", "C", "D", "E")) 
 ```
 
 That output takes us through the HyperTraPS process. First, the arguments provided to the function call are described, then the algorithm chosen (MH MCMC) and a summary of the input data is given. To estimate runtime, HyperTraPS reports the time taken for a single likelihood calculation, then scales this by the estimated number of calculations required to give a runtime estimate. Here this is only 1.17 seconds, but for chains long enough for satisfactory convergence (and more complicated systems) this may be dramatically longer.
@@ -110,61 +110,61 @@ my.post.r = readHyperinf("simpledemo", postlabel = "simpledemo", fulloutput=TRUE
 
 HyperTraPS allows substantial flexibility in how evolutionary pathways are inferred, how likelihoods are estimated, and other aspects of the approach. 
 
-If we want to sacrifice some accuracy in estimating likelihood for computational speed, we can run an example with fewer walkers sampling pathways (`walkers_arg`)
+If we want to sacrifice some accuracy in estimating likelihood for computational speed, we can run an example with fewer walkers sampling pathways (`walkers`)
 
 ```{r}
-my.post.sparse = HyperTraPS(m.2, initialstates_arg = m.1, 
-                            starttimes_arg = times, featurenames_arg = c("A", "B", "C", "D", "E"), 
-                            walkers_arg = 2,
-                            limited_output_arg = 1)
+my.post.sparse = HyperTraPS(m.2, initialstates = m.1, 
+                            starttimes = times, featurenames = c("A", "B", "C", "D", "E"), 
+                            walkers = 2,
+                            limited_output = 1)
 ```
 
-We can ask HyperTraPS to perform stepwise regularisation after fitting a model, pruning extraneous parameters (`regularise_arg`). The regularisation plot shows how the information criterion behaves as we prune back parameters -- the minimum gives us our optimal model.
+We can ask HyperTraPS to perform stepwise regularisation after fitting a model, pruning extraneous parameters (`regularise`). The regularisation plot shows how the information criterion behaves as we prune back parameters -- the minimum gives us our optimal model.
 
 ```{r}
-my.post.regularise = HyperTraPS(m.2, initialstates_arg = m.1, regularise_arg = 1,
-                                walkers_arg = 20,
-                                limited_output_arg = 1)
+my.post.regularise = HyperTraPS(m.2, initialstates = m.1, regularise = 1,
+                                walkers = 20,
+                                limited_output = 1)
 plotHypercube.regularisation(my.post.regularise)
 plotHypercube.summary(my.post.regularise)
 ```
 
-We can use simulated annealing to get a maximum likelihood estimate rather than a Bayesian picture (`sa_arg`)
+We can use simulated annealing to get a maximum likelihood estimate rather than a Bayesian picture (`sa`)
 
 ```{r}
-my.post.sa = HyperTraPS(m.2, initialstates_arg = m.1, sa_arg = 1,
-                        limited_output_arg = 1)
+my.post.sa = HyperTraPS(m.2, initialstates = m.1, sa = 1,
+                        limited_output = 1)
 plotHypercube.summary(my.post.sa)
 ```
 
-We can also use "phenotype landscape inference" -- an unbiased sampling method, unlike the (corrected) bias sampling in HyperTraPS (`PLI_arg`). This takes longer but is more flexible with uncertain data
+We can also use "phenotype landscape inference" -- an unbiased sampling method, unlike the (corrected) bias sampling in HyperTraPS (`PLI`). This takes longer but is more flexible with uncertain data
 
 ```{r}
-my.post.pli = HyperTraPS(m.2, initialstates_arg = m.1, PLI_arg = 1,
-                         limited_output_arg = 1)
+my.post.pli = HyperTraPS(m.2, initialstates = m.1, pli = 1,
+                         limited_output = 1)
 plotHypercube.summary(my.post.pli)
 ```
 
-HyperTraPS supports different parameter structures (`model_arg`). By default we use an "L2" parameterisation, where each feature can individually influence the acquisition of every other feature. "L1" has features completely independent; "L0" has all features identical. "L3" allows *pairs* of features to influence each feature's acquisition; "L4" allows *triplets* of features to influence each feature's acquisition. This approach, labelled -1, allows every edge on the hypercube to have its own independent parameters -- corresponding to the most flexible possible picture, where arbitrary sets of features influence other features. We then regularise as above (`regularise_arg`) to remove extraneous parameters
+HyperTraPS supports different parameter structures (`model`). By default we use an "L2" parameterisation, where each feature can individually influence the acquisition of every other feature. "L1" has features completely independent; "L0" has all features identical. "L3" allows *pairs* of features to influence each feature's acquisition; "L4" allows *triplets* of features to influence each feature's acquisition. This approach, labelled -1, allows every edge on the hypercube to have its own independent parameters -- corresponding to the most flexible possible picture, where arbitrary sets of features influence other features. We then regularise as above (`regularise`) to remove extraneous parameters
 
 ```{r}
-my.post.bigmodel.regularise = HyperTraPS(m.2, initialstates_arg = m.1, model_arg = -1,
-                                         regularise_arg = 1, walkers_arg = 20,
-                                         limited_output_arg = 1)
+my.post.bigmodel.regularise = HyperTraPS(m.2, initialstates = m.1, model = -1,
+                                         regularise = 1, walkers = 20,
+                                         limited_output = 1)
 plotHypercube.regularisation(my.post.bigmodel.regularise)
 ```
 
-Here's another example of model choice. The data is now generated by a process where *pairs* of features influence the acquisition of other features. To capture these interactions, an "L^2" picture (`model_arg = 2`, where each feature *individually* influences each other feature) is insufficient -- an "L^3" picture (`model_arg = 3`) allowing pair influence is needed. The full parameterisation, where every edge on the hypercube transition network (`model_arg = -1`) has an independent parameter, can also capture this behaviour.
+Here's another example of model choice. The data is now generated by a process where *pairs* of features influence the acquisition of other features. To capture these interactions, an "L^2" picture (`model = 2`, where each feature *individually* influences each other feature) is insufficient -- an "L^3" picture (`model = 3`) allowing pair influence is needed. The full parameterisation, where every edge on the hypercube transition network (`model = -1`) has an independent parameter, can also capture this behaviour.
 
 ```{r}
 logic.mat = readLines("Verify/hi-order.txt")
 logic.mat = do.call(rbind, lapply(strsplit(logic.mat, ""), as.numeric))
 logic.starts = logic.mat[seq(from=1, to=nrow(logic.mat), by=2),]
 logic.ends = logic.mat[seq(from=2, to=nrow(logic.mat), by=2),]
-logic.post.m1 = HyperTraPS(logic.ends, initialstates_arg = logic.starts, length_index_arg = 4, model_arg = -1, walkers_arg = 20, limited_output_arg = 1)
-logic.post.1 = HyperTraPS(logic.ends, initialstates_arg = logic.starts, length_index_arg = 4, model_arg = 1, walkers_arg = 20, limited_output_arg = 1)
-logic.post.2 = HyperTraPS(logic.ends, initialstates_arg = logic.starts, length_index_arg = 4, model_arg = 2, walkers_arg = 20, limited_output_arg = 1)
-logic.post.3 = HyperTraPS(logic.ends, initialstates_arg = logic.starts, length_index_arg = 4, model_arg = 3, walkers_arg = 20, limited_output_arg = 1)
+logic.post.m1 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = -1, walkers = 20, limited_output = 1)
+logic.post.1 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = 1, walkers = 20, limited_output = 1)
+logic.post.2 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = 2, walkers = 20, limited_output = 1)
+logic.post.3 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = 3, walkers = 20, limited_output = 1)
 
 ggarrange(plotHypercube.graph(logic.post.m1) + ggtitle("All edges") + theme(legend.position="none"),
           plotHypercube.graph(logic.post.1) + ggtitle("L") + theme(legend.position="none"),
@@ -186,9 +186,9 @@ cgh.mat = do.call(rbind, lapply(strsplit(cgh.mat, ""), as.numeric))
 cgh.names = as.vector(read.table("RawData/ovarian-names.txt", sep=","))[[1]]
 
 my.post.cgh = HyperTraPS(cgh.mat, 
-                        length_index_arg = 3, outputinput_arg = 1, 
-                        featurenames_arg = cgh.names,
-                        limited_output_arg = 1) 
+                        length = 3, outputinput = 1, 
+                        featurenames = cgh.names,
+                        limited_output = 1) 
 ggarrange(plotHypercube.lik.trace(my.post.cgh), 
           plotHypercube.bubbles(my.post.cgh, reorder=TRUE), 
           plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE), nrow=3)
@@ -204,10 +204,10 @@ c4.mat = as.matrix(read.table("RawData/c4-curated.csv", sep=","))
 c4.names = as.vector(read.table("RawData/c4-trait-names.txt", sep=","))[[1]]
 
 my.post.c4 = HyperTraPS(c4.mat, 
-                        length_index_arg = 3, 
-                        losses_arg = 1,
-                        featurenames_arg = c4.names,
-                        limited_output_arg = 1) 
+                        length = 3, 
+                        losses = 1,
+                        featurenames = c4.names,
+                        limited_output = 1) 
 plotHypercube.bubbles(my.post.c4, reorder=TRUE)
 ```
 
@@ -219,11 +219,11 @@ malaria.mat = as.matrix(malaria.df[,2:ncol(malaria.df)])
 malaria.names = as.vector(read.table("RawData/malaria-names.txt", sep=","))[[1]]
 
 my.post.malaria = HyperTraPS(malaria.mat, 
-                        length_index_arg = 3,
-                        kernel_index_arg = 2,
-                        walkers_arg = 20,
-                        featurenames_arg = malaria.names,
-                        limited_output_arg = 1) 
+                        length = 3,
+                        kernel = 2,
+                        walkers = 20,
+                        featurenames = malaria.names,
+                        limited_output = 1) 
 plotHypercube.bubbles(my.post.malaria, reorder=TRUE, transpose=TRUE)
 ```
 
@@ -235,10 +235,10 @@ tools.names = as.vector(read.table("RawData/tools-names.txt"))[[1]]
 tools.starts = tools.mat[seq(from=1, to=nrow(tools.mat), by=2),]
 tools.ends = tools.mat[seq(from=2, to=nrow(tools.mat), by=2),]
 
-my.post.tools = HyperTraPS(tools.ends, initialstates_arg = tools.starts, 
-                           length_index_arg = 3, 
-                           featurenames_arg = tools.names,
-                           limited_output_arg = 1) 
+my.post.tools = HyperTraPS(tools.ends, initialstates = tools.starts, 
+                           length = 3, 
+                           featurenames = tools.names,
+                           limited_output = 1) 
 plotHypercube.bubbles(my.post.tools, reorder=TRUE, transpose=TRUE)
 plotHypercube.sampledgraph2(my.post.tools, node.labels = FALSE, max=100, no.times=TRUE) + theme(legend.position = "none")
 ```

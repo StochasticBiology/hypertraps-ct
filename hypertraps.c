@@ -1043,12 +1043,12 @@ void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double
 	    ctrec[MAXCT*i + MAXCT-1]++;
 
 	  // sample the statistics of the first simulated run. 
-	       if(run == 0)
-	       {
-		 times[t] = continuoustime;
-		 betas[t] = totrate;
-		 route[t] = i;
-	       }
+	  if(run == 0)
+	    {
+	      times[t] = continuoustime;
+	      betas[t] = totrate;
+	      route[t] = i;
+	    }
 
 #ifdef VERBOSE
 	  for(i = 0; i < len; i++)
@@ -1103,7 +1103,7 @@ void Label(char *names, int len, char *fname)
 
 void helpandquit(int debug)
 {
-  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--times file.txt\t(start) timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--params file.txt\tuse parameterisation in file as initial guess\n--lscale X\t\tscale for observation counts\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--outputtransitions N\toutput transition matrix (0 no, 1 yes) [1]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
+  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--initialstates file.txt\t\tinitial states file (if not in 'obs') [NA]\n--starttimes file.txt\tstart timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NT]\n--params file.txt\tuse parameterisation in file as initial guess\n--lscale X\t\tscale for observation counts\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--pli\t\t\tuse phenotypic landscape inference [0]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--outputtransitions N\toutput transition matrix (0 no, 1 yes) [1]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
   if(debug)
     printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n--outputinput\t\toutput the data we read in(note: an undocumented option exists to pass CSV data as the observations file: file should have a header, and two columns of (ignored) before + after sample IDs, before subsequent columns with all \"before\" features followed by all \"after\" features on the same row.  \n\n");
   myexit(0);
@@ -1147,7 +1147,8 @@ int main(int argc, char *argv[])
   char likstr[100];
   double testval;
   char header[10000];
-  char obsfile[1000], timefile[1000], endtimefile[1000], paramfile[1000];
+  char obsfile[1000], initialsfile[1000], timefile[1000], endtimefile[1000], paramfile[1000];
+  int initials;
   int searchmethod;
   int filelabel;
   char labelstr[1000];
@@ -1210,6 +1211,8 @@ int main(int argc, char *argv[])
   strcpy(timefile, "");
   strcpy(endtimefile, "");
   inference = 1;
+  initials = 0;
+  strcpy(initialsfile, "");
   
   BINSCALE = 10;
   burnin = 0;
@@ -1221,9 +1224,10 @@ int main(int argc, char *argv[])
   for(i = 1; i < argc; i+=2)
     {
       if(strcmp(argv[i], "--obs\0") == 0) strcpy(obsfile, argv[i+1]);
+      else if(strcmp(argv[i], "--initialstates\0") == 0) { strcpy(initialsfile, argv[i+1]); initials = 1; }
       else if(strcmp(argv[i], "--params\0") == 0) { readparams = 1; strcpy(paramfile, argv[i+1]); }
       else if(strcmp(argv[i], "--label\0") == 0) { filelabel = 1; strcpy(labelstr, argv[i+1]); }
-      else if(strcmp(argv[i], "--times\0") == 0) { spectrumtype = 1; strcpy(timefile, argv[i+1]); }
+      else if(strcmp(argv[i], "--starttimes\0") == 0) { spectrumtype = 1; strcpy(timefile, argv[i+1]); }
       else if(strcmp(argv[i], "--endtimes\0") == 0) strcpy(endtimefile, argv[i+1]);
       else if(strcmp(argv[i], "--seed\0") == 0) seed = atoi(argv[i+1]);
       else if(strcmp(argv[i], "--length\0") == 0) lengthindex = atof(argv[i+1]);
@@ -1292,7 +1296,9 @@ int main(int argc, char *argv[])
   
       // initialise and allocate
       maxt = pow(10, lengthindex);
-      if(maxt <= 10000) SAMPLE = 100; else SAMPLE = 1000;
+      SAMPLE = 1000;
+      if(maxt <= 10000) SAMPLE = 100;
+      if(maxt <= 100) SAMPLE = 1;
 
       if(_EVERYITERATION)
 	SAMPLE = 1;
@@ -1348,7 +1354,7 @@ int main(int argc, char *argv[])
 		  do{ch=fgetc(fp);}while(!feof(fp) && ch != ',');
 		}
 	    }
-	    if(crosssectional) {
+	    if(crosssectional || initials) {
 	      for(j = 0; j < len; j++)
 		{
 		  tmprow[j] = matrix[i-len+j];
@@ -1360,10 +1366,39 @@ int main(int argc, char *argv[])
 	    break;
 	  }
       }while(!feof(fp));
+      fclose(fp);
+      if(initials) {
+	fp = fopen(initialsfile, "r");
+	if(fp == NULL)
+	  {
+	    printf("Couldn't find initial states file %s\n", obsfile);
+	    return 0;
+	  }
+	i = 0; 
+	do{
+	  ch = fgetc(fp);
+	  if((ch != '0' && ch != '1' && ch != '2' && ch != ' ' && ch != '\t' && ch != '\n') && i == 0)
+	    {
+	      printf("Found non-digit character before any entries: interpreting as CSV file format\n");
+	      csv = 1;
+	      rewind(fp);
+	      do{ch = fgetc(fp); if(ch != '\n') header[i++] = ch; }while(ch != '\n');
+	      i = 0;
+	      ch = '\n';
+	    }
+	  switch(ch)
+	    {
+	    case '0': matrix[i++] = (losses == 1 ? 1 : 0); break;
+	    case '1': matrix[i++] = (losses == 1 ? 0 : 1); break;
+	    case '2': matrix[i++] = 2; break;
+	    case '\n': i += len; break;
+	    }
+	}while(!feof(fp));
+      }
+      
       if(csv && !crosssectional) len /= 2;
       ntarg = i/len;
       NVAL = nparams(model, len);
-      fclose(fp);
 
       if(outputinput)
 	{
@@ -1593,17 +1628,17 @@ int main(int argc, char *argv[])
 		{
 		  // apply a perturbation to the existing parameterisation
 		  // non-uniform priors can be employed here if desired 
-		    for(i = 0; i < NVAL; i++)
-		      {
-			ntrans[i] = trans[i];
-			r = RND;
-			if(r < MU)
-			  {
-			    ntrans[i] += gsl_ran_gaussian(DELTA);
-			  }
-			if(ntrans[i] < -10) ntrans[i] = -10;
-			if(ntrans[i] > 10) ntrans[i] = 10;
-		      }
+		  for(i = 0; i < NVAL; i++)
+		    {
+		      ntrans[i] = trans[i];
+		      r = RND;
+		      if(r < MU)
+			{
+			  ntrans[i] += gsl_ran_gaussian(DELTA);
+			}
+		      if(ntrans[i] < -10) ntrans[i] = -10;
+		      if(ntrans[i] > 10) ntrans[i] = 10;
+		    }
 		  if(APM_VERBOSE)
 		    {
 		      printf("step 0 (change theta): apm_seed %i, ntrans[0] %f\n", apm_seed, ntrans[0]);
