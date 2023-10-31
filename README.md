@@ -163,7 +163,9 @@ All but the last are demonstrated here:
 Specific content for introduction paper
 =======
 
-`./`
+In the `Scripts/`, `Verify/`, `RawData/`, and `Process/` directories are various scripts, datafiles, and data-generating code to demonstrate HyperTraPS functionality and explore two scientific case studies (anti-microbial resistance in tuberculosis and reductive mitochondrial evolution). There's also data from previous studies using HyperTraPS for comparison and demonstration. The demonstration files in the root directory make use of these datafiles.
+
+`Scripts/`
 ----
 Scripts wrapping the curation, inference, and analysis process for different case. In each case, datasets are produced and set in their own directory. The analysis code is then called to process these data, and plotting code follows.
   * `infer-verify.sh` -- generates verification datasets and runs HyperTraPS
