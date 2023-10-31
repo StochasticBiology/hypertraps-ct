@@ -118,7 +118,7 @@ HyperTraPS needs at least a set of observations. In R this should take the form 
 |----------|---|--------------|---------|
 | Input data | obs=*matrix* | --obs *filename* | None (required) |
 | Precursor states | initialstates=*matrix* | --initialstates *filename* | None; on command line can also be specified as odd-element rows in "Input data" |
-| Cross-sectional observations | (assumed if "Precursor states" absent) | --crosssectional | 0 |
+| Transition format observations | (not available) | --transitionformat | (off) |
 | Time window start | starttimes=*vector* | --times *filename* | 0 |
 | Time window end | endtimes=*vector* | --endtimes *filename* | starttimes if present (i.e. precisely specified times); otherwise Inf |
 | Model structure | model=*N* | --model *N* | 2 |
