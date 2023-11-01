@@ -92,6 +92,37 @@ plotHypercube.timehists(my.post)
 plotHypercube.timeseries(my.post)
 ```
 
+### Uncertainty in transition timings
+
+HyperTraPS-CT allows uncertainty in transition timings to be captured. In the run above, we specified a precise timing for each transition, by giving a zero-width time window for each observation (start times = end times). This time window is flexible. We can allow it to have infinite width, in which case absolute timings are meaningless and we just infer the orderings of events. Or we can specify a finite time window, allowing a transition to take any time within that window, to capture uncertainty in observation timings.
+
+```{r}
+# precisely specified timings, as above
+my.post.time.precise = HyperTraPS(m.2, initialstates = m.1, 
+                               starttimes = times, endtimes = times,  
+                               limited_output = 1,
+                               featurenames = c("A", "B", "C", "D", "E")); 
+# infinite width time window for transitions (equivalent to just inferring ordering)
+my.post.time.inf = HyperTraPS(m.2, initialstates = m.1, 
+                                starttimes = times*0, endtimes = times*Inf, 
+                                limited_output = 1,
+                                featurenames = c("A", "B", "C", "D", "E"));
+# finite time window for each uncertain transition time
+my.post.time.uncertain = HyperTraPS(m.2, initialstates = m.1, 
+                     starttimes = times*0.25, endtimes = times*4, 
+                     limited_output = 1,
+                     featurenames = c("A", "B", "C", "D", "E")); 
+ggarrange(plotHypercube.timehists(my.post.time.precise, t.thresh=3), 
+          plotHypercube.timehists(my.post.time.uncertain, t.thresh=3),
+          plotHypercube.timehists(my.post.time.inf, t.thresh=3),
+          nrow=3)
+plotHypercube.sampledgraph2(my.post.time.precise, thresh=0.1, use.arc=FALSE, edge.label.size=3) + theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1))
+plotHypercube.sampledgraph2(my.post.time.uncertain, thresh=0.1, use.arc=FALSE, edge.label.size=3) + theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1))
+plotHypercube.sampledgraph2(my.post.time.inf, thresh=0.1, use.arc=FALSE, edge.label.size=3) + theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1))
+```
+
+The summary plots here reflects the different inferences about acquisition timescales that come from the approaches with different time windows. 
+
 ### Input/output between R data structure and file format
 
 We can write the output of HyperTraPS to a set of files for storage and later retrieval

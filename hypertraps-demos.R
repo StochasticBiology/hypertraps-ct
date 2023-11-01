@@ -38,6 +38,27 @@ plotHypercube.summary(my.post)
 plotHypercube.sampledgraph2(my.post, thresh=0.1, use.arc=FALSE, edge.label.size=3) + 
   theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1))
 
+### different levels of uncertainty in timings
+# precisely specified timings, as above
+my.post.time.precise = HyperTraPS(m.2, initialstates = m.1, 
+                               starttimes = times, endtimes = times, 
+                               length = 3, outputinput = 1,
+                               featurenames = c("A", "B", "C", "D", "E")); 
+# infinite width time window for transitions (just inferring ordering)
+my.post.time.inf = HyperTraPS(m.2, initialstates = m.1, 
+                                starttimes = times*0, endtimes = times*Inf, 
+                                length = 3, outputinput = 1,
+                                featurenames = c("A", "B", "C", "D", "E"));
+# finite time window for each uncertain transition time
+my.post.time.uncertain = HyperTraPS(m.2, initialstates = m.1, 
+                     starttimes = times*0.25, endtimes = times*4, 
+                     length = 3, outputinput = 1,
+                     featurenames = c("A", "B", "C", "D", "E")); 
+ggarrange(plotHypercube.timehists(my.post.time.precise, t.thresh=3), 
+          plotHypercube.timehists(my.post.time.uncertain, t.thresh=3),
+          plotHypercube.timehists(my.post.time.inf, t.thresh=3),
+          nrow=3)
+
 # write output to files
 writeHyperinf(my.post, "simpledemo", my.post$L, postlabel = "simpledemo", fulloutput=TRUE)
 
@@ -54,6 +75,9 @@ plotHypercube.summary(my.post.sparse, t.thresh = 2)
 # direct time run (no time window specified)
 my.post.dt = HyperTraPS(m.2, initialstates = m.1, featurenames = c("A", "B", "C", "D", "E")); 
 plotHypercube.summary(my.post.dt, continuous.time = FALSE)
+ggarrange(plotHypercube.timehists(my.post.dt, t.thresh=3),
+          plotHypercube.timehists(my.post.time.inf, t.thresh=3),
+          nrow=2)
 
 ### various other demos
 # other plots
