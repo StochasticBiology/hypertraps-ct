@@ -23,11 +23,11 @@ cd ..
 gcc -o3 hypertraps.c -lm -o hypertraps.ce
 
 # two-pathway ("cross") case studies
-./hypertraps.ce --obs VerifyData/synth-cross-samples-0.txt --starttimes VerifyData/synth-cross-times-0.txt --seed 1 --length 4 --kernel 5 --label VerifyData/cross-0 > VerifyData/cross03125.tmp &
-./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --starttimes VerifyData/synth-cross-times-1.txt --seed 1 --length 4 --kernel 5 --label VerifyData/cross-1 > VerifyData/cross13125.tmp &
-./hypertraps.ce --obs VerifyData/synth-cross-samples-2.txt --starttimes VerifyData/synth-cross-times-2.txt --seed 1 --length 4 --kernel 5 --label VerifyData/cross-2 > VerifyData/cross23125.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-0.txt --transitionformat --starttimes VerifyData/synth-cross-times-0.txt --seed 1 --length 4 --kernel 5 --label VerifyData/cross-0 > VerifyData/cross0.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-1.txt --transitionformat --starttimes VerifyData/synth-cross-times-1.txt --seed 1 --length 4 --kernel 5 --label VerifyData/cross-1 > VerifyData/cross1.tmp &
+./hypertraps.ce --obs VerifyData/synth-cross-samples-2.txt --transitionformat --starttimes VerifyData/synth-cross-times-2.txt --seed 1 --length 4 --kernel 5 --label VerifyData/cross-2 > VerifyData/cross2.tmp &
 
 # specific L=3 cubes with easy and hard parameterisations
-./hypertraps.ce --obs VerifyData/synth-easycube-data.txt --starttimes VerifyData/synth-easycube-time.txt --seed 1 --length 4 --kernel 5 --label VerifyData/easycube > VerifyData/hardcube3125.tmp &
-./hypertraps.ce --obs VerifyData/synth-hardcube-data.txt --starttimes VerifyData/synth-hardcube-time.txt --seed 1 --length 4 --kernel 5 --label VerifyData/hardcube > VerifyData/hardcube3125.tmp &
+./hypertraps.ce --obs VerifyData/synth-easycube-data.txt --transitionformat --starttimes VerifyData/synth-easycube-time.txt --seed 1 --length 4 --kernel 5 --label VerifyData/easycube > VerifyData/easycube.tmp &
+./hypertraps.ce --obs VerifyData/synth-hardcube-data.txt --transitionformat --starttimes VerifyData/synth-hardcube-time.txt --seed 1 --length 4 --kernel 5 --label VerifyData/hardcube > VerifyData/hardcube.tmp &
 
