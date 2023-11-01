@@ -1263,7 +1263,7 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--postperiod\0") == 0) sampleperiod = atoi(argv[i+1]);      
       else if(strcmp(argv[i], "--binscale\0") == 0) BINSCALE = atof(argv[i+1]);
  
-      else printf("Didn't understand argument %s\n", argv[i]);
+      else { printf("Didn't understand argument %s\n", argv[i]); i--; } 
     }
 
   // need to decide whether to run inference
