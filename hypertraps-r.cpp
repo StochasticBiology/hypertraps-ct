@@ -293,8 +293,8 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		Nullable<NumericMatrix> initialstates = R_NilValue,
 		Nullable<NumericVector> starttimes = R_NilValue,
 		Nullable<NumericVector> endtimes = R_NilValue,
-		NumericVector length_index = 3,
-		NumericVector kernel_index = 5,
+		NumericVector length = 3,
+		NumericVector kernel = 5,
 		NumericVector losses = 0,
 		NumericVector apm_type = 0,
 		NumericVector sa = 0,
@@ -354,8 +354,8 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   
   // default values
   spectrumtype = 0;
-  _lengthindex = length_index[0];
-  _kernelindex = kernel_index[0];
+  _lengthindex = length[0];
+  _kernelindex = kernel[0];
   _losses = losses[0];
   _apm_type = apm_type[0];
   _sgdscale = sgd_scale[0];
