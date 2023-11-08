@@ -41,6 +41,7 @@ plotHypercube.sampledgraph2(my.post, thresh=0.1, use.arc=FALSE, edge.label.size=
 # demonstrate predictions of future behaviour
 predictNextStep(my.post, c(1,1,0,0,0))
 predictNextStep(my.post, c(0,0,0,0,1))
+predictHiddenVals(my.post, c(1,2,2,2,2))
 
 ### different levels of uncertainty in timings
 # precisely specified timings, as above

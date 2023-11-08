@@ -15,6 +15,14 @@ DecToBin <- function(x, len) {
   return(paste(s, collapse=""))
 }
 
+BinToDec <- function(state) {
+  this.ref = 0
+  for(j in 1:length(state)) {
+    this.ref = this.ref + state[j]*(2**(length(state)-j))
+  }
+  return(this.ref)
+}
+
 plotHypercube.lik.trace = function(my.post) {
   ### likelihood traces
   return(ggplot(my.post$lik.traces) + geom_line(aes(x=Step, y=LogLikelihood1)) +
@@ -339,10 +347,7 @@ qgramdist = function(my.post.1, my.post.2) {
 
 predictNextStep = function(my.post, state) {
   # only works so far if the posterior structure has transition dynamics information
-  this.ref = 0
-  for(j in 1:my.post$L) {
-    this.ref = this.ref + state[j]*(2**(my.post$L-j))
-  }
+  this.ref = BinToDec(state)
   out.edges = my.post$dynamics$trans[my.post$dynamics$trans$From==this.ref,]
   out.probs = out.edges$Probability
   predictions = data.frame(states = unlist(lapply(out.edges$To, DecToBin, my.post$L)),
@@ -351,7 +356,19 @@ predictNextStep = function(my.post, state) {
 }
 
 predictHiddenVals = function(my.post, state) {
- #XXX
+ hidden.set = which(state == 2)
+ hidden.options = expand.grid(rep(list(0:1), length(hidden.set)))
+ res.df = data.frame()
+ for(i in 1:nrow(hidden.options)) {
+   tmpstate = state
+   tmpstate[hidden.set] = as.numeric(binary_matrix[i,])
+   ref = BinToDec(tmpstate)
+   res.df = rbind(res.df, data.frame(state=paste(tmpstate,collapse=""), 
+                                     level=sum(tmpstate),
+                                     prob=my.post$dynamics$states$Probability[my.post$dynamics$states$State==ref]))
+   
+ }
+ return(res.df)
 }
 
 sourceCpp("hypertraps-r.cpp")
