@@ -925,7 +925,10 @@ List PosteriorAnalysis(List L,
   NumericMatrix posterior;
   if(use_regularised == 0)
     {
-      posterior = as<NumericMatrix>(L["posterior.samples"]);
+      //      Rprintf("Pulling posterior sample\n");
+      //posterior = as<NumericMatrix>(L["posterior.samples"]);
+      posterior = internal::convert_using_rfunction(L["posterior.samples"], "as.matrix");
+      //Rprintf("Pulled posterior sample\n");
       if(!limited_output)
 	Rprintf("Using posterior samples with %i x %i entries\n", posterior.nrow(), posterior.ncol());
     }
@@ -937,7 +940,7 @@ List PosteriorAnalysis(List L,
       NumericMatrix tmpM(1,tmpV.size());
       for(i = 0; i < tmpV.size(); i++)
 	tmpM(0,i) = tmpV[i];
-      posterior = as<NumericMatrix>(tmpM);
+      posterior = internal::convert_using_rfunction(tmpM, "as.matrix"); //as<NumericMatrix>(tmpM);
       if(!limited_output)
 	Rprintf("Using best regularised params with %i x %i entries\n", posterior.nrow(), posterior.ncol());
     }
