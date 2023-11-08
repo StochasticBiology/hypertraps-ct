@@ -337,5 +337,22 @@ qgramdist = function(my.post.1, my.post.2) {
   return(returnlist)
 }
 
+predictNextStep = function(my.post, state) {
+  # only works so far if the posterior structure has transition dynamics information
+  this.ref = 0
+  for(j in 1:my.post$L) {
+    this.ref = this.ref + state[j]*(2**(my.post$L-j))
+  }
+  out.edges = my.post$dynamics$trans[my.post$dynamics$trans$From==this.ref,]
+  out.probs = out.edges$Probability
+  predictions = data.frame(states = unlist(lapply(out.edges$To, DecToBin, my.post$L)),
+                           probs=out.probs)
+  return(predictions)
+}
+
+predictHiddenVals = function(my.post, state) {
+ #XXX
+}
+
 sourceCpp("hypertraps-r.cpp")
 
