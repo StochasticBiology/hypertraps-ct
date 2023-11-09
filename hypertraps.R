@@ -2,6 +2,7 @@ library(Rcpp)
 library(ggplot2)
 library(ggpubr)
 library(ggraph)
+library(ggwordcloud)
 library(igraph)
 library(stringr)
 library(stringdist)
@@ -430,6 +431,23 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
   output.list$locus.probs = locus.probs
   
   return(output.list)
+}
+
+plotHypercube.prediction = function(prediction) {
+  if(length(prediction$states) > 0) {
+    g.1 = ggplot(prediction, aes(label=states, size=probs), angle=0) + 
+      geom_text_wordcloud() + scale_size_area(max_size = 30) +
+      theme_minimal()
+    g.2 = ggplot(prediction, aes(x=states, y=probs)) + 
+      geom_col() + theme_light()  
+  } else {
+  g.1 = ggplot(prediction$state.probs, aes(label=state, size=prob), angle=0) + 
+    geom_text_wordcloud() + scale_size_area(max_size = 30) +
+    theme_minimal()
+  g.2 = ggplot(prediction$locus.probs, aes(x=factor(locus), y=prob)) + 
+    geom_col() + theme_light()
+  }
+  return(ggarrange(g.1, g.2))
 }
 
 sourceCpp("hypertraps-r.cpp")

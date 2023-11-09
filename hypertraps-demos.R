@@ -39,14 +39,17 @@ plotHypercube.sampledgraph2(my.post, thresh=0.1, use.arc=FALSE, edge.label.size=
   theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1))
 
 # demonstrate predictions of future behaviour
-predictNextStep(my.post, c(1,1,0,0,0))
+prediction.step = predictNextStep(my.post, c(1,1,0,0,0))
+plotHypercube.prediction(prediction.step)
 predictNextStep(my.post, c(0,0,0,0,1))
 
 # demonstrate predictions of hidden values...
 # ... with no assumptions about progress on the hypercube
-predictHiddenVals(my.post, c(1,2,2,2,2))
+prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2))
+plotHypercube.prediction(prediction.hidden)
 # ... enforcing given belief about progress on the hypercube
-predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,0,0,0))
+prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,0,0,0))
+plotHypercube.hiddenVals(prediction.hidden)
 predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,1,1,0))
 predictHiddenVals(my.post, c(1,1,0,0,0))
 
