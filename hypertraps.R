@@ -58,8 +58,8 @@ plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE) {
   V(trans.g)$binname = bs
   layers = str_count(bs, "1")
   this.plot =  ggraph(trans.g, layout="sugiyama", layers=layers) + 
-            geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
-           scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
+    geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
+    scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
     theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
     this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
@@ -92,7 +92,7 @@ plotHypercube.sampledgraph = function(my.post, max = 1000, thresh = 0.05, node.l
   V(trans.g)$binname = bs
   layers = str_count(bs, "1")
   this.plot = ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
-            scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
+    scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
     theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
     this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
@@ -139,9 +139,9 @@ plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05, node.
   layers = str_count(bs, "1")
   
   if(use.arc == TRUE) {
-  this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label), label_size = edge.label.size, label_colour="black", color="#AAAAFF") + 
-             scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
-             theme_graph(base_family="sans")
+    this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label), label_size = edge.label.size, label_colour="black", color="#AAAAFF") + 
+      scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
+      theme_graph(base_family="sans")
   } else {
     this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=label), label_size = edge.label.size, label_colour="black", color="#AAAAFF") + 
       scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
@@ -219,11 +219,11 @@ plotHypercube.timeseries = function(my.post, log.axis = TRUE) {
 
 plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, continuous.time = TRUE) {
   if(continuous.time == TRUE) {
-  return (ggarrange(plotHypercube.lik.trace(my.post),
-                    plotHypercube.bubbles(my.post),
-                    plotHypercube.sampledgraph2(my.post, thresh = f.thresh, use.arc=FALSE, edge.label.size=3) + 
-                      theme(legend.position="none") + expand_limits(x = c(-1, 4)),
-                    plotHypercube.timehists(my.post, t.thresh), nrow=2, ncol=2) )
+    return (ggarrange(plotHypercube.lik.trace(my.post),
+                      plotHypercube.bubbles(my.post),
+                      plotHypercube.sampledgraph2(my.post, thresh = f.thresh, use.arc=FALSE, edge.label.size=3) + 
+                        theme(legend.position="none") + expand_limits(x = c(-1, 4)),
+                      plotHypercube.timehists(my.post, t.thresh), nrow=2, ncol=2) )
   } else {
     return (ggarrange(plotHypercube.lik.trace(my.post),
                       plotHypercube.bubbles(my.post),
@@ -345,8 +345,10 @@ qgramdist = function(my.post.1, my.post.2) {
   return(returnlist)
 }
 
+# predict the next evolutionary step from a given state
+# only works so far if the posterior structure has transition dynamics information
 predictNextStep = function(my.post, state) {
-  # only works so far if the posterior structure has transition dynamics information
+  # get this state reference and look up exit routes
   this.ref = BinToDec(state)
   out.edges = my.post$dynamics$trans[my.post$dynamics$trans$From==this.ref,]
   out.probs = out.edges$Probability
@@ -355,20 +357,45 @@ predictNextStep = function(my.post, state) {
   return(predictions)
 }
 
-predictHiddenVals = function(my.post, state) {
- hidden.set = which(state == 2)
- hidden.options = expand.grid(rep(list(0:1), length(hidden.set)))
- res.df = data.frame()
- for(i in 1:nrow(hidden.options)) {
-   tmpstate = state
-   tmpstate[hidden.set] = as.numeric(binary_matrix[i,])
-   ref = BinToDec(tmpstate)
-   res.df = rbind(res.df, data.frame(state=paste(tmpstate,collapse=""), 
-                                     level=sum(tmpstate),
-                                     prob=my.post$dynamics$states$Probability[my.post$dynamics$states$State==ref]))
-   
- }
- return(res.df)
+# get the representation of different hypercube levels in a dataset
+dataLevels = function(matrix) {
+  matrix[matrix==2] = 0
+  counts = rowSums(matrix)
+  counts = counts/sum(counts)
+  return(counts)
+}
+
+# predict unobserved values in a given observation
+# only works so far if the posterior structure has transition dynamics information
+predictHiddenVals = function(my.post, state, level.weight=1) {
+  # assign uniform weights to levels on the hypercube if not specified
+  if(length(level.weight)==1) {
+    level.weight = rep(1, my.post$L+1)
+  }
+  # normalise level weights
+  level.weight = level.weight/sum(level.weight)
+  # get the unobserved indices and construct all binary combinations that could fill them
+  hidden.set = which(state == 2)
+  hidden.options = expand.grid(rep(list(0:1), length(hidden.set)))
+  # initialise results
+  res.df = data.frame()
+  # loop through each possible binary combination
+  for(i in 1:nrow(hidden.options)) {
+    # get reference to this particular state
+    tmpstate = state
+    tmpstate[hidden.set] = as.numeric(binary_matrix[i,])
+    ref = BinToDec(tmpstate)
+    # pull this state's probability from learned hypercube
+    res.df = rbind(res.df, data.frame(state=paste(tmpstate,collapse=""), 
+                                      level=sum(tmpstate),
+                                      raw.prob=my.post$dynamics$states$Probability[my.post$dynamics$states$State==ref],
+                                      prob=level.weight[sum(tmpstate)+1] * my.post$dynamics$states$Probability[my.post$dynamics$states$State==ref]
+    ))
+    
+  }
+  # normalise outputs
+  res.df$prob = res.df$prob/sum(res.df$prob)
+  return(res.df)
 }
 
 sourceCpp("hypertraps-r.cpp")
