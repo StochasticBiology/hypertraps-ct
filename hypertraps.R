@@ -379,11 +379,12 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
   hidden.options = expand.grid(rep(list(0:1), length(hidden.set)))
   # initialise results
   res.df = data.frame()
+  if(nrow(hidden.options) > 0) {
   # loop through each possible binary combination
   for(i in 1:nrow(hidden.options)) {
     # get reference to this particular state
     tmpstate = state
-    tmpstate[hidden.set] = as.numeric(binary_matrix[i,])
+    tmpstate[hidden.set] = as.numeric(hidden.options[i,])
     ref = BinToDec(tmpstate)
     # pull this state's probability from learned hypercube
     res.df = rbind(res.df, data.frame(state=paste(tmpstate,collapse=""), 
@@ -392,6 +393,16 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
                                       prob=level.weight[sum(tmpstate)+1] * my.post$dynamics$states$Probability[my.post$dynamics$states$State==ref]
     ))
     
+  }
+  } else {
+    tmpstate = state
+    ref = BinToDec(tmpstate)
+    # pull this state's probability from learned hypercube
+    res.df = rbind(res.df, data.frame(state=paste(tmpstate,collapse=""), 
+                                      level=sum(tmpstate),
+                                      raw.prob=my.post$dynamics$states$Probability[my.post$dynamics$states$State==ref],
+                                      prob=level.weight[sum(tmpstate)+1] * my.post$dynamics$states$Probability[my.post$dynamics$states$State==ref]
+    ))
   }
   # normalise outputs
   res.df$prob = res.df$prob/sum(res.df$prob)
