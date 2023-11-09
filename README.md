@@ -11,7 +11,7 @@ For the command-line-only version, you'll just need the ability to compile and r
 
 For the R version without helper and plotting functions, you'll need R and the `Rcpp` library.
 
-For those helper and plotting functions, you'll need R with these libraries: `Rcpp`, `ggplot2`, `ggpubr`, `ggraph`, `igraph`, `stringr`, `stringdist`.
+For those helper and plotting functions, you'll need R with these libraries for full functionality: `Rcpp`, `ggplot2`, `ggpubr`, `ggraph`, `ggwordcloud`, `igraph`, `stringr`, `stringdist`.
 
 For the specific scientific case studies involving mitochondrial and tuberculosis evolution, the data wrangling also needs Python with `ETE3`.
 
