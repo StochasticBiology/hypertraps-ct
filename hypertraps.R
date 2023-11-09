@@ -372,28 +372,47 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
   if(length(level.weight)==1) {
     level.weight = rep(1, my.post$L+1)
   }
+  n1s = length(which(state==1))
+  if(n1s > 0) {
+    level.weight[1:n1s] = 0
+  }
   # normalise level weights
   level.weight = level.weight/sum(level.weight)
   # get the unobserved indices and construct all binary combinations that could fill them
   hidden.set = which(state == 2)
   hidden.options = expand.grid(rep(list(0:1), length(hidden.set)))
+  
   # initialise results
   res.df = data.frame()
   if(nrow(hidden.options) > 0) {
-  # loop through each possible binary combination
-  for(i in 1:nrow(hidden.options)) {
-    # get reference to this particular state
-    tmpstate = state
-    tmpstate[hidden.set] = as.numeric(hidden.options[i,])
-    ref = BinToDec(tmpstate)
-    # pull this state's probability from learned hypercube
-    res.df = rbind(res.df, data.frame(state=paste(tmpstate,collapse=""), 
-                                      level=sum(tmpstate),
-                                      raw.prob=my.post$dynamics$states$Probability[my.post$dynamics$states$State==ref],
-                                      prob=level.weight[sum(tmpstate)+1] * my.post$dynamics$states$Probability[my.post$dynamics$states$State==ref]
-    ))
+    # loop through each possible binary combination
+    for(i in 1:nrow(hidden.options)) {
+      # get reference to this particular state
+      tmpstate = state
+      tmpstate[hidden.set] = as.numeric(hidden.options[i,])
+      ref = BinToDec(tmpstate)
+      # pull this state's probability from learned hypercube
+      raw.prob = my.post$dynamics$states$Probability[my.post$dynamics$states$State==ref]
+      res.df = rbind(res.df, data.frame(state=paste(tmpstate,collapse=""), 
+                                        level=sum(tmpstate),
+                                        raw.prob=raw.prob))
+    }
+    # normalise probabilities across all options per level, and across all weighted levels
+    res.df$prob = res.df$level.prob =  0
+    for(i in n1s:length(state)) {
+      res.df$level.prob[res.df$level==i] = res.df$raw.prob[res.df$level==i]/sum(res.df$raw.prob[res.df$level==i])
+      res.df$prob[res.df$level==i] = res.df$raw.prob[res.df$level==i] * level.weight[i+1]
+    }
+    res.df$prob = res.df$prob/sum(res.df$prob)
     
-  }
+    # produce parallel output describing aggregated 0/1 probabilities for each locus
+    hidden.options.probs = cbind(hidden.options, as.numeric(res.df$prob))
+    locus.probs = data.frame()
+    for(i in 1:length(hidden.set)) {
+      locus = hidden.set[i]
+      prob = sum(hidden.options.probs[which(hidden.options.probs[,i]==1),ncol(hidden.options.probs)])
+      locus.probs = rbind(locus.probs, data.frame(locus=locus, prob=prob))
+    }
   } else {
     tmpstate = state
     ref = BinToDec(tmpstate)
@@ -401,12 +420,16 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
     res.df = rbind(res.df, data.frame(state=paste(tmpstate,collapse=""), 
                                       level=sum(tmpstate),
                                       raw.prob=my.post$dynamics$states$Probability[my.post$dynamics$states$State==ref],
-                                      prob=level.weight[sum(tmpstate)+1] * my.post$dynamics$states$Probability[my.post$dynamics$states$State==ref]
-    ))
+                                      level.prob=1,
+                                      prob=1))
+    locus.probs = data.frame()
   }
-  # normalise outputs
-  res.df$prob = res.df$prob/sum(res.df$prob)
-  return(res.df)
+
+  output.list = list()
+  output.list$state.probs = res.df
+  output.list$locus.probs = locus.probs
+  
+  return(output.list)
 }
 
 sourceCpp("hypertraps-r.cpp")

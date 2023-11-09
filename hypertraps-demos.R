@@ -47,6 +47,8 @@ predictNextStep(my.post, c(0,0,0,0,1))
 predictHiddenVals(my.post, c(1,2,2,2,2))
 # ... enforcing given belief about progress on the hypercube
 predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,0,0,0))
+predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,1,1,0))
+predictHiddenVals(my.post, c(1,1,0,0,0))
 
 ### different levels of uncertainty in timings
 # precisely specified timings, as above
