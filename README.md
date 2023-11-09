@@ -77,6 +77,8 @@ For continuous-time inference, HyperTraPS works with a time window for each obse
 
 In R, these start and end times are vectors specified by `starttimes` and `endtimes`. At the command line, they are stored in files accessed by the `--starttimes` and `--endtimes` flags. In both cases, absent start times means that all start times are assumed to be zero; absent end times means that all end times are assumed to be Inf.
 
+HyperTraPS also accepts descriptions of prior distributions on parameters. For the moment these are assumed to be uniform in log parameter space, and are specified by the min and max for each distribution. At the command line these values should be passed as a single file, given by `--priors`, with two columns and N rows, where the ith row gives the minimum and maximum value for parameter i. In R this should be provided as a matrix `priors` with two columns and N rows. Remember that N, the number of parameters, will depend on the model structure chosen and the number of features in the system. For example, the 3-feature system above and the default model structure (2, referring to L^2 parameters) would have N = 9.
+
 Output
 ------
 
@@ -121,6 +123,7 @@ HyperTraPS needs at least a set of observations. In R this should take the form 
 | Transition format observations | (not available) | --transitionformat | (off) |
 | Time window start | starttimes=*vector* | --times *filename* | 0 |
 | Time window end | endtimes=*vector* | --endtimes *filename* | starttimes if present (i.e. precisely specified times); otherwise Inf |
+| Prior mins and maxs | priors=*matrix* | --priors *filename* | -10 to 10 in log space for each parameter (i.e. very broad range over orders of magnitude)
 | Model structure | model=*N* | --model *N* | 2 |
 | Number of walkers | walkers=*N* | --walkers *N* | 200 |
 | Inference chain length | length=*N* | --length *N* | 3 |
