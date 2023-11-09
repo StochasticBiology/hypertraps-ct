@@ -52,6 +52,7 @@ prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,
 plotHypercube.hiddenVals(prediction.hidden)
 predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,1,1,0))
 predictHiddenVals(my.post, c(1,1,0,0,0))
+predictHiddenVals(my.post, c(1,1,2,2,0))
 
 # impose priors -- here disallowing every pairwise effect
 priors = matrix(0, ncol=2, nrow=5*5)

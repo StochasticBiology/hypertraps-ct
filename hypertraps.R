@@ -377,6 +377,10 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
   if(n1s > 0) {
     level.weight[1:n1s] = 0
   }
+  n0s = length(which(state==0))
+  if(n0s > 0) {
+    level.weight[(my.post$L+2-n0s):(my.post$L+1)] = 0
+  }
   # normalise level weights
   level.weight = level.weight/sum(level.weight)
   # get the unobserved indices and construct all binary combinations that could fill them
@@ -400,7 +404,7 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
     }
     # normalise probabilities across all options per level, and across all weighted levels
     res.df$prob = res.df$level.prob =  0
-    for(i in n1s:length(state)) {
+    for(i in n1s:(length(state)-n0s)) {
       res.df$level.prob[res.df$level==i] = res.df$raw.prob[res.df$level==i]/sum(res.df$raw.prob[res.df$level==i])
       res.df$prob[res.df$level==i] = res.df$raw.prob[res.df$level==i] * level.weight[i+1]
     }
