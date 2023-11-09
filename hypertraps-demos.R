@@ -50,6 +50,18 @@ predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,0,0,0))
 predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,1,1,0))
 predictHiddenVals(my.post, c(1,1,0,0,0))
 
+# impose priors -- here disallowing every pairwise effect
+priors = matrix(0, ncol=2, nrow=5*5)
+for(i in 0:4) {
+  priors[i*5+i+1,1] = -10
+  priors[i*5+i+1,2] = 10
+}
+my.post.priors = HyperTraPS(m.2, initialstates = m.1, 
+                     starttimes = times, endtimes = times, 
+                     priors = priors,
+                     featurenames = c("A", "B", "C", "D", "E")); 
+plotHypercube.summary(my.post.priors)
+
 ### different levels of uncertainty in timings
 # precisely specified timings, as above
 my.post.time.precise = HyperTraPS(m.2, initialstates = m.1, 

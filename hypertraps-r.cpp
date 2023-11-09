@@ -13,6 +13,7 @@ List RegulariseR(int *matrix,
 List OutputStatesR(double *ntrans, int LEN, int model);
 List HyperTraPS(NumericMatrix obs,
 		Nullable<NumericMatrix> initialstates,
+		Nullable<NumericMatrix> priors,
 		Nullable<NumericVector> starttimes,
 		Nullable<NumericVector> endtimes,
 		NumericVector length,
@@ -291,6 +292,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
 // [[Rcpp::export]]
 List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_arg,
 		Nullable<NumericMatrix> initialstates = R_NilValue,
+		Nullable<NumericMatrix> priors = R_NilValue,
 		Nullable<NumericVector> starttimes = R_NilValue,
 		Nullable<NumericVector> endtimes = R_NilValue,
 		NumericVector length = 3,
@@ -511,7 +513,29 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
     }
 
   NVAL = nparams(_model, len);
-  
+
+  NumericMatrix _priors(NVAL,2);
+  if(priors.isUsable())
+    {
+      NumericMatrix tmpM(priors);
+      if(tmpM.ncol() != 2 || tmpM.nrow() != NVAL)
+	{
+	  Rprintf("Prior matrix has the wrong dimensions -- need 2 columns and NPARAM rows\n");
+	  myexit(0);
+	}
+      _priors = tmpM;
+    }
+  else
+    {
+      NumericMatrix tmpM(NVAL, 2);
+      for(i = 0; i < NVAL; i++)
+	{
+	  tmpM(i,0) = -10;
+	  tmpM(i,1) = 10;
+	}
+      _priors = tmpM;
+    }
+    
   if(_outputinput)
     {
       Rprintf("Observed transitions:\n");
@@ -576,18 +600,25 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
       sprintf(beststatesstr, "%s-states.txt", labelstr);*/
   
   // initialise with an agnostic transition matrix
-  if(readparams == 0)
-    {
-      if(!_limited_output)
-	Rprintf("Starting with simple initial param guess\n");
-      InitialMatrix(trans, len, _model, 0);
-    }
-  else
+  if(readparams == 1)
     {
       if(!_limited_output)
 	Rprintf("Starting with supplied parameterisation\n");
       ReadMatrix(trans, len, _model, paramfile);
     }
+  else if(priors.isUsable())
+    {
+      if(!_limited_output)
+	Rprintf("Starting with centre of priors\n");
+
+      for(i = 0; i < NVAL; i++)
+	trans[i] = (_priors(i,0)+_priors(i,1))/2;
+    }
+  else {
+    if(!_limited_output)
+      Rprintf("Starting with simple initial param guess\n");
+    InitialMatrix(trans, len, _model, 0);
+  }
 
   // compute initial likelihood given this matrix
   time(&start_t);
@@ -689,8 +720,8 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		    {
 		      ntrans[i] += gsl_ran_gaussian(DELTA);
 		    }
-		  if(ntrans[i] < -10) ntrans[i] = -10;
-		  if(ntrans[i] > 10) ntrans[i] = 10;
+		  if(ntrans[i] < _priors(i,0)) ntrans[i] = _priors(i,0);
+		  if(ntrans[i] > _priors(i,1)) ntrans[i] = _priors(i,1);
 		}
 	      if(APM_VERBOSE)
 		{
@@ -787,8 +818,8 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	  for(i = 0; i < NVAL; i++)
 	    {
 	      trans[i] = trans[i]+gradients[i]*_sgdscale;
-	      if(trans[i] < -10) trans[i] = -10;
-	      if(trans[i] > 10) trans[i] = 10;
+	      if(trans[i] < _priors(i,0)) trans[i] = _priors(i,0);
+	      if(trans[i] > _priors(i,1)) trans[i] = _priors(i,1);
 	    }
 	  
 	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI);

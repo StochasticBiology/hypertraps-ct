@@ -1099,11 +1099,34 @@ void Label(char *names, int len, char *fname)
   free(tmp);
 }
 
-
+void ReadPriors(char *priorfile, int NVAL, double *priormin, double *priormax)
+{
+  int i;
+  FILE *fp;
+  double tmp;
+  int itmp;
+  
+  fp = fopen(priorfile, "r");
+  if(fp == NULL) {
+    printf("Couldn't find priors file %s\n", priorfile);
+    myexit(0);
+  }
+  for(i = 0; i < NVAL*2; i++)
+    {
+      itmp = fscanf(fp, "%lf", &tmp);
+      if(feof(fp)) break;
+      if(i % 2 == 0) priormin[(int)(i/2)] = tmp;
+      else priormax[(int)(i/2)] = tmp;
+    }
+  if(i != NVAL*2) {
+    printf("Found wrong number of entries in prior file. Should be number of params * 2\n");
+    myexit(0);
+  }
+}
 
 void helpandquit(int debug)
 {
-  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--transitionformat\tInterpet obs matrix as paired before-after observations [0]\n--initialstates file.txt\t\tinitial states file (if not in 'obs') [NA]\n--starttimes file.txt\tstart timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NA]\n--params file.txt\tuse parameterisation in file as initial guess\n--lscale X\t\tscale for observation counts\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--pli\t\t\tuse phenotypic landscape inference [0]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--outputtransitions N\toutput transition matrix (0 no, 1 yes) [1]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
+  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--transitionformat\tInterpet obs matrix as paired before-after observations [0]\n--initialstates file.txt\tinitial states file (if not in 'obs') [NA]\n--starttimes file.txt\tstart timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NA]\n--priors file.txt\tspecify prior range for parameters\n--params file.txt\tuse parameterisation in file as initial guess\n--lscale X\t\tscale for observation counts\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--pli\t\t\tuse phenotypic landscape inference [0]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--outputtransitions N\toutput transition matrix (0 no, 1 yes) [1]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
   if(debug)
     printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n--outputinput\t\toutput the data we read in(note: an undocumented option exists to pass CSV data as the observations file: file should have a header, and two columns of (ignored) before + after sample IDs, before subsequent columns with all \"before\" features followed by all \"after\" features on the same row.  \n\n");
   myexit(0);
@@ -1147,7 +1170,7 @@ int main(int argc, char *argv[])
   char likstr[100];
   double testval;
   char header[10000];
-  char obsfile[1000], initialsfile[1000], timefile[1000], endtimefile[1000], paramfile[1000];
+  char obsfile[1000], initialsfile[1000], timefile[1000], endtimefile[1000], paramfile[1000], priorfile[1000];
   int initials;
   int searchmethod;
   int filelabel;
@@ -1185,6 +1208,8 @@ int main(int argc, char *argv[])
   int burnin, sampleperiod;
   char labelfile[1000];
   int inference;
+  double *priormin, *priormax;
+  int priors;
   
   printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
@@ -1212,6 +1237,8 @@ int main(int argc, char *argv[])
   inference = 1;
   initials = 0;
   strcpy(initialsfile, "");
+  priors = 0;
+  strcpy(priorfile, "");
   
   BINSCALE = 10;
   burnin = 0;
@@ -1251,7 +1278,8 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--lscale\0") == 0) { lscale = atof(argv[i+1]); }
       else if(strcmp(argv[i], "--regularise\0") == 0) { regularise = 1; i--; }
       else if(strcmp(argv[i], "--model\0") == 0) { model = atoi(argv[i+1]); }
-
+      else if(strcmp(argv[i], "--priors\0") == 0) { strcpy(priorfile, argv[i+1]); }
+	
       else if(strcmp(argv[i], "--noinference\0") == 0) { inference = 0; i--; }
       else if(strcmp(argv[i], "--noposterior\0") == 0) { posterior_analysis = 0; i--; }
       else if(strcmp(argv[i], "--postfile\0") == 0) strcpy(postfile, argv[i+1]);
@@ -1488,6 +1516,14 @@ int main(int argc, char *argv[])
 	}
       printf("\n");
 
+      if(priors == 1)
+	{
+	  priormin = (double*)malloc(sizeof(double)*NVAL);
+	  priormax = (double*)malloc(sizeof(double)*NVAL);
+	  
+	  ReadPriors(priorfile, NVAL, priormin, priormax);
+	}
+      
       if(len > 15 && outputtransitions == 1)
 	{
 	  printf("*** More than 15 features, meaning we'd need a lot of space to output transition and state information. I'm switching off this output.\n");
@@ -1516,16 +1552,30 @@ int main(int argc, char *argv[])
       //      sprintf(besttransstr, "%s-trans.csv", labelstr);
       sprintf(beststatesstr, "%s", labelstr);
   
-      // initialise with an agnostic transition matrix
-      if(readparams == 0)
+     
+     
+      if(readparams == 1)
 	{
-	  printf("Starting with simple initial param guess\n");
-	  InitialMatrix(trans, len, model, 0);
+	  // read parameters
+	  printf("Starting with supplied parameterisation\n");
+	  ReadMatrix(trans, len, model, paramfile);
+	}
+      else if(priors == 1)
+	{
+	  // initialise with centre of prior distribution
+	  for(i = 0; i < NVAL; i++)
+	    trans[i] = (priormax[i]+priormin[i])/2;
+	  printf("Starting with centre of priors\n");
 	}
       else
 	{
-	  printf("Starting with supplied parameterisation\n");
-	  ReadMatrix(trans, len, model, paramfile);
+	  printf("Starting with simple initial param guess\n");
+	  InitialMatrix(trans, len, model, 0);
+	  for(i = 0; i < NVAL; i++)
+	    {
+	      priormin[i] = -10;
+	      priormax[i] = 10;
+	    }
 	}
 
       // compute initial likelihood given this matrix
@@ -1635,8 +1685,8 @@ int main(int argc, char *argv[])
 			{
 			  ntrans[i] += gsl_ran_gaussian(DELTA);
 			}
-		      if(ntrans[i] < -10) ntrans[i] = -10;
-		      if(ntrans[i] > 10) ntrans[i] = 10;
+		      if(ntrans[i] < priormin[i]) ntrans[i] = priormin[i];
+		      if(ntrans[i] > priormax[i]) ntrans[i] = priormax[i];
 		    }
 		  if(APM_VERBOSE)
 		    {
@@ -1733,8 +1783,8 @@ int main(int argc, char *argv[])
 	      for(i = 0; i < NVAL; i++)
 		{
 		  trans[i] = trans[i]+gradients[i]*sgdscale;
-		  if(trans[i] < -10) trans[i] = -10;
-		  if(trans[i] > 10) trans[i] = 10;
+		  if(trans[i] < priormin[i]) trans[i] = priormin[i];
+		  if(trans[i] > priormax[i]) trans[i] = priormax[i];
 		}
 	  
 	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
