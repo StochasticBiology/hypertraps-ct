@@ -105,7 +105,7 @@ The output structures are
 | Transition times for individual sampled routes of accumulation | *list*$times | *label*-times.txt | |
 | Dwelling statistics for individual sampled routes of accumulation | *list*$betas | *label*-betas.txt | |
 
-These various outputs can be further interrogated and/or used in the plotting functions below.
+The named list in R can be passed to plotting and prediction functions for analysis -- see "Visualising and using output" below.
 
 Demonstration
 -----------
@@ -144,8 +144,10 @@ So some example calls are (see the various demo scripts for more):
 | Run HyperTraPS-CT with default settings | HyperTraPS(*matrix*, starttimes=*vector*, endtimes=*vector*) | ./hypertraps.ce --obs *filename* --times *filename* --endtimes *filename* |
 | Run HyperTraPS with all-edges model, then regularise | HyperTraPS(*matrix*, model=-1, regularise=1) | ./hypertraps.ce --obs *filename* --model -1 --regularise |
 
-Plots in R
+Visualising and using output
 --------
+
+The various outputs of HyperTraPS can be used in the R plotting functions below, which summarise (amongst other things) the numerical behaviour of the inference processes, the ordering and timings (where appropriate) of feature acquisitions, the structure of the learned hypercubic transition network, and any outputs from regularisation. All of these except `plotHypercube.prediction` take a fitted model -- the output of `HyperTraPS` -- as a required argument, and may take other options as the table describes. `plotHypercube.prediction` takes a required argument that is the output of prediction functions described below.
 
 | Plot function | Description | Options and defaults |
 |---------------|-------------|---------|
@@ -158,10 +160,30 @@ Plots in R
 | `plotHypercube.timehists` | Histograms of absolute timings for each trait's acquisition | |
 | `plotHypercube.regularisation` | Information criterion vs number of nonzero parameters during regularisation | |
 | `plotHypercube.timeseries` | Time series of acquisitions across sampled routes | |
+| `plotHypercube.prediction` | Visualise predictions of unobserved features or future behaviour, given a model fit | *prediction* (required, the output of `predictHiddenVals` or `predictNextStep` (see below) |
 | `plotHypercube.summary` | Summary plot combining several of the above | *f.thresh*=0.05 (flux threshold for graph plot), *t.thresh*=20 (time threshold for time histograms), *continuous.time*=TRUE (plot continuous time summary information) |
+
 
 All but the last are demonstrated here:
 ![image](https://github.com/StochasticBiology/hypertraps-ct/assets/50171196/153ed0d7-88ea-4dc2-a3bc-0c24b25923db)
+
+In addition, we can ask HyperTraPS to make predictions about (a) any unobserved features for a given observation (for example, what value the ?s might take in 01??), and (b) what future evolutionary behaviour is likely given that we are currently in a certain state. These are achieved with functions `predictHiddenVals` and `predictNextStep` respectively. Both of these require a fitted hypercubic model (the output of `HyperTraPS`), which we'll call `fit`.
+
+To predict unobserved values in a given observation, you can invoke
+
+`predictHiddenVals(fit, state)`
+
+where `fit` is the fitted model and `state` is a vector describing the incomplete observations with 0s, 1s, and 2s, the latter of which mark unobserved features. So 0122 has uncertain features at positions 3 and 4. The function will output two dataframes, one giving the probability of observing each specific state that could correspond to the incomplete observation, and one giving the aggregate probability of each uncertain feature being 1.
+
+You can optionally provide an argument `level.weights` which provides probability weightings for different "levels" of the hypercube, that is, the different total number of 1s in the observation. This allows you to specify how likely it is that the true observation has acquired a certain number of features. By default this is uniform between the number of certain 1s and the maximum number of possible 1s.
+
+To predict future evolutionary behaviour, you can invoke
+
+`predictNextStep(fit, state)`
+
+where `fit` is the fitted model and `state` is a given state. This will return a dataframe describing the possible future dynamics from `state` and their probabilities.
+
+You can pass the output of both these prediction functions to `plotHypercube.prediction` for a visualisation of the corresponding prediction.
 
 Specific content for introduction paper
 =======
