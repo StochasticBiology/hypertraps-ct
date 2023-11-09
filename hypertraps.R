@@ -358,11 +358,11 @@ predictNextStep = function(my.post, state) {
 }
 
 # get the representation of different hypercube levels in a dataset
-dataLevels = function(matrix) {
-  matrix[matrix==2] = 0
-  counts = rowSums(matrix)
-  counts = counts/sum(counts)
-  return(counts)
+dataLevels = function(data.mat) {
+  data.mat[data.mat==2] = 0
+  counts = rowSums(data.mat)
+  counts = as.numeric(table(counts))/length(counts)
+  return(data.frame(level=1:length(counts), prop=counts))
 }
 
 # predict unobserved values in a given observation
