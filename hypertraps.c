@@ -124,9 +124,9 @@ double RetrieveEdge(int *state, int locus, double *ntrans, int LEN, int model)
   int i, j, k;
   
   if(model == 0)
-    return 0;
+    rate = 0;
   if(model == 1) // pi[locus] = rate of locus
-    return ntrans[locus];
+    rate = ntrans[locus];
   if(model == 2) // pi[i*LEN + locus] = influence of i on locus
     {
       rate = ntrans[locus*LEN+locus];
@@ -833,6 +833,12 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
       if(tlik < 0)
 	{
 	  printf("Somehow I have a negative likelihood, suggesting a lack of numerical convergence. Terminating to avoid unreliable posteriors.\n");
+	  printf("This was at observation %i, which is\n", i);
+	  for(j = 0; j < len; j++) printf("%i", matrix[2*i*len+len+j]);
+	  printf(" parent is: " );
+	  for(j = 0; j < len; j++) {  startpos[j] = matrix[2*i*len+j]; printf("%i", startpos[j]); }
+	  printf("\n");
+
 	  //myexit(0);
 	}
 
