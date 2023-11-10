@@ -1536,6 +1536,8 @@ int main(int argc, char *argv[])
       besttrans = (double*)malloc(sizeof(double)*NVAL);
       gradients = (double*)malloc(sizeof(double)*NVAL);
       tmpmat = (double*)malloc(sizeof(double)*NVAL);
+      priormin = (double*)malloc(sizeof(double)*NVAL);
+      priormax = (double*)malloc(sizeof(double)*NVAL);
 
       if(filelabel == 0)
 	{
