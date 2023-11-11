@@ -569,8 +569,8 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	}
       Rprintf("\n");
     }
-  
-  if(len > 15 && _outputtransitions == 1)
+
+    if(len > 15 && _outputtransitions == 1)
     {
       if(!_limited_output)
 	Rprintf("*** More than 15 features, meaning we'd need a lot of space to output transition and state information. I'm switching off this output.\n");
@@ -631,6 +631,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   Rprintf("One likelihood estimation took %e seconds.\nInitial likelihood is %e\n", diff_t, lik);
   lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI);
   Rprintf("Second guess is %e\n", lik);
+ 
   // MCMC or simulated annealing
   if(searchmethod == 0 || searchmethod == 2)
     {
@@ -642,10 +643,16 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
       if(_PLI) {
 	Rprintf("With PLI, this often means we're not using enough random walkers to hit every datapoint on the hypercube. If this takes a while to find a suitable start parameterisation, consider re-running with more random walkers.\n");
       }
+      i = 0;
       do{
-	InitialMatrix(trans, len, _model, 0);
+	i++;
+	InitialMatrix(trans, len, _model, 1);
 	lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI);
-      }while(isinf(lik));
+      }while(isinf(lik) && i < 100);
+      if(i >= 100) {
+	Rprintf("I didn't find a sensible start within 100 steps. I suspect something's wrong numerically.\n");
+	myexit(0);
+      }
       Rprintf("OK, starting with initial likelihood %e\n", lik);
     }
   
