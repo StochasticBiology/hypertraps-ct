@@ -719,10 +719,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
       /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
       if(targ[i] == 0)
 	{
-	  tmprate = P[i*LEN+i];
-	  for(j = 0; j < LEN; j++)
-	    tmprate += targ[j]*P[j*LEN+i];
-	  tmprate = exp(tmprate);
+	  tmprate = RetrieveEdge(targ, i, P, LEN, model);
 	}
       else /* we've already lost this gene */
 	tmprate = 0;
@@ -830,9 +827,9 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
       else 
 	tlik = lscale*LikelihoodMultiple(&(matrix[2*i*len+len]), ntrans, len, startpos, tau1s[i], tau2s[i], model);
       tloglik = log(tlik);
-      if(tlik < 0)
+      if(tlik <= 0)
 	{
-	  printf("Somehow I have a negative likelihood, suggesting a lack of numerical convergence. Terminating to avoid unreliable posteriors.\n");
+	  printf("Somehow I have a negative or zero likelihood, suggesting a lack of numerical convergence. Terminating to avoid unreliable posteriors.\n");
 	  printf("This was at observation %i, which is\n", i);
 	  for(j = 0; j < len; j++) printf("%i", matrix[2*i*len+len+j]);
 	  printf(" parent is: " );
@@ -1609,7 +1606,7 @@ int main(int argc, char *argv[])
 	    printf("With PLI, this often means we're not using enough random walkers to hit every datapoint on the hypercube. If this takes a while to find a suitable start parameterisation, consider re-running with more random walkers.\n");
 	  }
 	  do{
-	    InitialMatrix(trans, len, model, 0);
+	    InitialMatrix(trans, len, model, 1);
 	    lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
 	  }while(isinf(lik));
 	  printf("OK, starting with initial likelihood %e\n", lik);
