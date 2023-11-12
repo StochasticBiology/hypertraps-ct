@@ -30,6 +30,7 @@ List HyperTraPS(NumericMatrix obs,
 		NumericVector pli,
 		NumericVector walkers,
 		NumericVector full_analysis,
+		NumericVector output_transitions,
 		Nullable<CharacterVector> featurenames);
 
 List OutputStatesR(double *ntrans, int LEN, int model)
@@ -310,6 +311,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		NumericVector walkers = 200,
 		NumericVector full_analysis = 1,
 		NumericVector limited_output = 0,
+		NumericVector output_transitions = 1,
 		Nullable<CharacterVector> featurenames = R_NilValue)
 {
   int parents[_MAXN];
@@ -375,7 +377,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   _model = model[0];
   readparams = 0;
   _PLI = pli[0];
-  _outputtransitions = 1;
+  _outputtransitions = output_transitions[0];
   strcpy(obsfile, "rcpp");
   strcpy(paramfile, "");
   strcpy(timefile, "");
@@ -845,6 +847,9 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	}
     }
 
+  List db = List::create(Named("db") = 1);
+  return db;
+  
   List Lts = List::create(Named("Step") = t_output,
 			  Named("L") = L_output,
   			  Named("model") = model_output,

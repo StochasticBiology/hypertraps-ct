@@ -1430,21 +1430,6 @@ int main(int argc, char *argv[])
       ntarg = i/len;
       NVAL = nparams(model, len);
 
-      if(outputinput)
-	{
-	  printf("Observed transitions:\n");
-	  for(i = 0; i < ntarg/2; i++)
-	    {
-	      printf("%i: ", i);
-	      for(j = 0; j < len; j++) printf("%i", matrix[2*len*i+j]);
-	      printf(" -> ");
-	      for(j = 0; j < len; j++) printf("%i", matrix[2*len*i+len+j]);
-	      printf("\n");
-	    }
-	  if(losses == 1) printf("(where 1 is absence)\n\n");
-	  if(losses == 0) printf("(where 1 is presence)\n\n");
-	}
-  
       // grab timings from data file provided
       if(spectrumtype != 0)
 	{
@@ -1531,6 +1516,23 @@ int main(int argc, char *argv[])
 	{
 	  printf("*** More than 15 features, meaning we'd need a lot of space to output transition and state information. I'm switching off this output.\n");
 	  outputtransitions = 0;
+	}
+
+        if(outputinput)
+	{
+	  printf("Observed transitions:\n");
+	  for(i = 0; i < ntarg/2; i++)
+	    {
+	      printf("%i: ", i);
+	      for(j = 0; j < len; j++) printf("%i", matrix[2*len*i+j]);
+	      printf(" -> ");
+	      for(j = 0; j < len; j++) printf("%i", matrix[2*len*i+len+j]);
+	       if(spectrumtype != 0)
+	    printf("(window %.3e-%.3e)", tau1s[i], tau2s[i]);
+	      printf("\n");
+	    }
+	  if(losses == 1) printf("(where 1 is absence)\n\n");
+	  if(losses == 0) printf("(where 1 is presence)\n\n");
 	}
   
       // allocate memory and initialise output file
