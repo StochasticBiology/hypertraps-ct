@@ -135,6 +135,7 @@ HyperTraPS needs at least a set of observations. In R this should take the form 
 | Use SGD (0/1) | sgd=*N* | --sgd | 0 |
 | Use PLI (0/1) | pli=*N* | --pli | 0 |
 | Regularise model (0/1) | regularise=*N* | --regularise | 0 |
+| Output exact transitions (0/1) | output_transitions=*N* | --outputtransitions *N* | Switched off for L > 15 to avoid large output; consider switching off for CT 
 
 So some example calls are (see the various demo scripts for more):
 
