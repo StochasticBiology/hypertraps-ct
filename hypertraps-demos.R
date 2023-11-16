@@ -65,6 +65,12 @@ my.post.priors = HyperTraPS(m.2, initialstates = m.1,
                      priors = priors,
                      featurenames = c("A", "B", "C", "D", "E")); 
 plotHypercube.summary(my.post.priors)
+# compare to results from L model (independent features)  
+my.post.model1 = HyperTraPS(m.2, initialstates = m.1, 
+                            starttimes = times, endtimes = times, 
+                            model = 1, kernel=3,
+                            featurenames = c("A", "B", "C", "D", "E")); 
+plotHypercube.summary(my.post.model1)
 
 ### different levels of uncertainty in timings
 # precisely specified timings, as above
