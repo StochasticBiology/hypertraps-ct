@@ -357,6 +357,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   int _limited_output;
   
   // default values
+  num_error = 0;
   spectrumtype = 0;
   _lengthindex = length[0];
   _kernelindex = kernel[0];
@@ -847,9 +848,6 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	}
     }
 
-  List db = List::create(Named("db") = 1);
-  return db;
-  
   List Lts = List::create(Named("Step") = t_output,
 			  Named("L") = L_output,
   			  Named("model") = model_output,

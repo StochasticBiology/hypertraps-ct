@@ -30,6 +30,8 @@ int _EVERYITERATION = 0;
 
 double lscale = 1;
 
+double num_error = 0;
+
 // control output
 int VERBOSE = 0;
 int SPECTRUM_VERBOSE = 0;
@@ -745,7 +747,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 		  if(j != i)
 		    vi *= 1./(recbeta[LEN*n+j]-recbeta[LEN*n+i]);
 		  if(SPECTRUM_VERBOSE)
-		    printf("step %i recbeta %.4f vi %.4f\n", j, recbeta[LEN*n+j], vi);
+		    printf("step %i looking at step %i recbeta %.4f vi %.4f\n", i, j, recbeta[LEN*n+j], vi);
 		}
 	      betaci = recbeta[LEN*n+i];
 
@@ -753,15 +755,30 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 	      sumI2 += vi/betaci*(exp(-betaci*tau1) - exp(-betaci*tau2));
 
 	      if(SPECTRUM_VERBOSE)
-		printf("stepx %i vi %.4f betaci %.4f u %.4f | sumI1 %.4f sumI2 %.4f\n (tau1 %f tau2 %f)\n", i, vi, betaci, u, sumI1, sumI2, tau1, tau2);
+		printf("walker %i: stepx %i vi %.4f betaci %.4f u %.4f | sumI1 %.4f sumI2 %.4f\n (tau1 %f tau2 %f)\n", n, i, vi, betaci, u, sumI1, sumI2, tau1, tau2);
 	    }
 
 	  if(sumI1 < 0 || sumI2 < 0)
 	    {
-	      printf("I got a negative value for I1 (%e) or I2 (%e), which shouldn't happen and suggests a lack of numerical convergence. This can happen with large numbers of features. I'm stopping to avoid unreliable posteriors; consider running without continuous time option.\n", sumI1, sumI2);
-	      myexit(0);
+	      if(num_error == 0) {
+		printf("I got a negative value for I1 (%e) or I2 (%e), which shouldn't happen and suggests a lack of numerical convergence. This can happen with large numbers of features. I'm setting to zero but this may be worth examining.\n", sumI1, sumI2);
+	      }
+	      if(sumI1 < 0) {
+		if(-sumI1 > num_error) {
+		  num_error = -sumI1;
+		  printf("New scale of numerical error %e\n", num_error);
+		}
+		sumI1 = 0;
+	      }
+	      if(sumI2 < 0) {
+		if(-sumI2 > num_error) {
+		  num_error = -sumI2;
+		  printf("New scale of numerical error %e\n", num_error);
+		}
+		sumI2 = 0;
+	      }
 	    }
-
+	  
 	  // debugging example, run --obs VerifyData/synth-bigcross-90-hard-samples.txt --times VerifyData/synth-bigcross-90-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-90-db --spectrumverbose
 	  
 	  analyticI1 += (prob_path*sumI1);
