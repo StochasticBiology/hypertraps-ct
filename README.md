@@ -58,6 +58,22 @@ A matrix of "before" states may be specified as a matrix in R or a file at the c
 
 with the above observations would now reflect the transitions 001->001 (i.e. remaining in state 001) and 001->011.
 
+*If you're not interested in continuous time, uncertain data, priors, or old data formats, skip to the next section now.* 
+
+For continuous-time inference, HyperTraPS works with a time window for each observed transition, specified via a start time and an end time. If the start time and end time are equal, the transition is specified as taking exactly that time. If start time = 0 and end time = Inf, the transition can take any amount of time, which is mathematically equivalent to the case without continuous time. In general, the start and end times specify an allowed set of durations for the given transition, allowing uncertain timings to be accounted for.
+
+In R, these start and end times are vectors specified by `starttimes` and `endtimes`. At the command line, they are stored in files accessed by the `--starttimes` and `--endtimes` flags. In both cases, absent start times means that all start times are assumed to be zero; absent end times means that all end times are assumed to be Inf.
+
+The digit 2 can be used to reflect uncertainty in a state. For example,
+
+`0 2 1`
+
+corresponds to an observation where the first feature is absent, the second feature may be present or absent, and the third feature is present.
+
+HyperTraPS also accepts descriptions of prior distributions on parameters. For the moment these are assumed to be uniform in log parameter space, and are specified by the min and max for each distribution. At the command line these values should be passed as a single file, given by `--priors`, with two columns and N rows, where the ith row gives the minimum and maximum value for parameter i. In R this should be provided as a matrix `priors` with two columns and N rows. Remember that N, the number of parameters, will depend on the model structure chosen and the number of features in the system. For example, the 3-feature system above and the default model structure (2, referring to L^2 parameters) would have N = 9.
+
+*If you're not interested in old data formats, skip to the next section now.* 
+
 For compatibility with older studies, a different input format is possible at the command-line. When a single file containing a matrix of observations is provided, it is by default assumed that this gives cross-sectional observations. But the `--transitionformat` flag can be used to interpret this matrix as paired "before" and "after" observations. Now, the matrix should contain the "before" states as *odd* rows (starting from row 1) and the "after" states as *even* rows.
 
 For example,
@@ -66,18 +82,6 @@ For example,
 `0 1 1`
 
 with the `--transitionformat` flag would be interpreted as a transition 001->011 (odd row -> even row). Without the `--transitionformat` flag this would be interpreted as two independent observations, corresponding (as in the R case) to transitions 000->001 and 000->011.
-
-The digit 2 can be used to reflect uncertainty in a state. For example,
-
-`0 2 1`
-
-corresponds to an observation where the first feature is absent, the second feature may be present or absent, and the third feature is present.
-
-For continuous-time inference, HyperTraPS works with a time window for each observed transition, specified via a start time and an end time. If the start time and end time are equal, the transition is specified as taking exactly that time. If start time = 0 and end time = Inf, the transition can take any amount of time, which is mathematically equivalent to the case without continuous time. In general, the start and end times specify an allowed set of durations for the given transition, allowing uncertain timings to be accounted for.
-
-In R, these start and end times are vectors specified by `starttimes` and `endtimes`. At the command line, they are stored in files accessed by the `--starttimes` and `--endtimes` flags. In both cases, absent start times means that all start times are assumed to be zero; absent end times means that all end times are assumed to be Inf.
-
-HyperTraPS also accepts descriptions of prior distributions on parameters. For the moment these are assumed to be uniform in log parameter space, and are specified by the min and max for each distribution. At the command line these values should be passed as a single file, given by `--priors`, with two columns and N rows, where the ith row gives the minimum and maximum value for parameter i. In R this should be provided as a matrix `priors` with two columns and N rows. Remember that N, the number of parameters, will depend on the model structure chosen and the number of features in the system. For example, the 3-feature system above and the default model structure (2, referring to L^2 parameters) would have N = 9.
 
 Output
 ------
@@ -114,15 +118,16 @@ A good place to start is `hypertraps-demos.R`, where the basic form of R command
 Arguments to HyperTraPS
 ------
 
-HyperTraPS needs at least a set of observations. In R this should take the form of a matrix; on the command line it should be stored in a file.
+HyperTraPS needs at least a set of observations. *This is the only essential input.* In R this should take the form of a matrix; on the command line it should be stored in a file. The table below gives other inputs that can be provided, with more technical points appearing in lower sections.
 
 | Argument | R | Command-line | Default |
 |----------|---|--------------|---------|
 | Input data | obs=*matrix* | --obs *filename* | None (required) |
+|----------|---|--------------|---------|
 | Precursor states | initialstates=*matrix* | --initialstates *filename* | None; on command line can also be specified as odd-element rows in "Input data" |
-| Transition format observations | (not available) | --transitionformat | (off) |
 | Time window start | starttimes=*vector* | --times *filename* | 0 |
 | Time window end | endtimes=*vector* | --endtimes *filename* | starttimes if present (i.e. precisely specified times); otherwise Inf |
+|----------|---|--------------|---------|
 | Prior mins and maxs | priors=*matrix* | --priors *filename* | -10 to 10 in log space for each parameter (i.e. very broad range over orders of magnitude)
 | Model structure | model=*N* | --model *N* | 2 |
 | Number of walkers | walkers=*N* | --walkers *N* | 200 |
@@ -135,6 +140,7 @@ HyperTraPS needs at least a set of observations. In R this should take the form 
 | Use SGD (0/1) | sgd=*N* | --sgd | 0 |
 | Use PLI (0/1) | pli=*N* | --pli | 0 |
 | Regularise model (0/1) | regularise=*N* | --regularise | 0 |
+| Transition format observations | (not available) | --transitionformat | (off) |
 | Output exact transitions (0/1) | output_transitions=*N* | --outputtransitions *N* | Switched off for L > 15 to avoid large output; consider switching off for CT 
 
 So some example calls are (see the various demo scripts for more):
@@ -148,9 +154,11 @@ So some example calls are (see the various demo scripts for more):
 Visualising and using output
 --------
 
-The various outputs of HyperTraPS can be used in the R plotting functions below, which summarise (amongst other things) the numerical behaviour of the inference processes, the ordering and timings (where appropriate) of feature acquisitions, the structure of the learned hypercubic transition network, and any outputs from regularisation. All of these except `plotHypercube.prediction` take a fitted model -- the output of `HyperTraPS` -- as a required argument, and may take other options as the table describes. `plotHypercube.prediction` takes a required argument that is the output of prediction functions described below.
+The various outputs of HyperTraPS can be used in the R plotting functions below, which summarise (amongst other things) the numerical behaviour of the inference processes, the ordering and timings (where appropriate) of feature acquisitions, the structure of the learned hypercubic transition network, and any outputs from regularisation. *To start, `plotHypercube.summary` gives an overview of what we've learned. All of these except `plotHypercube.prediction` take a fitted model -- the output of `HyperTraPS` -- as a required argument, and may take other options as the table describes. `plotHypercube.prediction` takes a required argument that is the output of prediction functions described below.
 
 | Plot function | Description | Options and defaults |
+|---------------|-------------|---------|
+| `plotHypercube.summary` | Summary plot combining several of the above | *f.thresh*=0.05 (flux threshold for graph plot), *t.thresh*=20 (time threshold for time histograms), *continuous.time*=TRUE (plot continuous time summary information) |
 |---------------|-------------|---------|
 | `plotHypercube.lik.trace` | Trace of likelihood over inference run, calculated twice (to show consistency or lack thereof) | |
 | `plotHypercube.bubbles` | "Bubble plot" of probability of acquiring trait *i* at ordinal step *j* | *transpose*=FALSE (horizontal and vertical axis), *reorder*=FALSE (order traits by mean acquisition ordering) |
@@ -163,10 +171,8 @@ The various outputs of HyperTraPS can be used in the R plotting functions below,
 | `plotHypercube.timeseries` | Time series of acquisitions across sampled routes | |
 | `plotHypercube.prediction` | Visualise predictions of unobserved features or future behaviour, given a model fit | *prediction* (required, the output of `predictHiddenVals` or `predictNextStep` (see below) |
 | `plotHypercube.influences` | For the L^2 model, visualise how each feature acquisition influences the rate of acquisition of other features | |
-| `plotHypercube.summary` | Summary plot combining several of the above | *f.thresh*=0.05 (flux threshold for graph plot), *t.thresh*=20 (time threshold for time histograms), *continuous.time*=TRUE (plot continuous time summary information) |
 
-
-All but the last are demonstrated here:
+Some useful ones are demonstrated here:
 ![image](https://github.com/StochasticBiology/hypertraps-ct/assets/50171196/153ed0d7-88ea-4dc2-a3bc-0c24b25923db)
 
 In addition, we can ask HyperTraPS to make predictions about (a) any unobserved features for a given observation (for example, what value the ?s might take in 01??), and (b) what future evolutionary behaviour is likely given that we are currently in a certain state. These are achieved with functions `predictHiddenVals` and `predictNextStep` respectively. Both of these require a fitted hypercubic model (the output of `HyperTraPS`), which we'll call `fit`.
