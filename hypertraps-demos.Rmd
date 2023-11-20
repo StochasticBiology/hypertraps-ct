@@ -92,7 +92,47 @@ plotHypercube.timehists(my.post)
 plotHypercube.timeseries(my.post)
 ```
 
-### Uncertainty in transition timings
+*Influences between features.* How each acquired trait (horizontal axis) influences the propensity for each other trait (vertical axis) to be acquired. Red is repression, blue is promotion; the transparency gives the width of the associated posterior. Here we see that 1 and 5 strongly cross-repress (being the first steps on the two competing pathways) and each feature promotes the next step on its pathway (wrapping the diagonal).
+
+```{r}
+plotHypercube.influences(my.post)
+```
+
+### Predictions of unseen and future behaviour
+
+We can use the inferred transition network to make predictions about what will happen next in a given state. Let's query the inferred hypercube to see what will happen next when we are part of the way down one pathway.
+
+```{r}
+prediction.step = predictNextStep(my.post, c(1,1,0,0,0))
+plotHypercube.prediction(prediction.step)
+```
+
+The graphic reports the likely next steps, as a word cloud and a set of probabilities. Here, we're making the strong prediction that the next step after 11000 is 11100.
+
+We can also make predictions about hidden values in new observations. First let's mask an observation and ask HyperTraPS to "fill in the blanks" of 1????.
+
+```{r}
+prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2))
+plotHypercube.prediction(prediction.hidden)
+``` 
+
+Here, we see a word cloud of possible states that could correspond to our observation, and a set of probabilities associated with each *feature* being 1. That is, it's highly likely that feature 2 is 1, and less likely that feature 5 is 1. But doesn't this assume something about how far we've come on the hypercube?
+
+Yes -- by default this assumes that all "levels" of the hypercube -- all counts of "1" that are possible, given our uncertainty -- are equally likely. But we might be more interested in specifying something about how many features we're likely to have acquired. We can do this by specifying weights for each "level":
+
+```{r}
+prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,0,0,0))
+plotHypercube.prediction(prediction.hidden)
+```
+
+Here, we're saying that we believe there's only one more "1" in the ?s -- and we see a correspondingly strong prediction about where that "1" is. We can be more agnostic, and the predictions are shaped accordingly, like below. We might want our prediction to mirror how many "levels" we saw in our original data, for example.
+
+```{r}
+predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,1,1,0))
+plotHypercube.prediction(prediction.hidden)
+```
+
+### Uncertainty in observation times
 
 HyperTraPS-CT allows uncertainty in transition timings to be captured. In the run above, we specified a precise timing for each transition, by giving a zero-width time window for each observation (start times = end times). This time window is flexible. We can allow it to have infinite width, in which case absolute timings are meaningless and we just infer the orderings of events. Or we can specify a finite time window, allowing a transition to take any time within that window, to capture uncertainty in observation timings.
 
@@ -204,6 +244,33 @@ ggarrange(plotHypercube.graph(logic.post.m1) + ggtitle("All edges") + theme(lege
 ```    
 
 We can see that the structures inferred by the "full" and "L^3" models are the same, while the "L^2" (and inappropriate "L^1") will either introduce extraneous transitions or fail to capture the true ones.
+
+We can also impose priors on our model. This is achieved by specifying ranges for each parameter. Here, we give an extreme example, constructing a matrix setting this range to only include zero for all parameters except basal acquisition rates.
+
+```{r}
+priors = matrix(0, ncol=2, nrow=5*5)
+for(i in 0:4) {
+  priors[i*5+i+1,1] = -10
+  priors[i*5+i+1,2] = 10
+}
+my.post.priors = HyperTraPS(m.2, initialstates = m.1, 
+                     starttimes = times, endtimes = times, 
+                     priors = priors,
+                     limited_output = 1,
+                     featurenames = c("A", "B", "C", "D", "E")); 
+plotHypercube.summary(my.post.priors)
+```
+
+As this prior structure disallows interactions between features (these are exactly the off-diagonal parameters that we've enforced to be zero), the results should resemble inference run using the reduced model structure without interactions:
+
+```{r}
+my.post.model1 = HyperTraPS(m.2, initialstates = m.1, 
+                            starttimes = times, endtimes = times, 
+                            model = 1, kernel=3,
+                            limited_output = 1,
+                            featurenames = c("A", "B", "C", "D", "E")); 
+plotHypercube.summary(my.post.model1)
+```
 
 ### Scientific examples
 

@@ -50,7 +50,7 @@ prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2))
 plotHypercube.prediction(prediction.hidden)
 # ... enforcing given belief about progress on the hypercube
 prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,0,0,0))
-plotHypercube.hiddenVals(prediction.hidden)
+plotHypercube.prediction(prediction.hidden)
 predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,1,1,0))
 predictHiddenVals(my.post, c(1,1,0,0,0))
 predictHiddenVals(my.post, c(1,1,2,2,0))
