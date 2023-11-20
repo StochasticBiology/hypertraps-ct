@@ -162,6 +162,7 @@ The various outputs of HyperTraPS can be used in the R plotting functions below,
 | `plotHypercube.regularisation` | Information criterion vs number of nonzero parameters during regularisation | |
 | `plotHypercube.timeseries` | Time series of acquisitions across sampled routes | |
 | `plotHypercube.prediction` | Visualise predictions of unobserved features or future behaviour, given a model fit | *prediction* (required, the output of `predictHiddenVals` or `predictNextStep` (see below) |
+| `plotHypercube.influences` | For the L^2 model, visualise how each feature acquisition influences the rate of acquisition of other features | |
 | `plotHypercube.summary` | Summary plot combining several of the above | *f.thresh*=0.05 (flux threshold for graph plot), *t.thresh*=20 (time threshold for time histograms), *continuous.time*=TRUE (plot continuous time summary information) |
 
 
