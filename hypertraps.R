@@ -1,11 +1,11 @@
-library(Rcpp)
-library(ggplot2)
-library(ggpubr)
-library(ggraph)
-library(ggwordcloud)
-library(igraph)
-library(stringr)
-library(stringdist)
+require(Rcpp)
+require(ggplot2)
+require(ggpubr)
+require(ggraph)
+require(ggwordcloud)
+require(igraph)
+require(stringr)
+require(stringdist)
 
 DecToBin <- function(x, len) {
   s = c()
@@ -232,6 +232,25 @@ plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, contin
                         theme(legend.position="none") + expand_limits(x = c(-1, 4)) ) )
   }
 }
+
+plotHypercube.influences = function(my.post) {
+  plot.df = data.frame()
+  for(i in 1:my.post$L) {
+    for(j in 1:my.post$L) {
+      if(i != j) {
+        ref = (i-1)*my.post$L + j
+        ref.mean = mean(my.post$posterior.samples[,ref])
+        ref.sd = sd(my.post$posterior.samples[,ref])
+        plot.df = rbind(plot.df, data.frame(x=i, y=j, mean=ref.mean, cv=abs(ref.sd/ref.mean)))
+      }
+    }
+  }  
+  return(ggplot(plot.df, aes(x=x,y=y,fill=mean,alpha=cv)) + geom_tile() + 
+           scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
+           scale_alpha_continuous(range=c(1,0)) +
+           theme_light() + xlab("Acquired trait") + ylab("Influenced rate"))
+}
+
 
 mylabel = function(label, suffix) {
   return(paste(c(label, suffix), collapse=""))
