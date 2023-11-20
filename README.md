@@ -90,6 +90,8 @@ At the command line, HyperTraPS will output information about the progress of a 
 
 In R, HyperTraPS will output information about the progress of a run to the console, and return a named list containing outputs from and descriptions of the inference process.
 
+*If you are just interested in plotting summary outputs from the inference process, skip to the next section now.*
+
 The files from the command line version can be read into R (for plotting, analysis, etc) using `readHyperinf` from `hypertraps.R`. This reads a collection of output files and returns a named list. Similar, the named list structure in R can be written to files (for storage) using `writeHyperinf` from `hypertraps.R`. This takes a named list and produces the corresponding file set.
 
 The output structures are
@@ -123,11 +125,11 @@ HyperTraPS needs at least a set of observations. *This is the only essential inp
 | Argument | R | Command-line | Default |
 |----------|---|--------------|---------|
 | Input data | obs=*matrix* | --obs *filename* | None (required) |
-|----------|---|--------------|---------|
+| Timings and initial states:||||
 | Precursor states | initialstates=*matrix* | --initialstates *filename* | None; on command line can also be specified as odd-element rows in "Input data" |
 | Time window start | starttimes=*vector* | --times *filename* | 0 |
 | Time window end | endtimes=*vector* | --endtimes *filename* | starttimes if present (i.e. precisely specified times); otherwise Inf |
-|----------|---|--------------|---------|
+| More technical content: ||||
 | Prior mins and maxs | priors=*matrix* | --priors *filename* | -10 to 10 in log space for each parameter (i.e. very broad range over orders of magnitude)
 | Model structure | model=*N* | --model *N* | 2 |
 | Number of walkers | walkers=*N* | --walkers *N* | 200 |
@@ -159,7 +161,7 @@ The various outputs of HyperTraPS can be used in the R plotting functions below,
 | Plot function | Description | Options and defaults |
 |---------------|-------------|---------|
 | `plotHypercube.summary` | Summary plot combining several of the above | *f.thresh*=0.05 (flux threshold for graph plot), *t.thresh*=20 (time threshold for time histograms), *continuous.time*=TRUE (plot continuous time summary information) |
-|---------------|-------------|---------|
+| More specific plots: |||
 | `plotHypercube.lik.trace` | Trace of likelihood over inference run, calculated twice (to show consistency or lack thereof) | |
 | `plotHypercube.bubbles` | "Bubble plot" of probability of acquiring trait *i* at ordinal step *j* | *transpose*=FALSE (horizontal and vertical axis), *reorder*=FALSE (order traits by mean acquisition ordering) |
 | `plotHypercube.motifs` | Motif-style plot of probability of acquiring trait *i* at ordinal step *j* | |
