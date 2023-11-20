@@ -1,21 +1,6 @@
-library(ggplot2)
-library(gridExtra)
-#source("plot-trans.R")
-library(stringdist)
-library(stringr)
-library(pheatmap)
-library(igraph)
-library(ggraph)
-library(ggplotify)
-
-DecToBin <- function(x, len) {
-  s = c()
-  for(j in (len-1):0)
-  {
-    if(x >= 2**j) { s=c(s,1); x = x-2**j } else { s=c(s,0)}
-  }
-  return(paste(s, collapse=""))
-}
+setwd("..")
+source("hypertraps.R")
+setwd("Scripts")
 
 #### various test bed experiments
 
@@ -46,111 +31,35 @@ for(expt in 1:5) {
     oneshot="regularised"; bigL=5
   }
   
-  # initialise plot list
-  g.bubbles = g.lik = g.cube = g.gcube = g.motif = g.pheatmap = g.reglik = g.regBIC = list()
+  g.lik = g.bubbles = g.cube = g.reg = list()  
   # loop over files in output
   for(i in 1:length(fname)) {
-    bdf = thdf = data.frame()
-    # set up filenames for input
+    this.fname = paste(c("../VerifyData/", fname[i]), collapse="")
     if(oneshot=="regularised") {
-        base.name = post.name = fname[i]
-      #base.name = paste(c(fname[i], "-regularised"))
-      #post.name = paste(c(fname[i], "-regularised.txt"))
-    } else if(oneshot == "yes") {
-      base.name = post.name = fname[i]
-     # post.name = paste(c(fname[i], "-best.txt"))
+      this.post = readHyperinf(this.fname, postlabel = this.fname, regularised = TRUE)
+      # get trajectories from regularisation, if appropriate
+      g.reg[[i]] = plotHypercube.regularisation(this.post)
     } else {
-      base.name = post.name = fname[i]
-      #post.name = paste(c(fname[i], "-posterior.txt"))
+      this.post = readHyperinf(this.fname, postlabel = this.fname)
     }
-      lik.name = paste(c("../VerifyData/", base.name, "-lik.csv"), collapse="")
-      trans.name = paste(c("../VerifyData/", base.name, "-trans.csv"), collapse="")
-      states.name = paste(c("../VerifyData/", base.name, "-states.csv"), collapse="")
-      bubble.name = paste(c("../VerifyData/", post.name, "-bubbles.csv"), collapse="")
-      thist.name = paste(c("../VerifyData/", post.name, "-timehists.csv"), collapse="")
-      routes.name = paste(c("../VerifyData/", post.name, "-routes.txt"), collapse="")
-   
-    # read likelihood trace and produce plot
-    lik.df = read.csv(lik.name)
-    g.lik[[i]] = ggplot(lik.df) + 
-      geom_line(aes(x=Step,y=LogLikelihood1), color="#FF8888", alpha=0.3, linewidth=3) +
-      geom_line(aes(x=Step,y=LogLikelihood2), color="#8888FF", alpha=0.3, linewidth=3) +
-      theme_light()
-    
-    # read bubble output and produce plot
-    tmpdf = read.csv(bubble.name)
-    tmpdf$Expt=i
-    bdf = rbind(bdf, tmpdf)
-    g.bubbles[[i]] = ggplot(bdf, aes(x=Time, y=OriginalIndex, size=Probability)) +
-      geom_point() +
-      theme_light()
-    
-    tmpdf = read.csv(thist.name)
-    tmpdf$Expt=i
-    thdf = rbind(thdf, tmpdf)
-    
-    # read transition and state probabilities
-    trans.1 = read.csv(trans.name)
-    trans.1 = trans.1[!is.nan(trans.1$Probability),]
-    trans.s.1 = read.csv(states.name)
-    trans.s.1 = trans.s.1[!is.nan(trans.s.1$Probability),]
-    # produce plot using custom code
- #   g.cube[[i]] = plot.hypercube3(trans.1, statesdf=trans.s.1, 
- #                                 node.labels = FALSE, seg.labels = TRUE, threshold=5e-2)
-    
-    # set up metadata for ggraph plot
-    #trans.1$Flux = trans.1$Probability*trans.s.1$Probability[trans.1$From+1]
-    
-    trans.p = trans.1[trans.1$Flux > 1e-2,]
-    trans.g = graph_from_data_frame(trans.p)
-    bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
-    V(trans.g)$binname = bs
-    layers = str_count(bs, "1")
-    g.gcube[[i]] = ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
-      geom_node_point() + geom_node_label(aes(label=binname),size=2) +
-      scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
-      theme_graph() #aes(label=bs)) + theme_graph() 
-    
-    # read individual routes
-    routes = read.table(routes.name)
-    
-    # process route probabilities and produce motif plot
-    rdf = data.frame()
-    for(j in 1:ncol(routes)) {
-      startprob = 0
-      for(k in 0:max(routes)) {
-        thisprob = length(which(routes[,j]==k))/nrow(routes)
-        rdf = rbind(rdf, data.frame(Index=k, Time=j, Start=startprob, End=startprob+thisprob, Probability=thisprob))
-        startprob = startprob+thisprob
-      }
-    }
-    g.motif[[i]] = ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Index))) +
-      geom_text(aes(x=Time,y=(Start+End)/2,label=Index), color="#FFFFFF") + ylab("Probability") + theme_light()
- 
-    # get trajectories from regularisation, if appropriate
-   if(oneshot=="regularised") {
-      reg.name = paste(c("../VerifyData/", fname[i], "-regularising.csv"), collapse="")
-      reg.df = read.csv(reg.name)
-      g.reglik[[i]] = ggplot(reg.df) + geom_line(aes(x=nparam, y=log.lik)) + theme_light()
-        g.regBIC[[i]] = ggplot(reg.df) + geom_line(aes(x=nparam, y=BIC)) + theme_light() 
-    }    
-  }
+    g.lik[[i]] = plotHypercube.lik.trace(this.post)
+    g.bubbles[[i]] = plotHypercube.bubbles(this.post)
+    g.cube[[i]] = plotHypercube.sampledgraph(this.post)
+  }    
   
   # produce summary output
-  out.name = paste(c("plot-sandbox-", expt, ".png"), collapse="")
+  out.name = paste(c("plot-sandbox-build-", expt, ".png"), collapse="")
   sf = 2
-  png(out.name, width=2000*sf, height=800*sf, res=72*sf)
+  png(out.name, width=1100*sf, height=800*sf, res=72*sf)
   if(oneshot == "regularised") {
-  grid.arrange(g.reglik[[1]], g.regBIC[[1]], g.bubbles[[1]], g.gcube[[1]], g.motif[[1]], 
-               g.reglik[[2]], g.regBIC[[2]], g.bubbles[[2]], g.gcube[[2]], g.motif[[2]],
-               g.reglik[[3]], g.regBIC[[3]], g.bubbles[[3]], g.gcube[[3]], g.motif[[3]], 
-               #           g.lik[[4]], g.bubbles[[4]], g.gcube[[4]], g.motif[[4]], g.pheatmap[[4]], 
-               nrow=3)
+    grid.arrange(g.reg[[1]], g.bubbles[[1]], g.cube[[1]],
+                 g.reg[[2]], g.bubbles[[2]], g.cube[[2]],
+                 g.reg[[3]], g.bubbles[[3]], g.cube[[3]],
+                 nrow=3)
   } else {
-    grid.arrange(g.lik[[1]], g.bubbles[[1]], g.gcube[[1]], g.motif[[1]], 
-                 g.lik[[2]], g.bubbles[[2]], g.gcube[[2]], g.motif[[2]],
-                 g.lik[[3]], g.bubbles[[3]], g.gcube[[3]], g.motif[[3]], 
-                 #           g.lik[[4]], g.bubbles[[4]], g.gcube[[4]], g.motif[[4]], g.pheatmap[[4]], 
+    grid.arrange(g.lik[[1]], g.bubbles[[1]], g.cube[[1]],
+                 g.lik[[2]], g.bubbles[[2]], g.cube[[2]],
+                 g.lik[[3]], g.bubbles[[3]], g.cube[[3]],
                  nrow=3)
   }
   dev.off()
