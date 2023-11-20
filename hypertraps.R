@@ -71,7 +71,7 @@ plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE) {
 plotHypercube.sampledgraph = function(my.post, max = 1000, thresh = 0.05, node.labels = TRUE) {
   edge.from = edge.to = c()
   bigL = my.post$L
-  nsamps = min(max, nrow(my.post$routes))
+  nsamps = nrow(my.post$routes)
   for(i in 1:nsamps) {
     state = 0
     for(j in 1:ncol(my.post$routes)) {
@@ -181,7 +181,7 @@ plotHypercube.timehists = function(my.post, t.thresh = 20) {
 
 plotHypercube.regularisation = function(my.post) {
   return(ggplot(my.post$regularisation$reg.process, 
-                aes(x=params, y=AIC)) + geom_point() + theme_light() )
+                aes(x=nparam, y=AIC)) + geom_point() + theme_light() )
 }
 
 plotHypercube.motifs = function(my.post) {
@@ -274,16 +274,17 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
   
   if(regularised == TRUE) {
     tmpL = list()
-    rL$best = read.table(mylabel(label, "-regularised.txt"))
-    rL$reg.process = read.csv(mylabel(label, "-regularising.csv"))
+    tmpL$best = read.table(mylabel(label, "-regularised.txt"))
+    tmpL$reg.process = read.csv(mylabel(label, "-regularising.csv"))
+    rL$regularisation = tmpL
   }
   
   if(postlabel != "") {
     rL$bubbles = read.csv(mylabel(postlabel, "-bubbles.csv"))
     rL$timehists = read.csv(mylabel(postlabel, "-timehists.csv"))
-    rL$routes = read.table(mylabel(postlabel, "-routes.txt"), sep=",")
-    rL$betas = read.table(mylabel(postlabel, "-betas.txt"), sep=",")
-    rL$times = read.table(mylabel(postlabel, "-times.txt"), sep=",") 
+    rL$routes = read.table(mylabel(postlabel, "-routes.txt"), sep=" ")
+    rL$betas = read.table(mylabel(postlabel, "-betas.txt"), sep=" ")
+    rL$times = read.table(mylabel(postlabel, "-times.txt"), sep=" ") 
   }
   
   return(rL)
@@ -307,9 +308,9 @@ writeHyperinf = function(wL, label, postlabel = "", fulloutput=FALSE, regularise
   if(postlabel != "") {
     write.table(wL$bubbles, mylabel(postlabel, "-bubbles.csv"), row.names=FALSE, sep=",", quote=FALSE)
     write.table(wL$timehists, mylabel(postlabel, "-timehists.csv"), row.names=FALSE, sep=",", quote=FALSE)
-    write.table(wL$routes, mylabel(postlabel, "-routes.txt"), row.names=FALSE, col.names = FALSE, sep=",", quote=FALSE)
-    write.table(wL$betas, mylabel(postlabel, "-betas.txt"), row.names=FALSE, col.names = FALSE, sep=",", quote=FALSE)
-    write.table(wL$times, mylabel(postlabel, "-times.txt"), row.names=FALSE, col.names = FALSE, sep=",", quote=FALSE)
+    write.table(wL$routes, mylabel(postlabel, "-routes.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
+    write.table(wL$betas, mylabel(postlabel, "-betas.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
+    write.table(wL$times, mylabel(postlabel, "-times.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
   }
 }
 

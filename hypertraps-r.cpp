@@ -234,7 +234,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
 	}
     }
 
-  List Ldyn = List::create(Named("params") = NVAL_v,
+  List Ldyn = List::create(Named("nparam") = NVAL_v,
 			   Named("lik") = lik_v,
 			   Named("AIC") = AIC_v,
 			   Named("BIC") = BIC_v);
