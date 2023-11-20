@@ -37,6 +37,7 @@ my.post = HyperTraPS(m.2, initialstates = m.1,
 plotHypercube.summary(my.post)
 plotHypercube.sampledgraph2(my.post, thresh=0.1, use.arc=FALSE, edge.label.size=3) + 
   theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1))
+plotHypercube.influences(my.post)
 
 # demonstrate predictions of future behaviour
 prediction.step = predictNextStep(my.post, c(1,1,0,0,0))
