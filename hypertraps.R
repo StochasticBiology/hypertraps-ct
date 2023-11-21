@@ -213,21 +213,26 @@ plotHypercube.motifs = function(my.post, feature.names = c("")) {
            scale_fill_brewer(palette = "PuRd") + theme_light())
 }
 
-plotHypercube.timeseries = function(my.post, log.axis = TRUE) {
+plotHypercube.timeseries = function(my.post, log.axis = TRUE, feature.names=c("")) {
   # time series illustration
+  if(length(feature.names) > 1) {
+    labels = feature.names
+  } else {
+    labels = 1:my.post$L
+  }
   rtdf = data.frame()
   for(i in 1:(min(nrow(my.post$routes),1000))) {
     prevtime = 0
     for(j in 1:ncol(my.post$routes)) {
-      rtdf = rbind(rtdf, data.frame(Run=i, Step=j, Index=my.post$routes[i,j], PrevTime=prevtime, Time=my.post$times[i,j]))
+      rtdf = rbind(rtdf, data.frame(Run=i, Step=j, Label=labels[my.post$routes[i,j]+1], Index=my.post$routes[i,j], PrevTime=prevtime, Time=my.post$times[i,j]))
       prevtime = my.post$times[i,j]
     }
   }
   if(log.axis == TRUE) {
-    return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
+    return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label)), alpha=0.5) +
               scale_x_continuous(trans="log") + theme_light())
   } else {
-    ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Index)), alpha=0.5) +
+    ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label)), alpha=0.5) +
       theme_light()
   }
 }
