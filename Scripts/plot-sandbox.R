@@ -48,7 +48,7 @@ for(expt in 1:5) {
   }    
   
   # produce summary output
-  out.name = paste(c("plot-sandbox-build-", expt, ".png"), collapse="")
+  out.name = paste(c("plot-sandbox-", expt, ".png"), collapse="")
   sf = 2
   png(out.name, width=1100*sf, height=800*sf, res=72*sf)
   if(oneshot == "regularised") {
