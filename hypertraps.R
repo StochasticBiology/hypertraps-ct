@@ -192,19 +192,25 @@ plotHypercube.regularisation = function(my.post) {
                 aes(x=nparam, y=AIC)) + geom_point() + theme_light() )
 }
 
-plotHypercube.motifs = function(my.post) {
+plotHypercube.motifs = function(my.post, feature.names = c("")) {
   # motif plot
+  if(length(feature.names) > 1) {
+    labels = feature.names
+  } else {
+    labels = 1:my.post$L
+  }
   rdf = data.frame()
   for(j in 1:ncol(my.post$routes)) {
     startprob = 0
     for(i in 0:max(my.post$routes)) {
       thisprob = length(which(my.post$routes[,j]==i))/nrow(my.post$routes)
-      rdf = rbind(rdf, data.frame(Index=i, Time=j, Start=startprob, End=startprob+thisprob, Probability=thisprob))
+      rdf = rbind(rdf, data.frame(Index=i, Label=labels[i+1], Time=j, Start=startprob, End=startprob+thisprob, Probability=thisprob))
       startprob = startprob+thisprob
     }
   }
-  return(ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Index))) +
-           geom_text(aes(x=Time,y=(Start+End)/2,label=Index), color="#FFFFFF") + ylab("Probability") + theme_light())
+  return(ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Label))) +
+           geom_text(aes(x=Time,y=(Start+End)/2,label=Label), color="#FFFFFF") + ylab("Probability") + 
+           scale_fill_brewer(palette = "PuRd") + theme_light())
 }
 
 plotHypercube.timeseries = function(my.post, log.axis = TRUE) {
@@ -241,8 +247,13 @@ plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, contin
   }
 }
 
-plotHypercube.influences = function(my.post) {
+plotHypercube.influences = function(my.post, feature.names=c("")) {
   plot.df = data.frame()
+  if(length(feature.names) > 1) {
+    labels = feature.names
+  } else {
+    labels = 1:my.post$L
+  }
   for(i in 1:my.post$L) {
     for(j in 1:my.post$L) {
       if(i != j) {
@@ -256,7 +267,9 @@ plotHypercube.influences = function(my.post) {
   return(ggplot(plot.df, aes(x=x,y=y,fill=mean,alpha=cv)) + geom_tile() + 
            scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
            scale_alpha_continuous(range=c(1,0)) +
-           theme_light() + xlab("Acquired trait") + ylab("Influenced rate"))
+           theme_light() + xlab("Acquired trait") + ylab("Influenced rate") +
+           scale_x_continuous(breaks=1:my.post$L, labels=labels) +
+           scale_y_continuous(breaks=1:my.post$L, labels=labels))
 }
 
 
