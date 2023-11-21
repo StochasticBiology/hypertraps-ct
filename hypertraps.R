@@ -68,15 +68,15 @@ plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE) {
   return(this.plot)
 }
 
-plotHypercube.sampledgraph = function(my.post, max = 1000, thresh = 0.05, node.labels = TRUE) {
+plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, node.labels = TRUE) {
   edge.from = edge.to = c()
   bigL = my.post$L
-  nsamps = nrow(my.post$routes)
+  nsamps = min(max.samps, nrow(my.post$routes))
   for(i in 1:nsamps) {
     state = 0
     for(j in 1:ncol(my.post$routes)) {
       edge.from = c(edge.from, state)
-      state = state + 2**my.post$routes[i,j]
+      state = state + 2**(my.post$L-my.post$routes[i,j]-1)
       edge.to = c(edge.to, state)
     }
   }
@@ -101,15 +101,15 @@ plotHypercube.sampledgraph = function(my.post, max = 1000, thresh = 0.05, node.l
   return(this.plot)
 }
 
-plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05, node.labels = TRUE, use.arc = TRUE, no.times = FALSE, edge.label.size = 2) {
+plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05, node.labels = TRUE, use.arc = TRUE, no.times = FALSE, edge.label.size = 2, feature.names = c("")) {
   edge.from = edge.to = edge.time = edge.change = c()
   bigL = my.post$L
-  nsamps = min(max, nrow(my.post$routes))
+  nsamps = min(max.samps, nrow(my.post$routes))
   for(i in 1:nsamps) {
     state = 0
     for(j in 1:ncol(my.post$routes)) {
       edge.from = c(edge.from, state)
-      state = state + 2**my.post$routes[i,j]
+      state = state + 2**(my.post$L-my.post$routes[i,j]-1)
       edge.to = c(edge.to, state)
       edge.change = c(edge.change, my.post$routes[i,j])
       edge.time = c(edge.time, my.post$times[i,j])
@@ -117,6 +117,9 @@ plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05, node.
   }
   df = data.frame(From=edge.from, To=edge.to, Change=edge.change, Time=edge.time)
   dfu = unique(df)
+  if(length(feature.names) > 1) {
+    dfu$Change = feature.names[dfu$Change+1]
+  }
   dfu$Flux = dfu$MeanT = dfu$SDT = NA
   for(i in 1:nrow(dfu)) {
     this.set = which(df$From==dfu$From[i] & df$To==dfu$To[i])
@@ -155,23 +158,28 @@ plotHypercube.sampledgraph2 = function(my.post, max = 1000, thresh = 0.05, node.
 }
 
 
-plotHypercube.timehists = function(my.post, t.thresh = 20) {
+plotHypercube.timehists = function(my.post, t.thresh = 20, feature.names = c("")) {
   thdfp = data.frame()
+  if(length(feature.names) > 1) {
+    my.post$timehists$feature.label = feature.names[my.post$L-my.post$timehists$OriginalIndex]
+  } else {
+    my.post$timehists$feature.label = my.post$timehists$OriginalIndex
+  }
   for(i in c(3,4)) {
-    for(j in unique(my.post$timehists$OriginalIndex)) {
-      sub = my.post$timehists[my.post$timehists$OriginalIndex == j & my.post$timehists$Time < t.thresh,]
-      sub1 = my.post$timehists[my.post$timehists$OriginalIndex == j & my.post$timehists$Time >= t.thresh,]
+    for(j in unique(my.post$timehists$feature.label)) {
+      sub = my.post$timehists[my.post$timehists$feature.label == j & my.post$timehists$Time < t.thresh,]
+      sub1 = my.post$timehists[my.post$timehists$feature.label == j & my.post$timehists$Time >= t.thresh,]
       thdfp = rbind(thdfp, sub)
-      thdfp = rbind(thdfp, data.frame(OriginalIndex=j, Time=t.thresh, Probability=sum(sub1$Probability)))
+      thdfp = rbind(thdfp, data.frame(OriginalIndex = j, feature.label=j, Time=t.thresh, Probability=sum(sub1$Probability)))
     }
   }
   
   g.thist = ggplot(thdfp[thdfp$Time < t.thresh,], aes(x=log(Time+1), y=Probability)) + 
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
-    geom_line() + xlim(-0.1,log(t.thresh+1)) + facet_wrap(~OriginalIndex, nrow=2) +
+    geom_line() + xlim(-0.1,log(t.thresh+1)) + facet_wrap(~feature.label, nrow=2) +
     theme_light() #+ scale_x_continuous(trans="log10")
   
-  g.thist2 = ggplot(thdfp[thdfp$Time == t.thresh,], aes(x=OriginalIndex, y=Probability)) + 
+  g.thist2 = ggplot(thdfp[thdfp$Time == t.thresh,], aes(x=feature.label, y=Probability)) + 
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
     geom_col(position="dodge") + 
     theme_light() #+ scale_x_continuous(trans="log10")
@@ -312,6 +320,11 @@ writeHyperinf = function(wL, label, postlabel = "", fulloutput=FALSE, regularise
     write.table(wL$betas, mylabel(postlabel, "-betas.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
     write.table(wL$times, mylabel(postlabel, "-times.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
   }
+}
+
+pullFeatureLabels = function(my.post) {
+  sub = my.post$bubbles[1:my.post$L,]
+  return(as.vector(sub$Name[order(sub$OriginalIndex)]))
 }
 
 # construct the (probability-weighted) q-gram distance
