@@ -161,7 +161,7 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
 plotHypercube.timehists = function(my.post, t.thresh = 20, feature.names = c("")) {
   thdfp = data.frame()
   if(length(feature.names) > 1) {
-    my.post$timehists$feature.label = feature.names[my.post$L-my.post$timehists$OriginalIndex]
+    my.post$timehists$feature.label = feature.names[my.post$timehists$OriginalIndex+1]
   } else {
     my.post$timehists$feature.label = my.post$timehists$OriginalIndex
   }
