@@ -163,8 +163,12 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
   int biggestindex;
   double biggest;
   int pcount;
-  double AIC, BIC, bestBIC;
+  double AIC, BIC, bestIC;
   double *best;
+  double normedval;
+
+  if(model == -1) normedval = -20;
+  else normedval = 0;
   
   NVAL = nparams(model, len);
   best = (double*)malloc(sizeof(double)*NVAL);
@@ -173,7 +177,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
 
   AIC = 2*NVAL-2*lik;
   BIC = log(ntarg)*NVAL-2*lik;
-  bestBIC = BIC;
+  bestIC = AIC;
   for(i = 0; i < NVAL; i++)
     best[i] = ntrans[i];
 
@@ -200,22 +204,25 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
       biggest = 0;
       for(i = 0; i < NVAL; i++)
 	{
+	  if(ntrans[i] != normedval)
+	    {
 	  oldval = ntrans[i];
-	  ntrans[i] = 0;
+	  ntrans[i] = normedval;
 	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI);
 	  ntrans[i] = oldval;
-	  if((biggest == 0 || nlik > biggest) && ntrans[i] != 0)
+	  if((biggest == 0 || nlik > biggest))
 	    {
 	      biggest = nlik;
 	      biggestindex = i;
 	    }
+	    }
 	}
       // set this param to zero and count new param set
-      ntrans[biggestindex] = 0;
+      ntrans[biggestindex] = normedval;
       pcount = 0;
       for(i = 0; i < NVAL; i++)
 	{
-	  if(ntrans[i] != 0) pcount++;
+	  if(ntrans[i] != normedval) pcount++;
 	}
       // output
       AIC = 2*pcount-2*biggest;
@@ -226,9 +233,9 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
       AIC_v.push_back(AIC);
       BIC_v.push_back(BIC);
       //fprintf(fp, "%i,%e,%e,%e\n", pcount, biggest, AIC, BIC);
-      if(BIC < bestBIC)
+      if(AIC < bestIC)
 	{
-	  bestBIC = BIC;
+	  bestIC = AIC;
 	  for(i = 0; i < NVAL; i++)
 	    best[i] = ntrans[i];
 	}
@@ -250,7 +257,10 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
   //fprintf(fp, "\n");
   //fclose(fp);
   for(i = 0; i < NVAL; i++)
+    {
     best_v[i] = best[i];
+    ntrans[i] = best[i];
+    }
 
   List Lout = List::create(Named("best") = best_v,
 			   Named("lik.1") = GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI),
@@ -863,14 +873,18 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 			Named("posterior.samples") = posterior_output,
 			Named("lik.traces") = Ltsdf);
 
-  if(_outputtransitions) 
-    L["dynamics"] = dynamics_output;
-
   if(_regularise)
     {
       List regL = RegulariseR(matrix, len, ntarg, besttrans, parents, tau1s, tau2s, _model, _PLI, _limited_output);
       L["regularisation"] = regL;
+      if(_outputtransitions)
+	{ 
+	  dynamics_output = OutputStatesR(besttrans, len, _model);
+	}
     }
+
+  if(_outputtransitions) 
+    L["dynamics"] = dynamics_output;
 
   if(full_analysis[0] == 0)
     return L;

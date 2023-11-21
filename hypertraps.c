@@ -892,8 +892,12 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
   int pcount;
   FILE *fp;
   char fstr[200];
-  double AIC, BIC, bestBIC;
+  double AIC, BIC, bestIC;
   double *best;
+  double normedval;
+
+  if(model == -1) normedval = -20;
+  else normedval = 0;
   
   NVAL = nparams(model, len);
   best = (double*)malloc(sizeof(double)*NVAL);
@@ -902,7 +906,7 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
 
   AIC = 2*NVAL-2*lik;
   BIC = log(ntarg)*NVAL-2*lik;
-  bestBIC = BIC;
+  bestIC = AIC;
   for(i = 0; i < NVAL; i++)
     best[i] = ntrans[i];
 
@@ -921,29 +925,29 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
       for(i = 0; i < NVAL; i++)
 	{
 	  oldval = ntrans[i];
-	  ntrans[i] = 0;
+	  ntrans[i] = normedval;
 	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI);
 	  ntrans[i] = oldval;
-	  if((biggest == 0 || nlik > biggest) && ntrans[i] != 0)
+	  if((biggest == 0 || nlik > biggest) && ntrans[i] != normedval)
 	    {
 	      biggest = nlik;
 	      biggestindex = i;
 	    }
 	}
       // set this param to zero and count new param set
-      ntrans[biggestindex] = 0;
+      ntrans[biggestindex] = normedval;
       pcount = 0;
       for(i = 0; i < NVAL; i++)
 	{
-	  if(ntrans[i] != 0) pcount++;
+	  if(ntrans[i] != normedval) pcount++;
 	}
       // output
       AIC = 2*pcount-2*biggest;
       BIC = log(ntarg)*pcount-2*biggest;
       fprintf(fp, "%i,%e,%e,%e\n", pcount, biggest, AIC, BIC);
-      if(BIC < bestBIC)
+      if(AIC < bestIC)
 	{
-	  bestBIC = BIC;
+	  bestIC = AIC;
 	  for(i = 0; i < NVAL; i++)
 	    best[i] = ntrans[i];
 	}

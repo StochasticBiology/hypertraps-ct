@@ -73,6 +73,15 @@ my.post.model1 = HyperTraPS(m.2, initialstates = m.1,
                             featurenames = c("A", "B", "C", "D", "E")); 
 plotHypercube.summary(my.post.model1)
 
+# impose priors -- here disallowing one possible first step
+priors = matrix(c(-10,10), ncol=2, nrow=5*5, byrow = TRUE)
+priors[1,2] = -10
+my.post.priors = HyperTraPS(m.2, initialstates = m.1, 
+                            starttimes = times, endtimes = times, 
+                            priors = priors,
+                            featurenames = c("A", "B", "C", "D", "E")); 
+plotHypercube.summary(my.post.priors)
+
 ### different levels of uncertainty in timings
 # precisely specified timings, as above
 my.post.time.precise = HyperTraPS(m.2, initialstates = m.1, 
@@ -93,6 +102,17 @@ ggarrange(plotHypercube.timehists(my.post.time.precise, t.thresh=3),
           plotHypercube.timehists(my.post.time.uncertain, t.thresh=3),
           plotHypercube.timehists(my.post.time.inf, t.thresh=3),
           nrow=3)
+
+# output selected demos to file
+sf = 2
+png("plot-demos.png", width=1200*sf, height=1200*sf, res=72*sf)
+ggarrange(plotHypercube.sampledgraph2(my.post), plotHypercube.timehists(my.post),
+          plotHypercube.influences(my.post), plotHypercube.timeseries(my.post),
+          plotHypercube.prediction(prediction.step), plotHypercube.prediction(prediction.hidden),
+          plotHypercube.sampledgraph2(my.post.priors), plotHypercube.timehists(my.post.time.uncertain, t.thresh=3),
+          plotHypercube.timehists(my.post.time.inf, t.thresh=3), nrow=3, ncol=3,
+          labels=c("A","B","C","D","E","F","G","H","I"))
+dev.off()
 
 # write output to files
 writeHyperinf(my.post, "simpledemo", my.post$L, postlabel = "simpledemo", fulloutput=TRUE)
@@ -139,19 +159,40 @@ plotHypercube.regularisation(my.post.bigmodel.regularise)
 
 # this example demonstrates different model choices -- the data is generated using a process where pairs of features influence other features
 # the (inappropriate) L^1 and L^2 parameterisations cannot capture this, but the "all edge" (model -1) and L^3 parameterisations can
-logic.mat = readLines("Verify/hi-order.txt")
+logic.mat = readLines("RawData/old-hi-order.txt")
 logic.mat = do.call(rbind, lapply(strsplit(logic.mat, ""), as.numeric))
-logic.starts = logic.mat[seq(from=1, to=nrow(logic.mat), by=2),]
-logic.ends = logic.mat[seq(from=2, to=nrow(logic.mat), by=2),]
+logic.mat = rbind(logic.mat, logic.mat)
+logic.mat.i = readLines("RawData/old-hi-order-init.txt")
+logic.mat.i = do.call(rbind, lapply(strsplit(logic.mat.i, ""), as.numeric))
+logic.mat.i = rbind(logic.mat.i, logic.mat.i)
+logic.starts = logic.mat.i
+logic.ends = logic.mat
+
 logic.post.m1 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = -1, walkers = 20)
+logic.post.m1r = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = -1, walkers = 20, regularise = 1)
 logic.post.1 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = 1, walkers = 20)
 logic.post.2 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = 2, walkers = 20)
 logic.post.3 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = 3, walkers = 20)
 
+png("plot-demo-logic.png", width=800*sf, height=400*sf, res=72*sf)
 ggarrange(plotHypercube.graph(logic.post.m1) + ggtitle("All edges") + theme(legend.position="none"),
           plotHypercube.graph(logic.post.1) + ggtitle("L") + theme(legend.position="none"),
           plotHypercube.graph(logic.post.2)+ ggtitle("L^2") + theme(legend.position="none"),
-          plotHypercube.graph(logic.post.3)+ ggtitle("L^3") + theme(legend.position="none"))
+          plotHypercube.graph(logic.post.3)+ ggtitle("L^3") + theme(legend.position="none"),
+          plotHypercube.graph(logic.post.m1r)+ ggtitle("All edges, regularised") + theme(legend.position="none"),
+          plotHypercube.regularisation(logic.post.m1r))
+dev.off()
+
+ggarrange(plotHypercube.graph(logic.post.m1) + ggtitle("All edges") + theme(legend.position="none"),
+          plotHypercube.graph(logic.post.1) + ggtitle("L") + theme(legend.position="none"),
+          plotHypercube.graph(logic.post.2)+ ggtitle("L^2") + theme(legend.position="none"),
+          plotHypercube.graph(logic.post.3)+ ggtitle("L^3") + theme(legend.position="none"),
+          plotHypercube.graph(logic.post.m1r)+ ggtitle("All edges, regularised") + theme(legend.position="none"),
+          plotHypercube.regularisation(logic.post.m1r))
+
+#refs = which(logic.post.m1r$regularisation$best != -20)-1
+#data.frame(state=floor(refs/5), locus=refs%%5)
+
 # compare likelihoods across model structures
 c(max(logic.post.m1$lik.traces$LogLikelihood1),
   max(logic.post.1$lik.traces$LogLikelihood1),

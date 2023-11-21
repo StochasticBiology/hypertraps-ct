@@ -101,7 +101,10 @@ plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, 
   return(this.plot)
 }
 
-plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05, node.labels = TRUE, use.arc = TRUE, no.times = FALSE, edge.label.size = 2, feature.names = c("")) {
+plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05, 
+                                       node.labels = TRUE, use.arc = TRUE, no.times = FALSE, 
+                                       edge.label.size = 2, edge.label.angle = "across",
+                                       feature.names = c("")) {
   edge.from = edge.to = edge.time = edge.change = c()
   bigL = my.post$L
   nsamps = min(max.samps, nrow(my.post$routes))
@@ -143,11 +146,17 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
   layers = str_count(bs, "1")
   
   if(use.arc == TRUE) {
-    this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label), label_size = edge.label.size, label_colour="black", color="#AAAAFF") + 
+    this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + 
+      geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label), 
+                    label_size = edge.label.size, label_colour="#AAAAAA", color="#AAAAFF",
+                    label_parse = TRUE, angle_calc = edge.label.angle) + 
       scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
       theme_graph(base_family="sans")
   } else {
-    this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=label), label_size = edge.label.size, label_colour="black", color="#AAAAFF") + 
+    this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + 
+      geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=label), 
+                     label_size = edge.label.size, label_colour="#AAAAAA", color="#AAAAFF",
+                     label_parse = TRUE, angle_calc = edge.label.angle) + 
       scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
       theme_graph(base_family="sans")
   }
@@ -261,12 +270,10 @@ plotHypercube.influences = function(my.post, feature.names=c("")) {
   }
   for(i in 1:my.post$L) {
     for(j in 1:my.post$L) {
-      if(i != j) {
         ref = (i-1)*my.post$L + j
         ref.mean = mean(my.post$posterior.samples[,ref])
         ref.sd = sd(my.post$posterior.samples[,ref])
         plot.df = rbind(plot.df, data.frame(x=i, y=j, mean=ref.mean, cv=abs(ref.sd/ref.mean)))
-      }
     }
   }  
   return(ggplot(plot.df, aes(x=x,y=y,fill=mean,alpha=cv)) + geom_tile() + 
