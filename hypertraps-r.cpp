@@ -181,7 +181,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
   for(i = 0; i < NVAL; i++)
     best[i] = ntrans[i];
 
-  NumericVector NVAL_v, lik_v, AIC_v, BIC_v;
+  NumericVector NVAL_v, removed_v, lik_v, AIC_v, BIC_v;
   
   // sprintf(fstr, "%s-regularising.csv", labelstr);
   //fp = fopen(fstr, "w");
@@ -189,6 +189,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
   //fprintf(fp, "%i,%e,%e,%e\n", NVAL, lik, AIC, BIC);
 
   NVAL_v.push_back(NVAL);
+  removed_v.push_back(-1);
   lik_v.push_back(lik);
   AIC_v.push_back(AIC);
   BIC_v.push_back(BIC);
@@ -229,6 +230,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
       BIC = log(ntarg)*pcount-2*biggest;
 
       NVAL_v.push_back(pcount);
+      removed_v.push_back(biggestindex);
       lik_v.push_back(biggest);
       AIC_v.push_back(AIC);
       BIC_v.push_back(BIC);
@@ -242,6 +244,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
     }
 
   List Ldyn = List::create(Named("nparam") = NVAL_v,
+			   Named("removed") = removed_v,
 			   Named("lik") = lik_v,
 			   Named("AIC") = AIC_v,
 			   Named("BIC") = BIC_v);

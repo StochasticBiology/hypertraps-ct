@@ -881,7 +881,7 @@ void GetGradients(int *matrix, int len, int ntarg, double *trans, int *parents, 
     }
 }
 
-void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, char *labelstr, int PLI)
+void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, char *labelstr, int PLI, int outputtransitions)
 {
   int i, j;
   int NVAL;
@@ -912,8 +912,8 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
 
   sprintf(fstr, "%s-regularising.csv", labelstr);
   fp = fopen(fstr, "w");
-  fprintf(fp, "nparam,log.lik,AIC,BIC\n");
-  fprintf(fp, "%i,%e,%e,%e\n", NVAL, lik, AIC, BIC);
+  fprintf(fp, "nparam,removed,log.lik,AIC,BIC\n");
+  fprintf(fp, "%i,%i,%e,%e,%e\n", NVAL, -1, lik, AIC, BIC);
 
   printf("Regularising...\npruning ");
   // remove parameters stepwise
@@ -944,7 +944,7 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
       // output
       AIC = 2*pcount-2*biggest;
       BIC = log(ntarg)*pcount-2*biggest;
-      fprintf(fp, "%i,%e,%e,%e\n", pcount, biggest, AIC, BIC);
+      fprintf(fp, "%i,%i,%e,%e,%e\n", pcount, biggestindex, biggest, AIC, BIC);
       if(AIC < bestIC)
 	{
 	  bestIC = AIC;
@@ -964,9 +964,11 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
   fprintf(fp, "0,%e,%e\n", GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI), GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI));
   fclose(fp);
 
+  if(outputtransitions) {
   sprintf(fstr, "%s-regularised", labelstr);
   OutputStatesTrans(fstr, best, len, model);
-
+  }
+  
   free(best);
 
 }
@@ -1830,7 +1832,7 @@ int main(int argc, char *argv[])
     }
   if(regularise)
     {
-      Regularise(matrix, len, ntarg, besttrans, parents, tau1s, tau2s, model, labelstr, PLI);
+      Regularise(matrix, len, ntarg, besttrans, parents, tau1s, tau2s, model, labelstr, PLI, outputtransitions);
     }
   if(posterior_analysis)
     {
