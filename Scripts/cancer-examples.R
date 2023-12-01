@@ -9,7 +9,7 @@ source("hypertraps.R")
 ### Cancer case study 1
 
 # pull the AML data object from TreeMHN
-load("Cancer/AML_tree_obj.RData")
+load("RawData/AML_tree_obj.RData")
 
 # helper function for shifting bits in a character string
 new.state = function(old.state, locus) {
@@ -85,7 +85,7 @@ plotHypercube.sampledgraph3(cancer.more.samples, use.arc = FALSE, node.labels = 
 ### Cancer case study 2
 
 # read a big list of mutations across samples
-big.c.df = as.data.frame(read_excel("Cancer/Supplementary Table 14.Driver.Events.By.Mutation.Type.01052015.v2.xlsx", sheet=4))
+big.c.df = as.data.frame(read_excel("RawData/Supplementary Table 14.Driver.Events.By.Mutation.Type.01052015.v2.xlsx", sheet=4))
 genes = unique(big.c.df$Gene)
 samples = unique(big.c.df$Sample)
 
