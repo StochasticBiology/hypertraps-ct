@@ -6,7 +6,8 @@ using namespace Rcpp;
 List PosteriorAnalysis(List L,
 		       Nullable<CharacterVector> featurenames_arg,
 		       int use_regularised,
-		       int limited_output);
+		       int limited_output,
+		       int samples_per_row);
 List RegulariseR(int *matrix,
 		 int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, int PLI,
 		 int limited_output);
@@ -325,6 +326,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		NumericVector full_analysis = 1,
 		NumericVector limited_output = 0,
 		NumericVector output_transitions = 1,
+		NumericVector samples_per_row = 10,
 		Nullable<CharacterVector> featurenames = R_NilValue)
 {
   int parents[_MAXN];
@@ -368,7 +370,8 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   int readparams;
   int _PLI;
   int _limited_output;
-  
+  int _samples_per_row;
+		       
   // default values
   num_error = 0;
   spectrumtype = 0;
@@ -392,6 +395,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   readparams = 0;
   _PLI = pli[0];
   _outputtransitions = output_transitions[0];
+  _samples_per_row = samples_per_row[0];
   strcpy(obsfile, "rcpp");
   strcpy(paramfile, "");
   strcpy(timefile, "");
@@ -892,7 +896,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   if(full_analysis[0] == 0)
     return L;
   else
-    return PosteriorAnalysis(L, featurenames, _regularise, _limited_output);
+    return PosteriorAnalysis(L, featurenames, _regularise, _limited_output, _samples_per_row);
 }
 
 //' Extracts information from HyperTraPS-related posterior samples
@@ -903,7 +907,8 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 List PosteriorAnalysis(List L,
 		       Nullable<CharacterVector> featurenames = R_NilValue,
 		       int use_regularised = 0,
-		       int limited_output = 0)
+		       int limited_output = 0,
+		       int samples_per_row = 10)
 {
   int *matrix;
   int len, ntarg;
@@ -1092,7 +1097,7 @@ List PosteriorAnalysis(List L,
 	      fp3 = fopen(fstr, "w");*/
     }
   
-  int NSAMPLES = ((posterior.nrow() - burnin)/(sampleperiod+1))*(NSAMP);
+  int NSAMPLES = ((posterior.nrow() - burnin)/(sampleperiod+1))*(samples_per_row);
   NumericMatrix route_out(NSAMPLES, len);
   NumericMatrix betas_out(NSAMPLES, len);
   NumericMatrix times_out(NSAMPLES, len);
@@ -1109,7 +1114,7 @@ List PosteriorAnalysis(List L,
       if(count >= burnin && count % (sampleperiod+1) == 0)
 	{
 	  // loop through iterations
-	  for(j = 0; j < NSAMP; j++)
+	  for(j = 0; j < samples_per_row; j++)
 	    {
 	      for(i = 0; i < len; i++)
 		meanstore[i] = 0;

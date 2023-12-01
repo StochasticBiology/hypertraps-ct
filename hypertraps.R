@@ -166,6 +166,76 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
   return(this.plot)
 }
 
+plotHypercube.sampledgraph3 = function(my.post, max.samps = 1000, thresh = 0.05, 
+                                       node.labels = TRUE, use.arc = TRUE, no.times = FALSE, 
+                                       edge.label.size = 2, edge.label.angle = "across",
+                                       edge.label.colour = "#000000",
+                                       feature.names = c(""), truncate = -1) {
+  edge.from = edge.to = edge.time = edge.change = c()
+  bigL = my.post$L
+  if(truncate == -1 | truncate > bigL) { truncate = bigL }
+  nsamps = min(max.samps, nrow(my.post$routes))
+  for(i in 1:nsamps) {
+    state = paste0(rep("0", bigL), collapse = "")
+    for(j in 1:truncate) {
+      edge.from = c(edge.from, state)
+      locus = my.post$routes[i,j]+1
+      substr(state, locus, locus) <- "1"
+      edge.to = c(edge.to, state)
+      edge.change = c(edge.change, my.post$routes[i,j])
+      edge.time = c(edge.time, my.post$times[i,j])
+    }
+  }
+  df = data.frame(From=edge.from, To=edge.to, Change=edge.change, Time=edge.time)
+  dfu = unique(df)
+  if(length(feature.names) > 1) {
+    dfu$Change = feature.names[dfu$Change+1]
+  }
+  dfu$Flux = dfu$MeanT = dfu$SDT = NA
+  for(i in 1:nrow(dfu)) {
+    this.set = which(df$From==dfu$From[i] & df$To==dfu$To[i])
+    dfu$Flux[i] = length(this.set)
+    dfu$MeanT[i] = mean(df$Time[this.set])
+    if(length(this.set) > 1) {
+      dfu$SDT[i] = sd(df$Time[this.set])
+    }
+    if(no.times == TRUE) {
+      dfu$label[i] = paste(c("+", dfu$Change[i]), collapse="")
+    } else {
+      dfu$label[i] = paste(c("+", dfu$Change[i], ": ", signif(dfu$MeanT[i], digits=2), " +- ", signif(dfu$SDT[i], digits=2)), collapse="") 
+    }
+    
+  }
+  dfu$Flux = dfu$Flux / nsamps
+  dfu = dfu[dfu$Flux > thresh,]
+  trans.g = graph_from_data_frame(dfu)
+  #bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
+  #bs = unlist(lapply(as.numeric(as.vector(V(trans.g))), DecToBin, len=bigL))
+  bs = V(trans.g)$name
+  V(trans.g)$binname = bs
+  layers = str_count(bs, "1")
+  
+  if(use.arc == TRUE) {
+    this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + 
+      geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label), 
+                    label_size = edge.label.size, label_colour=edge.label.colour, color="#AAAAFF",
+                    label_parse = TRUE, angle_calc = edge.label.angle) + 
+      scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
+      theme_graph(base_family="sans")
+  } else {
+    this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + 
+      geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=label), 
+                     label_size = edge.label.size, label_colour=edge.label.colour, color="#AAAAFF",
+                     label_parse = TRUE, angle_calc = edge.label.angle) + 
+      scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
+      theme_graph(base_family="sans")
+  }
+  if(node.labels == TRUE) {
+    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
+  }
+  return(this.plot)
+}
+
 
 plotHypercube.timehists = function(my.post, t.thresh = 20, feature.names = c("")) {
   thdfp = data.frame()
@@ -238,11 +308,11 @@ plotHypercube.timeseries = function(my.post, log.axis = TRUE, feature.names=c(""
     }
   }
   if(log.axis == TRUE) {
-    return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label)), alpha=0.5) +
-              scale_x_continuous(trans="log") + theme_light())
+    return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
+              scale_x_continuous(trans="log10") + scale_color_brewer(palette = "Spectral") + theme_light())
   } else {
-    ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label)), alpha=0.5) +
-      theme_light()
+    ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
+      scale_color_brewer(palette = "Spectral")+ theme_light()
   }
 }
 
@@ -261,7 +331,7 @@ plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, contin
   }
 }
 
-plotHypercube.influences = function(my.post, feature.names=c("")) {
+plotHypercube.influences = function(my.post, feature.names=c(""), use.regularised = FALSE, reorder = FALSE, upper.right = FALSE) {
   plot.df = data.frame()
   if(length(feature.names) > 1) {
     labels = feature.names
@@ -270,18 +340,46 @@ plotHypercube.influences = function(my.post, feature.names=c("")) {
   }
   for(i in 1:my.post$L) {
     for(j in 1:my.post$L) {
-        ref = (i-1)*my.post$L + j
+      ref = (i-1)*my.post$L + j
+      if(use.regularised == TRUE) {
+        ref.mean = as.numeric(my.post$regularisation$best[ref])
+        ref.sd = 0
+      } else {
         ref.mean = mean(my.post$posterior.samples[,ref])
         ref.sd = sd(my.post$posterior.samples[,ref])
-        plot.df = rbind(plot.df, data.frame(x=i, y=j, mean=ref.mean, cv=abs(ref.sd/ref.mean)))
+      }
+      plot.df = rbind(plot.df, data.frame(x=i, y=j, mean=ref.mean, cv=abs(ref.sd/ref.mean)))
     }
   }  
-  return(ggplot(plot.df, aes(x=x,y=y,fill=mean,alpha=cv)) + geom_tile() + 
-           scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
-           scale_alpha_continuous(range=c(1,0)) +
-           theme_light() + xlab("Acquired trait") + ylab("Influenced rate") +
-           scale_x_continuous(breaks=1:my.post$L, labels=labels) +
-           scale_y_continuous(breaks=1:my.post$L, labels=labels))
+  plot.df$xlab = labels[plot.df$x]
+  plot.df$ylab = labels[plot.df$y]
+  if(reorder == TRUE) {
+    diag.means = plot.df[plot.df$x == plot.df$y,]
+    my.order = order(diag.means$mean, decreasing=TRUE)
+    plot.df$xlab = factor(plot.df$xlab, levels=labels[my.order])
+    plot.df$ylab = factor(plot.df$ylab, levels=labels[my.order])
+  } else {
+    plot.df$xlab = factor(plot.df$xlab)
+    plot.df$ylab = factor(plot.df$ylab)
+  }
+  if(upper.right == TRUE) {
+    return(ggplot(plot.df, aes(x=xlab,y=factor(ylab, levels=rev(levels(plot.df$ylab))),fill=mean,alpha=cv)) + geom_tile() + 
+             scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
+             scale_alpha_continuous(range=c(1,0)) +
+             theme_light() + xlab("Acquired trait") + ylab("(Influenced) rate") +
+             theme(axis.text.x = element_text(angle=90)) ) #+
+    #scale_x_continuous(breaks=1:my.post$L, labels=labels) +
+    #scale_y_continuous(breaks=1:my.post$L, labels=labels))
+  } else {
+    return(ggplot(plot.df, aes(x=xlab,y=ylab,fill=mean,alpha=cv)) + geom_tile() + 
+             scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
+             scale_alpha_continuous(range=c(1,0)) +
+             theme_light() + xlab("Acquired trait") + ylab("(Influenced) rate") +
+             theme(axis.text.x = element_text(angle=90)) ) #+
+    # scale_x_continuous(breaks=1:my.post$L, labels=labels) +
+    # scale_y_continuous(breaks=1:my.post$L, labels=labels))
+  }
+  
 }
 
 
@@ -487,7 +585,7 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
                                       prob=1))
     locus.probs = data.frame()
   }
-
+  
   output.list = list()
   output.list$state.probs = res.df
   output.list$locus.probs = locus.probs
@@ -495,19 +593,19 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
   return(output.list)
 }
 
-plotHypercube.prediction = function(prediction) {
+plotHypercube.prediction = function(prediction, max.size = 30) {
   if(length(prediction$states) > 0) {
     g.1 = ggplot(prediction, aes(label=states, size=probs), angle=0) + 
-      geom_text_wordcloud() + scale_size_area(max_size = 30) +
+      geom_text_wordcloud() + scale_size_area(max_size = max.size) +
       theme_minimal()
     g.2 = ggplot(prediction, aes(x=states, y=probs)) + 
       geom_col() + theme_light()  
   } else {
-  g.1 = ggplot(prediction$state.probs, aes(label=state, size=prob), angle=0) + 
-    geom_text_wordcloud() + scale_size_area(max_size = 30) +
-    theme_minimal()
-  g.2 = ggplot(prediction$locus.probs, aes(x=factor(locus), y=prob)) + 
-    geom_col() + theme_light()
+    g.1 = ggplot(prediction$state.probs, aes(label=state, size=prob), angle=0) + 
+      geom_text_wordcloud() + scale_size_area(max_size = max.size) +
+      theme_minimal()
+    g.2 = ggplot(prediction$locus.probs, aes(x=factor(locus), y=prob)) + 
+      geom_col() + theme_light()
   }
   return(ggarrange(g.1, g.2))
 }
