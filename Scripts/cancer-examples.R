@@ -51,20 +51,50 @@ for(aml.list in 1:length(AML[[5]])) {
 befores = matrix(unlist(lapply(strsplit(trans.df$before, ""), as.numeric)), ncol=AML[[1]], byrow=TRUE)
 afters = matrix(unlist(lapply(strsplit(trans.df$after, ""), as.numeric)), ncol=AML[[1]], byrow=TRUE)
 
-# run HyperTraPS and regularise
-cancer.post = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3)
-cancer.post.reg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, walkers=20, regularise = 1)
+if(run.simulations == TRUE) {
+  # run HyperTraPS and regularise
+  cancer.post = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3)
+  cancer.post.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, autoregularise = 1)
+  cancer.post.reg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, walkers=20, regularise = 1)
+  cancer.post.sa = HyperTraPS(afters, initialstates = befores, sa = 1, length = 3, kernel = 3)
+  cancer.post.sa.autoreg = HyperTraPS(afters, initialstates = befores, length = 3, kernel = 3, autoregularise = 1)
 
-# save output
-writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
-writeHyperinf(cancer.post.reg, "cancer.post.reg", postlabel="cancer.post.reg", fulloutput = FALSE, regularised = TRUE)
+  # save output
+  writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
+  writeHyperinf(cancer.post.reg, "cancer.post.reg", postlabel="cancer.post.reg", fulloutput = FALSE, regularised = TRUE)
+  writeHyperinf(cancer.post.autoreg, "cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
+  writeHyperinf(cancer.post.sa, "cancer.post.sa", postlabel="cancer.post.sa", fulloutput = FALSE, regularised = FALSE)
+  writeHyperinf(cancer.post.sa.autoreg, "cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
+}
 
 # example subsequent read
-#cancer.post.reg = readHyperinf("cancer.post.reg", postlabel="cancer.post.reg", fulloutput = FALSE, regularised = TRUE)
+cancer.post = readHyperinf("cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
+cancer.post.reg = readHyperinf("cancer.post.reg", postlabel="cancer.post.reg", fulloutput = FALSE, regularised = TRUE)
+cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
+cancer.post.sa = readHyperinf("cancer.post.sa", postlabel="cancer.post.sa", fulloutput = FALSE, regularised = FALSE)
+cancer.post.sa.autoreg = readHyperinf("cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
+
+plotHypercube.influences(cancer.post, feature.names = AML[[4]], 
+                         upper.right = TRUE, reorder = TRUE)
+plotHypercube.influences(cancer.post.reg, feature.names = AML[[4]], 
+                         use.regularised = TRUE, upper.right = TRUE, reorder = TRUE)
+plotHypercube.influences(cancer.post.autoreg, feature.names = AML[[4]], 
+                         upper.right = TRUE, reorder = TRUE)
+plotHypercube.influences(cancer.post.sa, feature.names = AML[[4]], 
+                         upper.right = TRUE, reorder = TRUE)
+plotHypercube.influences(cancer.post.sa.autoreg, feature.names = AML[[4]], 
+                         upper.right = TRUE, reorder = TRUE)
+
+ggarrange(plotHypercube.influences(cancer.post.reg, feature.names = AML[[4]], 
+                                   use.regularised = TRUE, upper.right = TRUE, reorder = TRUE),
+          plotHypercube.influences(cancer.post.sa.autoreg, feature.names = AML[[4]], 
+                                   upper.right = TRUE, reorder = TRUE),
+          nrow=1, ncol=2)
+### do this just with best parameterisation?
 
 # plot influences between genes
 plotHypercube.influences(cancer.post.reg, feature.names = AML[[4]], 
-                         use.regularised = TRUE, upper.right = FALSE, reorder = TRUE)
+                         use.regularised = TRUE, upper.right = TRUE, reorder = TRUE)
 
 # more samples from the regularised parameterisation
 cancer.more.samples = PosteriorAnalysis(cancer.post.reg, use_regularised = TRUE, samples_per_row = 1000)
