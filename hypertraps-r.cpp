@@ -27,6 +27,7 @@ List HyperTraPS(NumericMatrix obs,
 		NumericVector seed,
 		NumericVector outputinput,
 		NumericVector regularise,
+		NumericVector autoregularise,
 		NumericVector model,
 		NumericVector pli,
 		NumericVector walkers,
@@ -320,6 +321,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		NumericVector seed = 1,
 		NumericVector outputinput = 0,
 		NumericVector regularise = 0,
+		NumericVector autoregularise = 0,
 		NumericVector model = 2,
 		NumericVector pli = 0,
 		NumericVector walkers = 200,
@@ -371,7 +373,9 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   int _PLI;
   int _limited_output;
   int _samples_per_row;
-		       
+  int _autoregularise;
+  double regterm;
+  
   // default values
   num_error = 0;
   spectrumtype = 0;
@@ -385,6 +389,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   searchmethod = 0;
   BANK = walkers[0];
   _limited_output = limited_output[0];
+  _autoregularise = autoregularise[0];
   
   if(sgd[0] == 1) searchmethod = 1;
   if(sa[0] == 1) searchmethod = 2;
@@ -683,7 +688,12 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   if(_apm_type == 1)
     apm_seed = _seed;
 
-  int NSAMPLES = (maxt-maxt/5)/SAMPLE-1;
+  int NSAMPLES;
+
+  if(searchmethod == 0)
+    NSAMPLES = (maxt-maxt/5)/SAMPLE-1;
+  else
+    NSAMPLES = 1;
   
   NumericVector lik1_output, lik2_output, L_output, model_output, nparam_output, t_output;
   NumericVector best_output(NVAL);
@@ -719,7 +729,9 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	  for(i = 0; i < NVAL; i++)
 	    posterior_output(sampleref, i) = trans[i];
 
-	  sampleref++;
+	  // if MCMC, store a set of samples, otherwise the single best
+	  if(searchmethod == 0)
+	    sampleref++;
 	  
 	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI);
 	  lik1_output.push_back(nlik);
@@ -734,7 +746,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
       // MCMC or simulated annealing
       if(searchmethod == 0 || searchmethod == 2)
 	{
-
+	  regterm = 0;
 	  if(_apm_type == 0 || t%2 == 0)
 	    {
 	      // apply a perturbation to the existing parameterisation
@@ -745,10 +757,14 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		  r = RND;
 		  if(r < MU)
 		    {
-		      ntrans[i] += gsl_ran_gaussian(DELTA);
+		      if(_autoregularise == 0 || ntrans[i] != 0 || RND < 1./NVAL)
+		        ntrans[i] += gsl_ran_gaussian(DELTA);
 		    }
+		  if(_autoregularise && RND < 1./NVAL)
+		    ntrans[i] = 0;
 		  if(ntrans[i] < _priors(i,0)) ntrans[i] = _priors(i,0);
 		  if(ntrans[i] > _priors(i,1)) ntrans[i] = _priors(i,1);
+		  if(_autoregularise && ntrans[i] == 0) regterm++;
 		}
 	      if(APM_VERBOSE)
 		{
@@ -777,7 +793,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		  Rprintf("r seeded with %i, first call is %f\n", apm_seed, RND);
 		}
 	    }
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, _model, _PLI);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, _model, _PLI) + regterm;
 
 	  if(APM_VERBOSE)
 	    {
@@ -860,7 +876,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
       if(t % TMODULE == 0 && searchmethod != 1)
 	{
 	  if(!_limited_output)
-	    Rprintf("Iteration %i likelihood %f total-acceptance %f recent-acceptance %f trial-likelihood %f\n", t, lik, acc/(acc+rej), lacc/(lacc+lrej), nlik);
+	    Rprintf("Iteration %i likelihood %f total-acceptance %f recent-acceptance %f trial-likelihood %f regterm %f\n", t, lik, acc/(acc+rej), lacc/(lacc+lrej), nlik, regterm);
 	  lacc = lrej = 0;
 	}
     }
