@@ -3,6 +3,11 @@ title: "Demonstration of HyperTraPS in R"
 output: html_document
 ---
 
+<!-- FIXME: code specific: does the code look for user interrupts? I had to kill the R process if I wanted to stop HyperTraPS (Ctrl-C did not do). -->
+
+
+<!-- FIXME: references would be nice. For the examples, but also for some key method variants, for example phenotype landscape inference. -->
+
 HyperTraPS (hypercubic transition path sampling) is a family of algorithms for inferring the dynamics of "accumulation" processes. These are processes where a set of binary features are acquired over time.
 
 HyperTraPS will take a set of observed states, described by binary strings recording the presence/absence of each feature. It may optionally take initial states from which these states are reached, and information on the timings associated with each observation. It returns various summaries of which feature are acquired and when, and how these features influence each other.
@@ -16,12 +21,13 @@ library(Rcpp)
 sourceCpp("hypertraps-r.cpp")
 ```
 
-If we want various helper functions and ggplot functions in addition, use this
+If we want various helper functions and ggplot functions in addition, use this (if you don't have them installed already, you will need to install several packages, and you can do that with the code `install.packages(c("ggplot2", "ggpubr", "ggraph", "ggwordcloud", "igraph", "stringr", "stringdist"))`)
 
 ```{r}
 source("hypertraps.R")
 ```
 
+<!-- FIXME: say this is a simple demo of a longitudinal data set? -->
 ### Simple demo 
 
 Here we'll construct a simple synthetic dataset. The `m.1` matrix will store a set of initial states, and the `m.2` matrix will store a set of later observed states. The first row of `m.1`, for example, stores the state 00000, where no features have been acquired. The first row of `m.2` stores 10000, where the first of five features has been acquired.
@@ -52,7 +58,7 @@ m.2 = matrix(rep(c(1,0,0,0,0,
 times = rep(c(0.1, 0.2, 0.3, 0.4, 0.5), 10)
 ```
 
-Let's run HyperTraPS with these "before" and "after" observations. By using `times` as both the start and end time arguments, we say that each transition takes precisely that associated time -- we could allow broader time windows to capture uncertainty in timing. Finally, we provide labels for the five individual features involved.
+Let's run HyperTraPS with these "before" and "after" observations. By using `times` as both the start and end time arguments, we say that each transition takes precisely that associated time -- we could allow broader time windows to capture uncertainty in timing (FIXME: and this is done below at blablabla). Finally, we provide labels for the five individual features involved.
 
 ```{r}
 my.post = HyperTraPS(m.2, initialstates = m.1, 
@@ -60,9 +66,13 @@ my.post = HyperTraPS(m.2, initialstates = m.1,
                      featurenames = c("A", "B", "C", "D", "E")) 
 ```
 
-That output takes us through the HyperTraPS process. First, the arguments provided to the function call are described, then the algorithm chosen (MH MCMC) and a summary of the input data is given. To estimate runtime, HyperTraPS reports the time taken for a single likelihood calculation, then scales this by the estimated number of calculations required to give a runtime estimate. Here this is only 1.17 seconds, but for chains long enough for satisfactory convergence (and more complicated systems) this may be dramatically longer.
+That output takes us through the HyperTraPS process. First, the arguments provided to the function call are described (some of them are empty or not relevant, since we are passing many arguments directly to the underlying C++ via Rcpp), then the algorithm chosen (MH MCMC) and a summary of the input data is given. To estimate runtime, HyperTraPS reports the time taken for a single likelihood calculation, then scales this by the estimated number of calculations required to give a runtime estimate. Here this is only 1.17 seconds (in my system), but for chains long enough for satisfactory convergence (and more complicated systems) this may be dramatically longer.
 
 Because we didn't turn off output, HyperTraPS periodically outputs information about the run as it goes. Every 100th step, it outputs: the likelihood of the current parameterisation; the step acceptance rate through the whole run; the step acceptance rate since the last output; the likelihood of the most recent proposal. These can help design efficient MCMC approaches: if the acceptance rate is too low and/or the recent proposal likelihood is much lower than the current, consider a smaller perturbation kernel. It also helps us see when the chain is "burned in" -- when the likelihood fluctuates, rather than consistently increasing, we're probably more stable.
+
+<!-- FIXME: say here that the likelihood trace plot can helo with this diagnostics? And, if possible, go into details (using it for "burned in" seems simpler). And somewhat outside the scope of this, but not unrelated: what about running multiple chains, maybe parallelized using forking, and then using Gelman's R diagnostics, etc? -->
+
+
 
 After the MCMC run, the posterior analysis begins, and outputs a few details. These include the size of the posterior sample set being explored, the model being used, and a quick summary of the mean acquisition orderings of each feature. These are really just checks for debugging; not much useful information can be seen from them.
 
@@ -73,20 +83,47 @@ Now -- visualising the results.
 ```{r}
 plotHypercube.sampledgraph2(my.post)
 ```
+<!-- FIXME: there is a ggplot warning, but I could not easily find how to fix it -->
+<!-- Using the `size` aesthetic in this geom was deprecated in ggplot2 3.4.0. -->
+<!-- ℹ Please use `linewidth` in the `default_aes` field and elsewhere instead. -->
+
+<!-- FIXME: (CODE_1) I find the size of the node label too tiny. It is argument size to geom_node_label. Make it an argument of the function?-->
+
 
 *Bubble plot.* This plot summarises the inferred dynamics of features, forgetting specific states. The size of a circle at point x,y gives the probability that feature y is acquired at ordinal time x.
 
 ```{r}
 plotHypercube.bubbles(my.post)
 ```
+<!-- FIXME: replace x in the abscisas by "ordinal time"? CODE_2-->
 
-*Timing histograms.* Histograms of acquisition time for each feature, and probability that each feature is not acquired within a given time threshold (here, 20).
+<!-- FIXME: features are labeled starting at 0. For R users this might seem strange? Start labeling at 1? -->
+
+
+
+*Timing histograms.* Histograms of acquisition time for each feature, and probability that each feature is not acquired within a given time threshold (here, using 3 instead of the default of 20).
+
+<!-- FIXME with the default threshold of 20, the plot on the right, the histogram, shows nothing. In this example, probably better to use a smaller threshold? I've changed it to 5 for consistency with the 3 used below. -->
+
+<!-- The X axis is given as log(Time + 1) which is not very intuitive. How about back-transforming it to Time? -->
 
 ```{r}
-plotHypercube.timehists(my.post)
+plotHypercube.timehists(my.post, t.thresh = 5)
 ```
 
+
+
 *Time series plot.* Each step up the vertical axis corresponds to the acquisition of a new feature. The horizontal axis gives the time of the corresponding event, and the colour labels the feature that was acquired.
+
+
+<!-- FIXME: I am not sure I  understand this plot. The abscisas label says "PrevTime" and it ranges from about 1e-4 to 10; could it give "Time of acquisition" instead of previous time? -->
+<!-- And I guess each line from the bottom left to the top right is a different sequence of acquisition. Can this be said explicitly? -->
+
+
+<!-- FIXME: the default, using log.axis = TRUE, gives a warning. I understand that is unavoidable, but could the code be written so that that unavoidable -inf does not trigger a warning? -->
+
+
+<!-- FIXME: would it be possible to filter low probability paths? Or maybe this is not appropriate here (we have sampledgraph2 for that) -->
 
 ```{r}
 plotHypercube.timeseries(my.post)
@@ -109,12 +146,16 @@ plotHypercube.prediction(prediction.step)
 
 The graphic reports the likely next steps, as a word cloud and a set of probabilities. Here, we're making the strong prediction that the next step after 11000 is 11100.
 
-We can also make predictions about hidden values in new observations. First let's mask an observation and ask HyperTraPS to "fill in the blanks" of 1????.
+We can also make predictions about hidden values in new observations. First let's mask an observation and ask HyperTraPS to "fill in the blanks" of 1???? (the hidden value is indicated by a 2).
+
 
 ```{r}
 prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2))
 plotHypercube.prediction(prediction.hidden)
 ``` 
+
+<!-- FIXME: the x-axis label of the histogram I do not think gives useful clues. -->
+<!-- How about "Prob. feature is a 1"? CODE_3-->
 
 Here, we see a word cloud of possible states that could correspond to our observation, and a set of probabilities associated with each *feature* being 1. That is, it's highly likely that feature 2 is 1, and less likely that feature 5 is 1. But doesn't this assume something about how far we've come on the hypercube?
 
@@ -136,22 +177,25 @@ plotHypercube.prediction(prediction.hidden)
 
 HyperTraPS-CT allows uncertainty in transition timings to be captured. In the run above, we specified a precise timing for each transition, by giving a zero-width time window for each observation (start times = end times). This time window is flexible. We can allow it to have infinite width, in which case absolute timings are meaningless and we just infer the orderings of events. Or we can specify a finite time window, allowing a transition to take any time within that window, to capture uncertainty in observation timings.
 
+<!-- FIXME: I think the semicolon here is not needed and can be confusing. I remove it. -->
+
+<!-- FIXME: would it make sense to separate the different statements for better readability? -->
 ```{r}
 # precisely specified timings, as above
 my.post.time.precise = HyperTraPS(m.2, initialstates = m.1, 
                                starttimes = times, endtimes = times,  
                                limited_output = 1,
-                               featurenames = c("A", "B", "C", "D", "E")); 
+                               featurenames = c("A", "B", "C", "D", "E"))
 # infinite width time window for transitions (equivalent to just inferring ordering)
 my.post.time.inf = HyperTraPS(m.2, initialstates = m.1, 
-                                starttimes = times*0, endtimes = times*Inf, 
-                                limited_output = 1,
-                                featurenames = c("A", "B", "C", "D", "E"));
+                              starttimes = times*0, endtimes = times*Inf, 
+                              limited_output = 1,
+                              featurenames = c("A", "B", "C", "D", "E"))
 # finite time window for each uncertain transition time
 my.post.time.uncertain = HyperTraPS(m.2, initialstates = m.1, 
-                     starttimes = times*0.25, endtimes = times*4, 
-                     limited_output = 1,
-                     featurenames = c("A", "B", "C", "D", "E")); 
+                                    starttimes = times*0.25, endtimes = times*4, 
+                                    limited_output = 1,
+                                    featurenames = c("A", "B", "C", "D", "E")) 
 ggarrange(plotHypercube.timehists(my.post.time.precise, t.thresh=3), 
           plotHypercube.timehists(my.post.time.uncertain, t.thresh=3),
           plotHypercube.timehists(my.post.time.inf, t.thresh=3),
@@ -160,6 +204,8 @@ plotHypercube.sampledgraph2(my.post.time.precise, thresh=0.1, use.arc=FALSE, edg
 plotHypercube.sampledgraph2(my.post.time.uncertain, thresh=0.1, use.arc=FALSE, edge.label.size=3) + theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1))
 plotHypercube.sampledgraph2(my.post.time.inf, thresh=0.1, use.arc=FALSE, edge.label.size=3) + theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1))
 ```
+
+<!-- FIXME: "summary plots": there are two different types of plots. Are those from one set more "summary" than the others? Is it possible to just say "The plots here (...)"? -->
 
 The summary plots here reflects the different inferences about acquisition timescales that come from the approaches with different time windows. 
 
@@ -189,9 +235,9 @@ my.post.sparse = HyperTraPS(m.2, initialstates = m.1,
                             walkers = 2,
                             limited_output = 1)
 ```
-
+<!-- FIXME: extraneous parameters? or parameters with poor support in the data? -->
 We can ask HyperTraPS to perform stepwise regularisation after fitting a model, pruning extraneous parameters (`regularise`). The regularisation plot shows how the information criterion behaves as we prune back parameters -- the minimum gives us our optimal model.
-
+<!-- FIXME: would it make sense to have, as a separate code block, the call to plotHypercube.summary? So first HyperTraPS is run with regularisation and the regularisation plot is shown. And then, the summary plots show the output from the best regularised model. -->
 ```{r}
 my.post.regularise = HyperTraPS(m.2, initialstates = m.1, regularise = 1,
                                 walkers = 20,
@@ -199,6 +245,7 @@ my.post.regularise = HyperTraPS(m.2, initialstates = m.1, regularise = 1,
 plotHypercube.regularisation(my.post.regularise)
 plotHypercube.summary(my.post.regularise)
 ```
+<!-- FIXME: what to use the likelihood trace plot for is never explained, in contrast to the other plots, which have been explained before. We get a hint of how to use it above, -->
 
 We can use simulated annealing to get a maximum likelihood estimate rather than a Bayesian picture (`sa`)
 
@@ -209,7 +256,7 @@ plotHypercube.summary(my.post.sa)
 ```
 
 We can also use "phenotype landscape inference" -- an unbiased sampling method, unlike the (corrected) bias sampling in HyperTraPS (`PLI`). This takes longer but is more flexible with uncertain data
-
+<!-- FIXME: the lik.trace shows two lines. This probably should be explained, at least briefly. -->
 ```{r}
 my.post.pli = HyperTraPS(m.2, initialstates = m.1, pli = 1,
                          limited_output = 1)
@@ -217,7 +264,9 @@ plotHypercube.summary(my.post.pli)
 ```
 
 HyperTraPS supports different parameter structures (`model`). By default we use an "L2" parameterisation, where each feature can individually influence the acquisition of every other feature. "L1" has features completely independent; "L0" has all features identical. "L3" allows *pairs* of features to influence each feature's acquisition; "L4" allows *triplets* of features to influence each feature's acquisition. This approach, labelled -1, allows every edge on the hypercube to have its own independent parameters -- corresponding to the most flexible possible picture, where arbitrary sets of features influence other features. We then regularise as above (`regularise`) to remove extraneous parameters
-
+<!-- FIXME: "This approach, labelled -1, (...)". I think the sentence should be "The approach labelled -1" -->
+<!-- FIXME: models are given as 1, 2, ... Not as L1, L2. -->
+<!-- FIXME: passing a 0 leads to an error in the C++ code: "But this doesn't match the L=0 in my argument!" -->
 ```{r}
 my.post.bigmodel.regularise = HyperTraPS(m.2, initialstates = m.1, model = -1,
                                          regularise = 1, walkers = 20,
@@ -227,11 +276,19 @@ plotHypercube.regularisation(my.post.bigmodel.regularise)
 
 Here's another example of model choice. The data is now generated by a process where *pairs* of features influence the acquisition of other features. To capture these interactions, an "L^2" picture (`model = 2`, where each feature *individually* influences each other feature) is insufficient -- an "L^3" picture (`model = 3`) allowing pair influence is needed. The full parameterisation, where every edge on the hypercube transition network (`model = -1`) has an independent parameter, can also capture this behaviour.
 
+<!-- FIXME: I think reading the hi-order.txt file and then turning it into a 20x5 matrix hides the ease with which one can play with data that one creates on the fly with a particular pattern. I would, at least, separate the reading of the file and data manipulation from the analysis itself, and show that these are just very simple matrices that could have been created on the fly. I take the liberty to do it. -->
+
+This code reads the data, pre-stored for convenience in a txt file. Next, the data are stored in a 20x5 matrix; the odd rows are the initial states and the even rows the final states. 
 ```{r}
-logic.mat = readLines("Verify/hi-order.txt")
+(logic.mat = readLines("Verify/hi-order.txt"))
 logic.mat = do.call(rbind, lapply(strsplit(logic.mat, ""), as.numeric))
 logic.starts = logic.mat[seq(from=1, to=nrow(logic.mat), by=2),]
 logic.ends = logic.mat[seq(from=2, to=nrow(logic.mat), by=2),]
+```  
+
+We now run four different models of different complexity.
+
+```{r}
 logic.post.m1 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = -1, walkers = 20, limited_output = 1)
 logic.post.1 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = 1, walkers = 20, limited_output = 1)
 logic.post.2 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = 2, walkers = 20, limited_output = 1)
@@ -242,11 +299,19 @@ ggarrange(plotHypercube.graph(logic.post.m1) + ggtitle("All edges") + theme(lege
           plotHypercube.graph(logic.post.2)+ ggtitle("L^2") + theme(legend.position="none"),
           plotHypercube.graph(logic.post.3)+ ggtitle("L^3") + theme(legend.position="none"))
 ```    
+<!-- FIXME: it is not clear what are the differences between plotHypercube.sampledgraph2, used before, and plotHypercube.graph. When should we use one or the other? -->
+
+<!-- FIXME: explain why most examples use 1000 steps (length = 3), whereas these use 10000 (length = 4) -->
+
+<!-- FIXME: the above likelihood trace plots have two lines; why? -->
 
 We can see that the structures inferred by the "full" and "L^3" models are the same, while the "L^2" (and inappropriate "L^1") will either introduce extraneous transitions or fail to capture the true ones.
 
+<!-- FIXME: why "inappropriate"? -->
+
 We can also impose priors on our model. This is achieved by specifying ranges for each parameter. Here, we give an extreme example, constructing a matrix setting this range to only include zero for all parameters except basal acquisition rates.
 
+<!-- FIXME: I remove the semicolon at the end of some lines -->
 ```{r}
 priors = matrix(0, ncol=2, nrow=5*5)
 for(i in 0:4) {
@@ -257,7 +322,7 @@ my.post.priors = HyperTraPS(m.2, initialstates = m.1,
                      starttimes = times, endtimes = times, 
                      priors = priors,
                      limited_output = 1,
-                     featurenames = c("A", "B", "C", "D", "E")); 
+                     featurenames = c("A", "B", "C", "D", "E"))
 plotHypercube.summary(my.post.priors)
 ```
 
@@ -268,7 +333,7 @@ my.post.model1 = HyperTraPS(m.2, initialstates = m.1,
                             starttimes = times, endtimes = times, 
                             model = 1, kernel=3,
                             limited_output = 1,
-                            featurenames = c("A", "B", "C", "D", "E")); 
+                            featurenames = c("A", "B", "C", "D", "E"))
 plotHypercube.summary(my.post.model1)
 ```
 
@@ -292,10 +357,14 @@ ggarrange(plotHypercube.lik.trace(my.post.cgh),
           plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE), nrow=3)
 plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE)
 ```
+<!-- FIXME: the above likelihood trace plot has two lines; why? -->
+
 
 2. C4 photosynthesis case study: traits are physical/genetic features associated with C4, observations are (incomplete) phylogenetically independent intermediate species.
 
 This case study involves some uncertain data, which are present as "2"s in the source data -- labelling features which may be 0 or 1.
+
+<!-- FIXME: why not show an example of phylogenetically-related data? OK, it is used in the last example. But might want to give more details here about what is done to obtain phylogenetically independent intermediate species-->
 
 ```{r}
 c4.mat = as.matrix(read.table("RawData/c4-curated.csv", sep=","))
@@ -308,8 +377,13 @@ my.post.c4 = HyperTraPS(c4.mat,
                         limited_output = 1) 
 plotHypercube.bubbles(my.post.c4, reorder=TRUE)
 ```
+<!-- FIXME: Not shown above, but I tried, and the likelihood trace also shows two lines here. -->
+
 
 3. Severe malaria disease progression case study: traits are clinical features, observations are (incomplete) independent patient presentations
+
+<!-- FIXME: might want to warn the reader that this example can take more than 20 minutes to run. -->
+
 
 ```{r}
 malaria.df = read.csv("RawData/jallow_dataset_binary_with2s.csv")
@@ -318,12 +392,14 @@ malaria.names = as.vector(read.table("RawData/malaria-names.txt", sep=","))[[1]]
 
 my.post.malaria = HyperTraPS(malaria.mat, 
                         length = 3,
-                        kernel = 2,
+                         kernel = 2,
                         walkers = 20,
                         featurenames = malaria.names,
                         limited_output = 1) 
 plotHypercube.bubbles(my.post.malaria, reorder=TRUE, transpose=TRUE)
 ```
+<!-- FIXME: the likelihood trace also shows two lines here -->
+
 
 4. Tool use evolution case study: traits are modes of tool use, observations are phylogenetically coupled species observations (phylogeny has been accounted for, giving transition pairs)
 
@@ -341,3 +417,6 @@ plotHypercube.bubbles(my.post.tools, reorder=TRUE, transpose=TRUE)
 plotHypercube.sampledgraph2(my.post.tools, node.labels = FALSE, max=100, no.times=TRUE) + theme(legend.position = "none")
 ```
 
+<!-- FIXME: the last graphs looks strange: like to disconnected, and far away graphs. I have to decrease the threshold to 0.014 to get it to be connected. Also, it is unclear why the max(.samps) = 100 options is used here.  -->
+
+<!-- FIXME: the likelihood trace also shows two lines here -->
