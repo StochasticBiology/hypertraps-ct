@@ -58,7 +58,7 @@ m.2 = matrix(rep(c(1,0,0,0,0,
 times = rep(c(0.1, 0.2, 0.3, 0.4, 0.5), 10)
 ```
 
-Let's run HyperTraPS with these "before" and "after" observations. By using `times` as both the start and end time arguments, we say that each transition takes precisely that associated time -- we could allow broader time windows to capture uncertainty in timing (FIXME: and this is done below at blablabla). Finally, we provide labels for the five individual features involved.
+Let's run HyperTraPS with these "before" and "after" observations. By using `times` as both the start and end time arguments, we say that each transition takes precisely that associated time -- we could allow broader time windows to capture uncertainty in timing (illustrated below, in section [Uncertainty in observation times]). Finally, we provide labels for the five individual features involved.
 
 ```{r}
 my.post = HyperTraPS(m.2, initialstates = m.1, 
@@ -70,7 +70,7 @@ That output takes us through the HyperTraPS process. First, the arguments provid
 
 Because we didn't turn off output, HyperTraPS periodically outputs information about the run as it goes. Every 100th step, it outputs: the likelihood of the current parameterisation; the step acceptance rate through the whole run; the step acceptance rate since the last output; the likelihood of the most recent proposal. These can help design efficient MCMC approaches: if the acceptance rate is too low and/or the recent proposal likelihood is much lower than the current, consider a smaller perturbation kernel. It also helps us see when the chain is "burned in" -- when the likelihood fluctuates, rather than consistently increasing, we're probably more stable.
 
-<!-- FIXME: say here that the likelihood trace plot can helo with this diagnostics? And, if possible, go into details (using it for "burned in" seems simpler). And somewhat outside the scope of this, but not unrelated: what about running multiple chains, maybe parallelized using forking, and then using Gelman's R diagnostics, etc? -->
+<!-- FIXME: say here that the likelihood trace plot can help with this diagnostics, and that is why the trace is calculated twice?  Would it be possible to provide more details about usage of the plots to diagnose issues? -->
 
 
 
@@ -97,18 +97,20 @@ plotHypercube.bubbles(my.post)
 ```
 <!-- FIXME: replace x in the abscisas by "ordinal time"? CODE_2-->
 
-<!-- FIXME: features are labeled starting at 0. For R users this might seem strange? Start labeling at 1? -->
+<!-- FIXME: features are labeled starting at 0. For R users this might seem strange? And I don't think anything in the README indicates this -->
 
 
 
 *Timing histograms.* Histograms of acquisition time for each feature, and probability that each feature is not acquired within a given time threshold (here, using 3 instead of the default of 20).
 
-<!-- FIXME with the default threshold of 20, the plot on the right, the histogram, shows nothing. In this example, probably better to use a smaller threshold? I've changed it to 5 for consistency with the 3 used below. -->
+<!-- FIXME with the default threshold of 20, the plot on the right, the histogram, shows nothing. In this example, probably better to use a smaller threshold? I've changed for consistency with the 3 used below. -->
+
+<!-- FIXME: the example shown in the README also has an empty histogram, probably from this example run with t.thresh = 20 -->
 
 <!-- The X axis is given as log(Time + 1) which is not very intuitive. How about back-transforming it to Time? -->
 
 ```{r}
-plotHypercube.timehists(my.post, t.thresh = 5)
+plotHypercube.timehists(my.post, t.thresh = 3)
 ```
 
 
@@ -205,7 +207,7 @@ plotHypercube.sampledgraph2(my.post.time.uncertain, thresh=0.1, use.arc=FALSE, e
 plotHypercube.sampledgraph2(my.post.time.inf, thresh=0.1, use.arc=FALSE, edge.label.size=3) + theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1))
 ```
 
-<!-- FIXME: "summary plots": there are two different types of plots. Are those from one set more "summary" than the others? Is it possible to just say "The plots here (...)"? -->
+<!-- FIXME: "summary plots": there are two different types of plots. Are those from one set more "summary" than the others? Is it possible to just say "The plots here (...)"? Otherwise, it could give the impression that there are some plots that are not summaries. -->
 
 The summary plots here reflects the different inferences about acquisition timescales that come from the approaches with different time windows. 
 
@@ -245,7 +247,7 @@ my.post.regularise = HyperTraPS(m.2, initialstates = m.1, regularise = 1,
 plotHypercube.regularisation(my.post.regularise)
 plotHypercube.summary(my.post.regularise)
 ```
-<!-- FIXME: what to use the likelihood trace plot for is never explained, in contrast to the other plots, which have been explained before. We get a hint of how to use it above, -->
+<!-- FIXME: what to use the likelihood trace plot for is never explained, in contrast to the other plots, which have been explained before. We only get a hint of how to use it above. -->
 
 We can use simulated annealing to get a maximum likelihood estimate rather than a Bayesian picture (`sa`)
 
@@ -256,7 +258,7 @@ plotHypercube.summary(my.post.sa)
 ```
 
 We can also use "phenotype landscape inference" -- an unbiased sampling method, unlike the (corrected) bias sampling in HyperTraPS (`PLI`). This takes longer but is more flexible with uncertain data
-<!-- FIXME: the lik.trace shows two lines. This probably should be explained, at least briefly. -->
+<!-- FIXME: the lik.trace shows two lines. This is explained in the README. But the likelihood trace plots for the previous examples show (or seem to show) a single line. -->
 ```{r}
 my.post.pli = HyperTraPS(m.2, initialstates = m.1, pli = 1,
                          limited_output = 1)
@@ -265,8 +267,8 @@ plotHypercube.summary(my.post.pli)
 
 HyperTraPS supports different parameter structures (`model`). By default we use an "L2" parameterisation, where each feature can individually influence the acquisition of every other feature. "L1" has features completely independent; "L0" has all features identical. "L3" allows *pairs* of features to influence each feature's acquisition; "L4" allows *triplets* of features to influence each feature's acquisition. This approach, labelled -1, allows every edge on the hypercube to have its own independent parameters -- corresponding to the most flexible possible picture, where arbitrary sets of features influence other features. We then regularise as above (`regularise`) to remove extraneous parameters
 <!-- FIXME: "This approach, labelled -1, (...)". I think the sentence should be "The approach labelled -1" -->
-<!-- FIXME: models are given as 1, 2, ... Not as L1, L2. -->
-<!-- FIXME: passing a 0 leads to an error in the C++ code: "But this doesn't match the L=0 in my argument!" -->
+<!-- FIXME: models are given as 1, 2, ... Not as L1, L2. Say so explicitly? Yes, it is in the README-->
+<!-- FIXME: passing a 0 leads to an error in the C++ code: "But this doesn't match the L=0 in my argument!"  This happens in other examples. But it seems to fail after all steps are finished. -->
 ```{r}
 my.post.bigmodel.regularise = HyperTraPS(m.2, initialstates = m.1, model = -1,
                                          regularise = 1, walkers = 20,
@@ -299,11 +301,9 @@ ggarrange(plotHypercube.graph(logic.post.m1) + ggtitle("All edges") + theme(lege
           plotHypercube.graph(logic.post.2)+ ggtitle("L^2") + theme(legend.position="none"),
           plotHypercube.graph(logic.post.3)+ ggtitle("L^3") + theme(legend.position="none"))
 ```    
-<!-- FIXME: it is not clear what are the differences between plotHypercube.sampledgraph2, used before, and plotHypercube.graph. When should we use one or the other? -->
+<!-- FIXME: it is not clear what are the differences between plotHypercube.sampledgraph2, used before, and plotHypercube.graph. When should we use one or the other? From the README the difference is using full output vs. sample paths but ... when and why should one be used instead of the other? -->
 
 <!-- FIXME: explain why most examples use 1000 steps (length = 3), whereas these use 10000 (length = 4) -->
-
-<!-- FIXME: the above likelihood trace plots have two lines; why? -->
 
 We can see that the structures inferred by the "full" and "L^3" models are the same, while the "L^2" (and inappropriate "L^1") will either introduce extraneous transitions or fail to capture the true ones.
 
@@ -357,7 +357,6 @@ ggarrange(plotHypercube.lik.trace(my.post.cgh),
           plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE), nrow=3)
 plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE)
 ```
-<!-- FIXME: the above likelihood trace plot has two lines; why? -->
 
 
 2. C4 photosynthesis case study: traits are physical/genetic features associated with C4, observations are (incomplete) phylogenetically independent intermediate species.
@@ -377,7 +376,6 @@ my.post.c4 = HyperTraPS(c4.mat,
                         limited_output = 1) 
 plotHypercube.bubbles(my.post.c4, reorder=TRUE)
 ```
-<!-- FIXME: Not shown above, but I tried, and the likelihood trace also shows two lines here. -->
 
 
 3. Severe malaria disease progression case study: traits are clinical features, observations are (incomplete) independent patient presentations
@@ -398,7 +396,6 @@ my.post.malaria = HyperTraPS(malaria.mat,
                         limited_output = 1) 
 plotHypercube.bubbles(my.post.malaria, reorder=TRUE, transpose=TRUE)
 ```
-<!-- FIXME: the likelihood trace also shows two lines here -->
 
 
 4. Tool use evolution case study: traits are modes of tool use, observations are phylogenetically coupled species observations (phylogeny has been accounted for, giving transition pairs)
@@ -418,5 +415,3 @@ plotHypercube.sampledgraph2(my.post.tools, node.labels = FALSE, max=100, no.time
 ```
 
 <!-- FIXME: the last graphs looks strange: like to disconnected, and far away graphs. I have to decrease the threshold to 0.014 to get it to be connected. Also, it is unclear why the max(.samps) = 100 options is used here.  -->
-
-<!-- FIXME: the likelihood trace also shows two lines here -->
