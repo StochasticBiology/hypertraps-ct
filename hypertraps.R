@@ -610,7 +610,7 @@ plotHypercube.prediction = function(prediction, max.size = 30) {
       geom_text_wordcloud() + scale_size_area(max_size = max.size) +
       theme_minimal()
     g.2 = ggplot(prediction$locus.probs, aes(x=factor(locus), y=prob)) + 
-      geom_col() + theme_light()
+      geom_col() + theme_light() + xlab("Probability feature is a 1")
   }
   return(ggarrange(g.1, g.2))
 }
