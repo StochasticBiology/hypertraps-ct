@@ -53,7 +53,7 @@ plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
 }
 
 plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE,
-                               node.labels.size = 2) {
+                               node.label.size = 2) {
   ### produce hypercube subgraph
   bigL = my.post$L
   trans.p = my.post$dynamics$trans[my.post$dynamics$trans$Flux > thresh,]
@@ -67,12 +67,12 @@ plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE,
     theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
     this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),
-                                                                size = node.labels.size) 
+                                                                size = node.label.size) 
   }
   return(this.plot)
 }
 
-plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, node.labels = TRUE, node.labels.size = 2) {
+plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, node.labels = TRUE, node.label.size = 2) {
   edge.from = edge.to = c()
   bigL = my.post$L
   nsamps = min(max.samps, nrow(my.post$routes))
@@ -100,7 +100,7 @@ plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, 
     scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
     theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
-    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=node.labels.size) 
+    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=node.label.size) 
   }
   return(this.plot)
 }
@@ -109,7 +109,7 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
                                        node.labels = TRUE, use.arc = TRUE, no.times = FALSE, 
                                        edge.label.size = 2, edge.label.angle = "across",
                                        feature.names = c(""),
-                                       node.labels.size = 2) {
+                                       node.label.size = 2) {
   edge.from = edge.to = edge.time = edge.change = c()
   bigL = my.post$L
   nsamps = min(max.samps, nrow(my.post$routes))
@@ -166,7 +166,7 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
       theme_graph(base_family="sans")
   }
   if(node.labels == TRUE) {
-    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname), size=node.labels.size) 
+    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname), size=node.label.size) 
   }
   return(this.plot)
 }
@@ -176,7 +176,7 @@ plotHypercube.sampledgraph3 = function(my.post, max.samps = 1000, thresh = 0.05,
                                        edge.label.size = 2, edge.label.angle = "across",
                                        edge.label.colour = "#000000",
                                        feature.names = c(""), truncate = -1,
-                                       node.labels.size = 2) {
+                                       node.label.size = 2) {
   edge.from = edge.to = edge.time = edge.change = c()
   bigL = my.post$L
   if(truncate == -1 | truncate > bigL) { truncate = bigL }
@@ -237,7 +237,7 @@ plotHypercube.sampledgraph3 = function(my.post, max.samps = 1000, thresh = 0.05,
       theme_graph(base_family="sans")
   }
   if(node.labels == TRUE) {
-    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=node.labels.size) 
+    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=node.label.size) 
   }
   return(this.plot)
 }
