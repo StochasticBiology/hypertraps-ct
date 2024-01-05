@@ -243,7 +243,7 @@ plotHypercube.sampledgraph3 = function(my.post, max.samps = 1000, thresh = 0.05,
 }
 
 
-plotHypercube.timehists = function(my.post, t.thresh = 20, feature.names = c("")) {
+plotHypercube.timehists = function(my.post, t.thresh = 20, feature.names = c(""), log.time = TRUE) {
   thdfp = data.frame()
   if(length(feature.names) > 1) {
     my.post$timehists$feature.label = feature.names[my.post$timehists$OriginalIndex+1]
@@ -258,12 +258,19 @@ plotHypercube.timehists = function(my.post, t.thresh = 20, feature.names = c("")
       thdfp = rbind(thdfp, data.frame(OriginalIndex = j, feature.label=j, Time=t.thresh, Probability=sum(sub1$Probability)))
     }
   }
-  
-  g.thist = ggplot(thdfp[thdfp$Time < t.thresh,], aes(x=log(Time+1), y=Probability)) + 
+
+  if (log.time) {
+    g.thist = ggplot(thdfp[thdfp$Time < t.thresh,],
+                     aes(x=log(Time+1), y=Probability))
+  } else {
+    g.thist = ggplot(thdfp[thdfp$Time < t.thresh,],
+                     aes(x=Time, y=Probability))
+  }
+  g.thist = g.thist + 
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
     geom_line() + xlim(-0.1,log(t.thresh+1)) + facet_wrap(~feature.label, nrow=2) +
     theme_light() #+ scale_x_continuous(trans="log10")
-  
+
   g.thist2 = ggplot(thdfp[thdfp$Time == t.thresh,], aes(x=feature.label, y=Probability)) + 
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
     geom_col(position="dodge") + 
