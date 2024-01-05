@@ -43,11 +43,12 @@ plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
     toplot$y = toplot$Name
   }
   this.plot = ggplot(toplot, aes(x=x, y=y, size=Probability)) + geom_point() +
-    theme_light() + xlab("Ordinal time")
+    theme_light() 
   if(transpose == TRUE){
-    return(this.plot + theme(axis.text.x = element_text(angle=90)) )
+    return(this.plot + theme(axis.text.x = element_text(angle=90)) +
+             xlab("") + ylab("Ordinal time"))
   } else {
-    return(this.plot)
+    return(this.plot + xlab("Ordinal time") + ylab(""))
   }
 }
 
