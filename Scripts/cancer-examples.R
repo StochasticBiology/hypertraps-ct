@@ -6,6 +6,8 @@ library(readxl)
 setwd("..")
 source("hypertraps.R")
 
+run.simulations = TRUE
+
 ### Cancer case study 1
 
 # pull the AML data object from TreeMHN
@@ -55,58 +57,48 @@ if(run.simulations == TRUE) {
   # run HyperTraPS and regularise
   cancer.post = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3)
   cancer.post.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, autoregularise = 1)
-  cancer.post.reg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, walkers=20, regularise = 1)
-  cancer.post.sa = HyperTraPS(afters, initialstates = befores, sa = 1, length = 3, kernel = 3)
-  cancer.post.sa.autoreg = HyperTraPS(afters, initialstates = befores, length = 3, kernel = 3, autoregularise = 1)
+  cancer.post.sa.autoreg = HyperTraPS(afters, initialstates = befores, sa = 1, length = 4, kernel = 3, autoregularise = 1)
 
-  # save output
   writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
-  writeHyperinf(cancer.post.reg, "cancer.post.reg", postlabel="cancer.post.reg", fulloutput = FALSE, regularised = TRUE)
   writeHyperinf(cancer.post.autoreg, "cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
-  writeHyperinf(cancer.post.sa, "cancer.post.sa", postlabel="cancer.post.sa", fulloutput = FALSE, regularised = FALSE)
   writeHyperinf(cancer.post.sa.autoreg, "cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
 }
 
 # example subsequent read
-cancer.post = readHyperinf("cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
-cancer.post.reg = readHyperinf("cancer.post.reg", postlabel="cancer.post.reg", fulloutput = FALSE, regularised = TRUE)
 cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
-cancer.post.sa = readHyperinf("cancer.post.sa", postlabel="cancer.post.sa", fulloutput = FALSE, regularised = FALSE)
+cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
 cancer.post.sa.autoreg = readHyperinf("cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
 
-plotHypercube.influences(cancer.post, feature.names = AML[[4]], 
-                         upper.right = TRUE, reorder = TRUE)
-plotHypercube.influences(cancer.post.reg, feature.names = AML[[4]], 
-                         use.regularised = TRUE, upper.right = TRUE, reorder = TRUE)
-plotHypercube.influences(cancer.post.autoreg, feature.names = AML[[4]], 
-                         upper.right = TRUE, reorder = TRUE)
-plotHypercube.influences(cancer.post.sa, feature.names = AML[[4]], 
-                         upper.right = TRUE, reorder = TRUE)
-plotHypercube.influences(cancer.post.sa.autoreg, feature.names = AML[[4]], 
-                         upper.right = TRUE, reorder = TRUE)
+cancer.post.autoreg$lik.traces[79,]
+cancer.post.sa.autoreg$lik.traces[79,]
 
-ggarrange(plotHypercube.influences(cancer.post.reg, feature.names = AML[[4]], 
-                                   use.regularised = TRUE, upper.right = TRUE, reorder = TRUE),
-          plotHypercube.influences(cancer.post.sa.autoreg, feature.names = AML[[4]], 
-                                   upper.right = TRUE, reorder = TRUE),
-          nrow=1, ncol=2)
-### do this just with best parameterisation?
+plot.null = plotHypercube.influences(cancer.post, feature.names = AML[[4]], 
+                                     use.final = TRUE, upper.right = TRUE, reorder = TRUE)
+plot.autoreg = plotHypercube.influences(cancer.post.autoreg, feature.names = AML[[4]], 
+                                        upper.right = TRUE, reorder = TRUE)
+plot.autoreg.last = plotHypercube.influences(cancer.post.autoreg, feature.names = AML[[4]], 
+                                             use.final = TRUE, upper.right = TRUE, reorder = TRUE)
+plot.sa.autoreg = plotHypercube.influences(cancer.post.sa.autoreg, feature.names = AML[[4]], 
+                                           use.final = TRUE, upper.right = TRUE, reorder = TRUE)
 
-# plot influences between genes
-plotHypercube.influences(cancer.post.reg, feature.names = AML[[4]], 
-                         use.regularised = TRUE, upper.right = TRUE, reorder = TRUE)
+sf = 3
+png("cancer-post-autoreg.png", width=600*sf, height=400*sf, res=72*sf)
+print(plot.autoreg)
+dev.off()
+
+png("cancer-post-all.png", width=1200*sf, height=800*sf, res=72*sf)
+print(ggarrange(plot.null, plot.autoreg, plot.autoreg.last, plot.sa.autoreg, labels = c("A", "B", "C", "D")))
+dev.off()
 
 # more samples from the regularised parameterisation
-cancer.more.samples = PosteriorAnalysis(cancer.post.reg, use_regularised = TRUE, samples_per_row = 1000)
+cancer.more.samples = PosteriorAnalysis(cancer.post.autoreg, samples_per_row = 1000)
 
-# various plots
-plotHypercube.sampledgraph2(cancer.post.reg, use.arc = FALSE, node.labels = FALSE, no.times = TRUE)
-plotHypercube.sampledgraph3(cancer.post.reg, use.arc = FALSE, node.labels = FALSE, 
+plotHypercube.sampledgraph3(cancer.post.autoreg, use.arc = FALSE, node.labels = FALSE, 
                             no.times = TRUE, truncate = 6, edge.label.size=4, thresh = 0.01,
-                            feature.names = labels)
+                            feature.names = AML[[4]])
 plotHypercube.sampledgraph3(cancer.more.samples, use.arc = FALSE, node.labels = FALSE, 
                             no.times = TRUE, truncate = 6, edge.label.size=2, thresh = 0.02,
-                            feature.names = labels)
+                            feature.names = AML[[4]])
 
 
 # put parameter loss details in regularisation output; add use.regularised to all plot functions
@@ -131,13 +123,19 @@ for(i in 1:nrow(big.c.df)) {
 }
 
 # put into matrix form and run HyperTraPS
-big.c.m = as.matrix(data.df[1:(ncol(data.df)-1)])
-big.c.post = HyperTraPS(big.c.m, kernel = 3)
-writeHyperinf(big.c.post, "big-c-post")
+if(run.simulations == TRUE) {
+  big.c.m = as.matrix(data.df[1:(ncol(data.df)-1)])
+  big.c.post = HyperTraPS(big.c.m, autoregularise = 1, kernel = 3)
+  writeHyperinf(big.c.post, "big-c-post", fulloutput = FALSE, regularised = FALSE)
+}
+big.c.post = readHyperinf("big-c-post", fulloutput = FALSE, regularised = FALSE)
 
 # plot influences between genes
+sf = 3
+png("cancer-big-post-autoreg.png", width=600*sf, height=600*sf, res=72*sf)
 plotHypercube.influences(big.c.post, feature.names = genes, 
                          upper.right = FALSE, reorder = TRUE)
+dev.off()
 
 # more sampling from posterior
 big.c.more = PosteriorAnalysis(big.c.post, samples_per_row = 100)
