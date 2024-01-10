@@ -106,7 +106,7 @@ if(run.simulations == TRUE) {
 } else {
   load("../Pre-run-analysis/cancer.post.RData")
 }
-# FIXME: this can't work unless previously saved. Shouldn't this be in the "if (run.simulations == TRUE)" above?
+
 # FIXME: why is readHyperinf a better idea than load'ing the RData?
 # example subsequent read
 cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
