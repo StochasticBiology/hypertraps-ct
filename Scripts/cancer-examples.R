@@ -53,17 +53,59 @@ for(aml.list in 1:length(AML[[5]])) {
 befores = matrix(unlist(lapply(strsplit(trans.df$before, ""), as.numeric)), ncol=AML[[1]], byrow=TRUE)
 afters = matrix(unlist(lapply(strsplit(trans.df$after, ""), as.numeric)), ncol=AML[[1]], byrow=TRUE)
 
+# Running the analysis can take around an hour (and close to 30 minutes if parallelized)
+# Alternatively, you can set run.simulations to FALSE and load the pre-run analysis
 if(run.simulations == TRUE) {
   # run HyperTraPS and regularise
-  cancer.post = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3)
-  cancer.post.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, autoregularise = 1)
-  cancer.post.sa.autoreg = HyperTraPS(afters, initialstates = befores, sa = 1, length = 4, kernel = 3, autoregularise = 1)
+  # FIXME: autoregularise option is not explained anywhere else, I think.
+  #  How does it differ from regularise?
+  
+  # FIXME: run in parallel?. Set as an option. This more than halves (2.6) the
+  # running time for me
+  
+  parallelize = TRUE
 
-  writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
-  writeHyperinf(cancer.post.autoreg, "cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
-  writeHyperinf(cancer.post.sa.autoreg, "cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
+  if (parallelize) {
+    require(parallel)
+    # Create the data frame of options, print to check it is what we want
+    # and pass to mcmapply
+    (aml.opts <- data.frame(autoregularise = c(0, 1, 1),
+                            sa = c(0, 0, 1)))
+    
+    system.time(runs <- mcmapply(HyperTraPS,
+                                 autoregularise = aml.opts$autoregularise,
+                                 sa = aml.opts$sa,
+                     MoreArgs = list(obs = afters,
+                                     initialstates = befores,
+                                     length = 4,
+                                     kernel = 3),
+                     SIMPLIFY = FALSE,
+                     mc.cores = min(detectCores(), nrow(aml.opts))))
+
+    #    user   system  elapsed 
+    # 2847.988    0.372 1491.374
+    
+    cancer.post = runs[[1]]
+    cancer.post.autoreg = runs[[2]]
+    cancer.post.sa.autoreg = runs[[3]]
+  } else {
+    system.time({
+      cancer.post = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3)
+      cancer.post.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, autoregularise = 1)
+      cancer.post.sa.autoreg = HyperTraPS(afters, initialstates = befores, sa = 1, length = 4, kernel = 3, autoregularise = 1)
+      
+    })
+    ## user   system  elapsed 
+    ## 3991.512    0.259 3993.431
+    
+    writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
+    writeHyperinf(cancer.post.autoreg, "cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
+    writeHyperinf(cancer.post.sa.autoreg, "cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
+} else {
+  load("./Scripts/cancer.post.RData")
+  
 }
-
+# FIXME: this can't work unless previously saved. Shouldn't this be in the "if (run.simulations == TRUE)" above?
 # example subsequent read
 cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
 cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
