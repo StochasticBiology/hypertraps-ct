@@ -42,15 +42,18 @@ plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
     toplot$x = toplot$Time
     toplot$y = toplot$Name
   }
-  this.plot = ggplot(toplot, aes(x=x, y=y, size=Probability)) + geom_point() +theme_light()
+  this.plot = ggplot(toplot, aes(x=x, y=y, size=Probability)) + geom_point() +
+    theme_light() 
   if(transpose == TRUE){
-    return(this.plot + theme(axis.text.x = element_text(angle=90)) )
+    return(this.plot + theme(axis.text.x = element_text(angle=90)) +
+             xlab("") + ylab("Ordinal time"))
   } else {
-    return(this.plot)
+    return(this.plot + xlab("Ordinal time") + ylab(""))
   }
 }
 
-plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE) {
+plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE,
+                               node.label.size = 2) {
   ### produce hypercube subgraph
   bigL = my.post$L
   trans.p = my.post$dynamics$trans[my.post$dynamics$trans$Flux > thresh,]
@@ -63,12 +66,13 @@ plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE) {
     scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
     theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
-    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
+    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),
+                                                                size = node.label.size) 
   }
   return(this.plot)
 }
 
-plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, node.labels = TRUE) {
+plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, node.labels = TRUE, node.label.size = 2) {
   edge.from = edge.to = c()
   bigL = my.post$L
   nsamps = min(max.samps, nrow(my.post$routes))
@@ -96,7 +100,7 @@ plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, 
     scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
     theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
-    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
+    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=node.label.size) 
   }
   return(this.plot)
 }
@@ -104,7 +108,8 @@ plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, 
 plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05, 
                                        node.labels = TRUE, use.arc = TRUE, no.times = FALSE, 
                                        edge.label.size = 2, edge.label.angle = "across",
-                                       feature.names = c("")) {
+                                       feature.names = c(""),
+                                       node.label.size = 2) {
   edge.from = edge.to = edge.time = edge.change = c()
   bigL = my.post$L
   nsamps = min(max.samps, nrow(my.post$routes))
@@ -161,7 +166,7 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
       theme_graph(base_family="sans")
   }
   if(node.labels == TRUE) {
-    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
+    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname), size=node.label.size) 
   }
   return(this.plot)
 }
@@ -170,7 +175,8 @@ plotHypercube.sampledgraph3 = function(my.post, max.samps = 1000, thresh = 0.05,
                                        node.labels = TRUE, use.arc = TRUE, no.times = FALSE, 
                                        edge.label.size = 2, edge.label.angle = "across",
                                        edge.label.colour = "#000000",
-                                       feature.names = c(""), truncate = -1) {
+                                       feature.names = c(""), truncate = -1,
+                                       node.label.size = 2) {
   edge.from = edge.to = edge.time = edge.change = c()
   bigL = my.post$L
   if(truncate == -1 | truncate > bigL) { truncate = bigL }
@@ -231,13 +237,13 @@ plotHypercube.sampledgraph3 = function(my.post, max.samps = 1000, thresh = 0.05,
       theme_graph(base_family="sans")
   }
   if(node.labels == TRUE) {
-    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=2) 
+    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=node.label.size) 
   }
   return(this.plot)
 }
 
 
-plotHypercube.timehists = function(my.post, t.thresh = 20, feature.names = c("")) {
+plotHypercube.timehists = function(my.post, t.thresh = 20, feature.names = c(""), log.time = TRUE) {
   thdfp = data.frame()
   if(length(feature.names) > 1) {
     my.post$timehists$feature.label = feature.names[my.post$timehists$OriginalIndex+1]
@@ -252,12 +258,19 @@ plotHypercube.timehists = function(my.post, t.thresh = 20, feature.names = c("")
       thdfp = rbind(thdfp, data.frame(OriginalIndex = j, feature.label=j, Time=t.thresh, Probability=sum(sub1$Probability)))
     }
   }
-  
-  g.thist = ggplot(thdfp[thdfp$Time < t.thresh,], aes(x=log(Time+1), y=Probability)) + 
+
+  if (log.time) {
+    g.thist = ggplot(thdfp[thdfp$Time < t.thresh,],
+                     aes(x=log(Time+1), y=Probability))
+  } else {
+    g.thist = ggplot(thdfp[thdfp$Time < t.thresh,],
+                     aes(x=Time, y=Probability))
+  }
+  g.thist = g.thist + 
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
     geom_line() + xlim(-0.1,log(t.thresh+1)) + facet_wrap(~feature.label, nrow=2) +
     theme_light() #+ scale_x_continuous(trans="log10")
-  
+
   g.thist2 = ggplot(thdfp[thdfp$Time == t.thresh,], aes(x=feature.label, y=Probability)) + 
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
     geom_col(position="dodge") + 
@@ -605,10 +618,13 @@ plotHypercube.prediction = function(prediction, max.size = 30) {
       geom_text_wordcloud() + scale_size_area(max_size = max.size) +
       theme_minimal()
     g.2 = ggplot(prediction$locus.probs, aes(x=factor(locus), y=prob)) + 
-      geom_col() + theme_light()
+      geom_col() + theme_light() + xlab("Probability feature is a 1")
   }
   return(ggarrange(g.1, g.2))
 }
 
 sourceCpp("hypertraps-r.cpp")
 
+## Note: the warning
+## "Using the `size` aesthetic in this geom was deprecated in ggplot2 3.4.0."
+## is a known issue: https://github.com/thomasp85/ggraph/issues/333
