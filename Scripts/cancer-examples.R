@@ -5,13 +5,14 @@ library(readxl)
 
 setwd("..")
 source("hypertraps.R")
+setwd("Scripts/")
 
 run.simulations = TRUE
 
 ### Cancer case study 1
 
 # pull the AML data object from TreeMHN
-load("RawData/AML_tree_obj.RData")
+load("../RawData/AML_tree_obj.RData")
 
 # helper function for shifting bits in a character string
 new.state = function(old.state, locus) {
@@ -116,13 +117,17 @@ cancer.post.autoreg$lik.traces[79,]
 cancer.post.sa.autoreg$lik.traces[79,]
 
 plot.null = plotHypercube.influences(cancer.post, feature.names = AML[[4]], 
-                                     use.final = TRUE, upper.right = TRUE, reorder = TRUE)
+                                     use.final = TRUE, upper.right = TRUE, reorder = TRUE) +
+  guides(alpha=FALSE)
 plot.autoreg = plotHypercube.influences(cancer.post.autoreg, feature.names = AML[[4]], 
-                                        upper.right = TRUE, reorder = TRUE)
+                                        upper.right = TRUE, reorder = TRUE) +
+  guides(alpha = FALSE)
 plot.autoreg.last = plotHypercube.influences(cancer.post.autoreg, feature.names = AML[[4]], 
-                                             use.final = TRUE, upper.right = TRUE, reorder = TRUE)
+                                             use.final = TRUE, upper.right = TRUE, reorder = TRUE) +
+  guides(alpha=FALSE)
 plot.sa.autoreg = plotHypercube.influences(cancer.post.sa.autoreg, feature.names = AML[[4]], 
-                                           use.final = TRUE, upper.right = TRUE, reorder = TRUE)
+                                           use.final = TRUE, upper.right = TRUE, reorder = TRUE) + 
+  guides(alpha = FALSE)
 
 sf = 3
 png("cancer-post-autoreg.png", width=600*sf, height=400*sf, res=72*sf)
@@ -130,7 +135,8 @@ print(plot.autoreg)
 dev.off()
 
 png("cancer-post-all.png", width=1200*sf, height=800*sf, res=72*sf)
-print(ggarrange(plot.null, plot.autoreg, plot.autoreg.last, plot.sa.autoreg, labels = c("A", "B", "C", "D")))
+print(ggarrange(plot.null, plot.autoreg, 
+                plot.autoreg.last, plot.sa.autoreg, labels = c("A", "B", "C", "D")))
 dev.off()
 
 # more samples from the regularised parameterisation
@@ -150,7 +156,7 @@ plotHypercube.sampledgraph3(cancer.more.samples, use.arc = FALSE, node.labels = 
 ### Cancer case study 2
 
 # read a big list of mutations across samples
-big.c.df = as.data.frame(read_excel("RawData/Supplementary Table 14.Driver.Events.By.Mutation.Type.01052015.v2.xlsx", sheet=4))
+big.c.df = as.data.frame(read_excel("../RawData/Supplementary Table 14.Driver.Events.By.Mutation.Type.01052015.v2.xlsx", sheet=4))
 genes = unique(big.c.df$Gene)
 samples = unique(big.c.df$Sample)
 
