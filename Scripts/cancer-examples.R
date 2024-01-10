@@ -104,10 +104,10 @@ if(run.simulations == TRUE) {
     writeHyperinf(cancer.post.sa.autoreg, "cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
   }
 } else {
-  load("./Pre-run-analysis/cancer.post.RData")
+  load("../Pre-run-analysis/cancer.post.RData")
 }
 # FIXME: this can't work unless previously saved. Shouldn't this be in the "if (run.simulations == TRUE)" above?
-# FIXME: why is readHyperinf a better idea than load?
+# FIXME: why is readHyperinf a better idea than load'ing the RData?
 # example subsequent read
 cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
 cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
@@ -116,6 +116,7 @@ cancer.post.sa.autoreg = readHyperinf("cancer.post.sa.autoreg", postlabel="cance
 cancer.post.autoreg$lik.traces[79,]
 cancer.post.sa.autoreg$lik.traces[79,]
 
+# FIXME:  (the current version of) plotHypercube.influences does not take a use.final argument
 plot.null = plotHypercube.influences(cancer.post, feature.names = AML[[4]], 
                                      use.final = TRUE, upper.right = TRUE, reorder = TRUE) +
   guides(alpha=FALSE)
@@ -140,8 +141,13 @@ print(ggarrange(plot.null, plot.autoreg,
 dev.off()
 
 # more samples from the regularised parameterisation
+# FIXME: when/why should we run PosteriorAnalysis?
+#     The plot below using cancer.more.samples is a plot of samples
+#     from the posterior? I do not see any (obvious) differences between the plots
 cancer.more.samples = PosteriorAnalysis(cancer.post.autoreg, samples_per_row = 1000)
 
+# FIXME: sampledgraph3 is used here for the first time and not mentioned in the README
+#    either
 plotHypercube.sampledgraph3(cancer.post.autoreg, use.arc = FALSE, node.labels = FALSE, 
                             no.times = TRUE, truncate = 6, edge.label.size=4, thresh = 0.01,
                             feature.names = AML[[4]])
