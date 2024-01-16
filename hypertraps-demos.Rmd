@@ -257,6 +257,7 @@ ggarrange(plotHypercube.timehists(my.post.dt, t.thresh=3),
 
 We can write the output of HyperTraPS to a set of files for storage and later retrieval
 
+<!-- FIXME: I am not sure this call is really what is intended. This is passing the value of 5 (my.post$L) to the argument "regularised" of writeHyperinf. It does not break,  since regularised is a boolean. But why would one call the function this way? -->
 ```{r write-my-post}
 writeHyperinf(my.post, "simpledemo", my.post$L, postlabel = "simpledemo", fulloutput=TRUE)
 ```
