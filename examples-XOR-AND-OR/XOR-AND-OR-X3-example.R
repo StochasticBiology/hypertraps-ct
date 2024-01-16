@@ -103,13 +103,12 @@ x3.runs <- mcmapply(HyperTraPS,
                     )
 save(file = "x3.runs.RData", x3.runs)
 
-
 xao.runs <- mcmapply(HyperTraPS,
                      regularise = opts$regularise,
                      model = opts$model,
                      MoreArgs = list(
                        obs = d_xao,
-                       featurenames = c("A", "B", "C", "D"),
+                       featurenames = c("A", "B", "C", "D", "E"),
                        length = 4,
                        kernel = 3,
                        limited_output = 1),
