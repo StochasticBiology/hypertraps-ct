@@ -47,6 +47,23 @@ if (simulate_from_evamtools) {
                        Relation = c(rep("Single", 3), rep("XOR", 3)),
                        Lambdas = c(1.6, 1.8, 2.2, rep(2.0, 3)))
   sim_X3 <- sim_data_evam(dag_X3)
+
+  # Simplified from plot_evam
+  plot_model <- function(x, main = "") {
+    method_info <- igraph::graph_from_data_frame(x[, c("From", "To")])
+    parent_set <- evamtools:::parent_set_from_edges(x)
+    evamtools:::plot_method(method_info = method_info,
+                            parent_set = parent_set,
+                            edges = x, 
+                            method = main)
+  }
+
+  pdf(file = "true_models.pdf", width = 11, height = 6)
+  par(mfrow = c(1, 2))
+  plot_model(dag_XOR_AND_OR, "XOR_AND_OR")
+  plot_model(dag_X3, "X3")  
+  dev.off()
+  
   # save(file = "sim_XOR_AND_OR-X3.RData", sim_X3, sim_XOR_AND_OR)
 } else {
   # Load RData. Otherwise, provide the RDS files downloaded from evamtools
