@@ -81,41 +81,45 @@ setwd("../.")
 source("hypertraps.R")
 setwd(pwd)
 
-library(parallel)
+## Analyses take about 2.5 and 5.2 hours for x3 and xao
+## datasets. The pre-run analyses are available as an RData
+run_analyses <- FALSE
+if (run_analyses) {
+  library(parallel)
+  ## (We could parallelise over data set too. Not done here
+  ## to keep the examples separate)
+  x3.runs <- mcmapply(HyperTraPS,
+                      model = c(2, 3, -1),
+                      MoreArgs = list(
+                        obs = d_x3,
+                        featurenames = c("A", "B", "C", "D"),
+                        length = 4,
+                        kernel = 3,
+                        regularise = 1,
+                        limited_output = 1),
+                      SIMPLIFY = FALSE,
+                      mc.cores = detectCores()
+                      )
+  save(file = "x3.runs.RData", x3.runs)
 
-## (We could parallelise over data set too. Not done here
-## to keep the examples separate)
+  xao.runs <- mcmapply(HyperTraPS,
+                       model = c(2, 3, 4, -1),
+                       MoreArgs = list(
+                         obs = d_xao,
+                         featurenames = c("A", "B", "C", "D", "E"),
+                         length = 4,
+                         kernel = 3,
+                         regularise = 1,
+                         limited_output = 1),
+                       SIMPLIFY = FALSE,
+                       mc.cores = detectCores()
+                       )
+  save(file = "xao.runs.RData", xao.runs)
+} else {
+  load("xao.runs.RData")
+  load("x3.runs.RData")
+}
 
-(opts <- data.frame(regularise = c(0, 0, 0, 0, 1),
-                    model = c(2, 3, 4, -1, -1)))
-
-x3.runs <- mcmapply(HyperTraPS,
-                    regularise = opts$regularise,
-                    model = opts$model,
-                    MoreArgs = list(
-                      obs = d_x3,
-                      featurenames = c("A", "B", "C", "D"),
-                      length = 4,
-                      kernel = 3,
-                      limited_output = 1),
-                    SIMPLIFY = FALSE,
-                    mc.cores = min(detectCores(), nrow(opts))
-                    )
-save(file = "x3.runs.RData", x3.runs)
-
-xao.runs <- mcmapply(HyperTraPS,
-                     regularise = opts$regularise,
-                     model = opts$model,
-                     MoreArgs = list(
-                       obs = d_xao,
-                       featurenames = c("A", "B", "C", "D", "E"),
-                       length = 4,
-                       kernel = 3,
-                       limited_output = 1),
-                     SIMPLIFY = FALSE,
-                     mc.cores = min(detectCores(), nrow(opts))
-                     )
-save(file = "xao.runs.RData", xao.runs)
 
 
 
