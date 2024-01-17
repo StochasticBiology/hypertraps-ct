@@ -121,8 +121,27 @@ if (run_analyses) {
 }
 
 
+########################################
+##
+## x3 dataset
+########################################
 
+## Check traces
+## The second one might benefit from a longer run?
+do.call(ggarrange, lapply(x3.runs, plotHypercube.lik.trace))
 
+## Regularisation
+plotHypercube.regularisation(x3.runs[[5]])
 
+## Influences. The results seem very different from those of MHN
+## (compare with p.2 of mhn_hesbcn_plots.pdf)
+plotHypercube.influences(x3.runs[[1]], feature.names = c("A", "B", "C", "D"),
+                         upper.right = TRUE)
 
+## I don't understand the number of parameters for L = -1
+dim(x3.runs[[4]]$posterior.samples) ## 4^3 = 64.
+## But the number of possible transitions is 32 = 2^(4-1) * 4
+## Similarly for the example in the Rmd vignette.
+## I am missing something obvious here.
 
+lapply(x3.runs, function(x) dim(x$posterior.samples))
