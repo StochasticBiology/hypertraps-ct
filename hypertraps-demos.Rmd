@@ -126,6 +126,7 @@ plotHypercube.timehists(my.post, t.thresh = 3)
 ```{r tseries-my-post}
 plotHypercube.timeseries(my.post)
 ```
+<!-- FIXME: I think the description here does not match the plot. The plot has "Acquired" on the abscisas, and influenced on the ordinates. -->
 
 *Influences between features.* How each acquired trait (horizontal axis) influences the propensity for each other trait (vertical axis) to be acquired. Red is repression, blue is promotion; the transparency gives the width of the associated posterior. Here we see that 1 and 5 strongly cross-repress (being the first steps on the two competing pathways) and each feature promotes the next step on its pathway (wrapping the diagonal).
 
@@ -349,6 +350,14 @@ ggarrange(plotHypercube.graph(logic.post.m1) + ggtitle("All edges") + theme(lege
           plotHypercube.graph(logic.post.2)+ ggtitle("L^2") + theme(legend.position="none"),
           plotHypercube.graph(logic.post.3)+ ggtitle("L^3") + theme(legend.position="none"))
 ```    
+
+<!-- FIXME: I do not understand the number of parameters of the L=-1 model. It is 160, but that is twice the number of transitions (80).
+In Moen and Johnston, p.4 of suppl mat we see: 2^(L-1) L = 80
+I am missing something obvious here, but I can't see what.
+Also: the matrix of parameters has no labels: would it be possible to add labels?
+-->
+
+
 <!-- FIXME: it is not clear what are the differences between plotHypercube.sampledgraph2, used before, and plotHypercube.graph. When should we use one or the other? From the README the difference is using full output vs. sample paths but ... when and why should one be used instead of the other? -->
 
 <!-- FIXME: explain why most examples use 1000 steps (length = 3), whereas these use 10000 (length = 4) -->
