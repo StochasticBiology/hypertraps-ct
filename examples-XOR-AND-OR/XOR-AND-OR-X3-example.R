@@ -205,7 +205,7 @@ ggarrange(
 ## The full model captures the true dependency patterns for D (fourth locus)
 ## on second acquisition, but then it is incorrect on third acquisition
 ## (non-negligible transitions to 1011, 0111, 1101) and
-## on the final one
+## on the final one (but see below)
 
 ggarrange(
   plotHypercube.sampledgraph3(x3.l2.more.samples, no.times = TRUE,
@@ -239,5 +239,70 @@ ggarrange(
   plotHypercube.bubbles(x3.m1.more.samples) + ggtitle("Full")
 )
 
+## As above: can we use PosteriorAnalysis output here?
+ggarrange(
+  plotHypercube.timeseries(x3.l2.more.samples,
+                         feature.names = LETTERS[1:4]) + ggtitle("L^2"),
+  plotHypercube.timeseries(x3.l3.more.samples,
+                           feature.names = LETTERS[1:4]) + ggtitle("L^3"),
+  plotHypercube.timeseries(x3.m1.more.samples,
+                           feature.names = LETTERS[1:4]) + ggtitle("Full")
+)
 
 
+## Trying to see how the three plots complement each other
+## So D is gained last, but a very long time after all others
+## (bottom plot: 60, compared to value less than 0.5)
+## which turns this last transition suspicious?
+ggarrange(
+    plotHypercube.bubbles(x3.l2.more.samples) + ggtitle("L^2"),
+    plotHypercube.timeseries(x3.l2.more.samples,
+                             feature.names = LETTERS[1:4]) + ggtitle("L^2"),
+    plotHypercube.sampledgraph3(x3.l2.more.samples, no.times = FALSE,
+                                feature.names = LETTERS[1:4],
+                                use.arc = FALSE, node.label.size = 4,
+                                edge.label.size = 4)
+)
+
+## Same thing
+ggarrange(
+  plotHypercube.bubbles(x3.l3.more.samples) + ggtitle("L^3"),
+  plotHypercube.timeseries(x3.l3.more.samples,
+                           feature.names = LETTERS[1:4]) + ggtitle("L^3"),
+  plotHypercube.sampledgraph3(x3.l2.more.samples, no.times = FALSE,
+                              feature.names = LETTERS[1:4],
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 4)
+)
+
+## Even more clear: all gains of D that we know are not possible
+## have a time 10^8.
+ggarrange(
+  plotHypercube.bubbles(x3.m1.more.samples) + ggtitle("Full"),
+  plotHypercube.timeseries(x3.m1.more.samples,
+                           feature.names = LETTERS[1:4]) + ggtitle("Full"),
+  plotHypercube.sampledgraph3(x3.m1.more.samples, no.times = FALSE,
+                              feature.names = LETTERS[1:4],
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 4)
+)
+
+## Easier to see times if single plot
+plotHypercube.sampledgraph3(x3.m1.more.samples, no.times = FALSE,
+                            feature.names = LETTERS[1:4],
+                            use.arc = FALSE, node.label.size = 4,
+                            edge.label.size = 4)
+
+
+## Would it be possible to filter in sampledgraph* plots
+## by time, so that we can filter out those transitions
+## that take a long time?
+
+## I am now mentally filtering the sampledgraph one prompted by the timeseries
+## one: the first and second events are gained quickly. Then two paths:
+## gaining a third (any of the remaining, except D)
+
+## Can we get the expected times of gaining 1, 2, 3, ... events? This would help
+## set the threshold for the filtering of long transitions.
+
+## I am implicitly thinking about the "transition to END", without formalizing it for now. 
