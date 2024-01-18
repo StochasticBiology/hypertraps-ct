@@ -81,7 +81,7 @@ setwd("../.")
 source("hypertraps.R")
 setwd(pwd)
 
-## Analyses take about 2.5 and 5.2 hours for x3 and xao
+## Analyses take about 2 and ?? hours for x3 and xao
 ## datasets. The pre-run analyses are available as an RData
 run_analyses <- FALSE
 if (run_analyses) {
@@ -102,6 +102,8 @@ if (run_analyses) {
                       )
   save(file = "x3.runs.RData", x3.runs)
 
+  ## CHECK: I'll probably end up with only 2, 3, -1
+  ## as 4 is taking > 18 h, and is probably not sensible
   xao.runs <- mcmapply(HyperTraPS,
                        model = c(2, 3, 4, -1),
                        MoreArgs = list(
@@ -131,7 +133,7 @@ if (run_analyses) {
 do.call(ggarrange, lapply(x3.runs, plotHypercube.lik.trace))
 
 ## Regularisation
-plotHypercube.regularisation(x3.runs[[5]])
+do.call(ggarrange, lapply(x3.runs, plotHypercube.regularisation))
 
 ## Influences. The results seem very different from those of MHN
 ## (compare with p.2 of mhn_hesbcn_plots.pdf)
@@ -139,9 +141,103 @@ plotHypercube.influences(x3.runs[[1]], feature.names = c("A", "B", "C", "D"),
                          upper.right = TRUE)
 
 ## I don't understand the number of parameters for L = -1
-dim(x3.runs[[4]]$posterior.samples) ## 4^3 = 64.
+dim(x3.runs[[3]]$posterior.samples) ## 4^3 = 64.
 ## But the number of possible transitions is 32 = 2^(4-1) * 4
 ## Similarly for the example in the Rmd vignette.
 ## I am missing something obvious here.
 
 lapply(x3.runs, function(x) dim(x$posterior.samples))
+
+## Easier names
+x3.l2 <- x3.runs[[1]]
+x3.l3 <- x3.runs[[2]]
+x3.m1 <- x3.runs[[3]]
+
+
+## As in cancer-examples.R, get more samples from the regularised parameterisation
+
+## It is unclear to me if all plots are using the regularised results:
+## see this comment in cancer-examples.R: "add use.regularised to all plot functions"
+## Calling PosteriorAnalysis with "use_regularised = 1" and then plotting
+## those samples, is this the way to see the paths from the regularised results?
+x3.l2.more.samples <- PosteriorAnalysis(x3.l2,
+                                        featurenames = c("A", "B", "C", "D"),
+                                        samples_per_row = 1000,
+                                        use_regularised = 1)
+
+x3.l3.more.samples <- PosteriorAnalysis(x3.l3,
+                                        featurenames = c("A", "B", "C", "D"),
+                                        samples_per_row = 1000,
+                                        use_regularised = 1)
+
+x3.m1.more.samples <- PosteriorAnalysis(x3.m1,
+                                        featurenames = c("A", "B", "C", "D"),
+                                        samples_per_row = 1000,
+                                        use_regularised = 1)
+
+
+
+## Regularisation does not seem to make much of a difference
+ggarrange(
+  plotHypercube.sampledgraph2(x3.l2,  no.times = TRUE, use.arc = FALSE,
+                              node.label.size = 4, edge.label.size = 0),
+  plotHypercube.sampledgraph3(x3.l2.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0)) 
+
+ggarrange(
+  plotHypercube.sampledgraph2(x3.l3,  no.times = TRUE, use.arc = FALSE,
+                              node.label.size = 4, edge.label.size = 0),
+  plotHypercube.sampledgraph3(x3.l3.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0))
+
+ggarrange(
+  plotHypercube.sampledgraph2(x3.m1,  no.times = TRUE, use.arc = FALSE,
+                              node.label.size = 4, edge.label.size = 0),
+  plotHypercube.sampledgraph3(x3.m1.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0))
+
+
+## The three models, regularised.
+## L2 is different from MHN
+## The full model captures the true dependency patterns for D (fourth locus)
+## on second acquisition, but then it is incorrect on third acquisition
+## (non-negligible transitions to 1011, 0111, 1101) and
+## on the final one
+
+ggarrange(
+  plotHypercube.sampledgraph3(x3.l2.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0) + ggtitle("L^2"),
+  plotHypercube.sampledgraph3(x3.l3.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0) + ggtitle("L^3"),
+  plotHypercube.sampledgraph3(x3.m1.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0) + ggtitle("Full")
+)
+
+
+## Bubbles.
+## All of them think D can be acquired last, but that is not possible.
+## All of them also incorrectly think D can be acquired first.
+## (These mistakes not surprising, given previous plot)
+
+ggarrange(
+  plotHypercube.bubbles(x3.l2) + ggtitle("L^2"),
+  plotHypercube.bubbles(x3.l3) + ggtitle("L^3"),
+  plotHypercube.bubbles(x3.m1) + ggtitle("Full")
+)
+
+## Is it correct to call it on the output from
+## PosteriorAnalysis? No major changes, though
+ggarrange(
+  plotHypercube.bubbles(x3.l2.more.samples) + ggtitle("L^2"),
+  plotHypercube.bubbles(x3.l3.more.samples) + ggtitle("L^3"),
+  plotHypercube.bubbles(x3.m1.more.samples) + ggtitle("Full")
+)
+
+
+
