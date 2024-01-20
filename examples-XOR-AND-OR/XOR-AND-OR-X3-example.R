@@ -57,10 +57,22 @@ if (simulate_from_evamtools) {
                             method = main)
   }
 
-  pdf(file = "true_models.pdf", width = 11, height = 6)
-  par(mfrow = c(1, 2))
+  plot_hypercube_transitions <- function(x, main = "") {
+    obj <- list(edges = x,
+                parent_set = evamtools:::parent_set_from_edges(x))
+    tmat <- as.matrix(evamtools:::cpm2tm(obj)$trans_mat_genots)
+    evamtools:::plot_genot_fg(tmat, plot_type = "trans_mat")
+  }
+  
+  pdf(file = "true_models.pdf", width = 11, height = 11)
+  par(mfrow = c(2, 2))
+  par(oma = c(2, 2, 2, 2))
   plot_model(dag_XOR_AND_OR, "XOR_AND_OR")
-  plot_model(dag_X3, "X3")  
+  plot_model(dag_X3, "X3")
+  plot_hypercube_transitions(dag_XOR_AND_OR)
+  title("XOR_AND_OR: \nTrue transitions between genotypes")
+  plot_hypercube_transitions(dag_X3)
+  title("X3: \nTrue transitions between genotypes")
   dev.off()
   
   # save(file = "sim_XOR_AND_OR-X3.RData", sim_X3, sim_XOR_AND_OR)
