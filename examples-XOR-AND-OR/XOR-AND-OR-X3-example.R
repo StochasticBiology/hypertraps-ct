@@ -81,7 +81,7 @@ setwd("../.")
 source("hypertraps.R")
 setwd(pwd)
 
-## Analyses take about 2 and ?? hours for x3 and xao
+## Analyses take about 2 and 5 hours for x3 and xao
 ## datasets. The pre-run analyses are available as an RData
 run_analyses <- FALSE
 if (run_analyses) {
@@ -102,10 +102,11 @@ if (run_analyses) {
                       )
   save(file = "x3.runs.RData", x3.runs)
 
-  ## CHECK: I'll probably end up with only 2, 3, -1
-  ## as 4 is taking > 18 h, and is probably not sensible
+  
+  ## L = 4 is taking > 70 h, and is probably not sensible
+  ## The runs here take about 4.5 hours (2, 4.5 and 3.5)
   xao.runs <- mcmapply(HyperTraPS,
-                       model = c(2, 3, 4, -1),
+                       model = c(2, 3, -1),
                        MoreArgs = list(
                          obs = d_xao,
                          featurenames = c("A", "B", "C", "D", "E"),
@@ -125,7 +126,8 @@ if (run_analyses) {
 
 ########################################
 ##
-## x3 dataset
+##        x3 dataset
+##
 ########################################
 
 ## Check traces
@@ -140,7 +142,7 @@ do.call(ggarrange, lapply(x3.runs, plotHypercube.regularisation))
 plotHypercube.influences(x3.runs[[1]], feature.names = c("A", "B", "C", "D"),
                          upper.right = TRUE)
 
-## I don't understand the number of parameters for L = -1
+## FIXME: I don't understand the number of parameters for L = -1
 dim(x3.runs[[3]]$posterior.samples) ## 4^3 = 64.
 ## But the number of possible transitions is 32 = 2^(4-1) * 4
 ## Similarly for the example in the Rmd vignette.
@@ -156,7 +158,7 @@ x3.m1 <- x3.runs[[3]]
 
 ## As in cancer-examples.R, get more samples from the regularised parameterisation
 
-## It is unclear to me if all plots are using the regularised results:
+## FIXME: It is unclear to me if all plots are using the regularised results:
 ## see this comment in cancer-examples.R: "add use.regularised to all plot functions"
 ## Calling PosteriorAnalysis with "use_regularised = 1" and then plotting
 ## those samples, is this the way to see the paths from the regularised results?
@@ -231,7 +233,7 @@ ggarrange(
   plotHypercube.bubbles(x3.m1) + ggtitle("Full")
 )
 
-## Is it correct to call it on the output from
+## FIXME: Is it correct to call it on the output from
 ## PosteriorAnalysis? No major changes, though
 ggarrange(
   plotHypercube.bubbles(x3.l2.more.samples) + ggtitle("L^2"),
@@ -269,7 +271,7 @@ ggarrange(
   plotHypercube.bubbles(x3.l3.more.samples) + ggtitle("L^3"),
   plotHypercube.timeseries(x3.l3.more.samples,
                            feature.names = LETTERS[1:4]) + ggtitle("L^3"),
-  plotHypercube.sampledgraph3(x3.l2.more.samples, no.times = FALSE,
+  plotHypercube.sampledgraph3(x3.l3.more.samples, no.times = FALSE,
                               feature.names = LETTERS[1:4],
                               use.arc = FALSE, node.label.size = 4,
                               edge.label.size = 4)
@@ -294,15 +296,147 @@ plotHypercube.sampledgraph3(x3.m1.more.samples, no.times = FALSE,
                             edge.label.size = 4)
 
 
-## Would it be possible to filter in sampledgraph* plots
-## by time, so that we can filter out those transitions
-## that take a long time?
+## FIXME: Would it be possible to filter in sampledgraph* plots by time, so that
+## we can filter out those transitions that take a long time?
 
-## I am now mentally filtering the sampledgraph one prompted by the timeseries
-## one: the first and second events are gained quickly. Then two paths:
-## gaining a third (any of the remaining, except D)
+## FIXME: I am now mentally filtering the sampledgraph one prompted by the
+## timeseries one: the first and second events are gained quickly. Then two
+## paths: gaining a third (any of the remaining, except D)
 
-## Can we get the expected times of gaining 1, 2, 3, ... events? This would help
-## set the threshold for the filtering of long transitions.
+## FIXME: Can we get the expected times of gaining 1, 2, 3, ... events? This
+## would help set the threshold for the filtering of long transitions.
 
-## I am implicitly thinking about the "transition to END", without formalizing it for now. 
+## FIXME: I am implicitly thinking about the "transition to END", without
+## formalizing it for now.
+
+
+
+########################################
+##
+##        xao dataset
+##
+########################################
+
+## Follows the same logic as for x3.
+
+## Check traces
+do.call(ggarrange, lapply(xao.runs, plotHypercube.lik.trace))
+
+## Regularisation
+do.call(ggarrange, lapply(xao.runs, plotHypercube.regularisation))
+
+## Influences. The results seem very more similar to from those of MHN
+## (compare with p. 1 of mhn_hesbcn_plots.pdf)
+plotHypercube.influences(xao.runs[[1]],
+                         feature.names = c("A", "B", "C", "D", "E"),
+                         upper.right = TRUE)
+
+## Easier names
+xao.l2 <- xao.runs[[1]]
+xao.l3 <- xao.runs[[2]]
+xao.m1 <- xao.runs[[3]]
+
+
+
+xao.l2.more.samples <- PosteriorAnalysis(xao.l2,
+                                         featurenames = c("A", "B", "C", "D", "E"),
+                                         samples_per_row = 1000,
+                                        use_regularised = 1)
+
+xao.l3.more.samples <- PosteriorAnalysis(xao.l3,
+                                         featurenames = c("A", "B", "C", "D", "E"),
+                                         samples_per_row = 1000,
+                                        use_regularised = 1)
+
+xao.m1.more.samples <- PosteriorAnalysis(xao.m1,
+                                         featurenames = c("A", "B", "C", "D", "E"),
+                                         samples_per_row = 1000,
+                                        use_regularised = 1)
+
+## Regularisation does not seem to make much of a difference
+ggarrange(
+  plotHypercube.sampledgraph2(xao.l2,  no.times = TRUE, use.arc = FALSE,
+                              node.label.size = 4, edge.label.size = 0),
+  plotHypercube.sampledgraph3(xao.l2.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0)) 
+
+ggarrange(
+  plotHypercube.sampledgraph2(xao.l3,  no.times = TRUE, use.arc = FALSE,
+                              node.label.size = 4, edge.label.size = 0),
+  plotHypercube.sampledgraph3(xao.l3.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0))
+
+ggarrange(
+  plotHypercube.sampledgraph2(xao.m1,  no.times = TRUE, use.arc = FALSE,
+                              node.label.size = 4, edge.label.size = 0),
+  plotHypercube.sampledgraph3(xao.m1.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0))
+
+## The three models, regularised.
+## All models capture the key patterns, but L^3 does a better job than Full
+
+ggarrange(
+  plotHypercube.sampledgraph3(xao.l2.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0) + ggtitle("L^2"),
+  plotHypercube.sampledgraph3(xao.l3.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0) + ggtitle("L^3"),
+  plotHypercube.sampledgraph3(xao.m1.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0) + ggtitle("Full")
+)
+
+## Bubbles.
+## All models are similar. In contrast to x3, there are no ordinal
+## times precluded for any event in the true model.
+ggarrange(
+  plotHypercube.bubbles(xao.l2.more.samples) + ggtitle("L^2"),
+  plotHypercube.bubbles(xao.l3.more.samples) + ggtitle("L^3"),
+  plotHypercube.bubbles(xao.m1.more.samples) + ggtitle("Full")
+)
+
+
+## Using three plots together for each model. Again, the time to the forbidden
+## transition has a much larger time.
+ggarrange(
+  plotHypercube.bubbles(xao.l2.more.samples) + ggtitle("L^2"),
+  plotHypercube.timeseries(xao.l2.more.samples,
+                           feature.names = LETTERS[1:5]) + ggtitle("L^2"),
+  plotHypercube.sampledgraph3(xao.l2.more.samples, no.times = FALSE,
+                              feature.names = LETTERS[1:5],
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 4)
+)
+
+## Same thing
+ggarrange(
+  plotHypercube.bubbles(xao.l3.more.samples) + ggtitle("L^3"),
+  plotHypercube.timeseries(xao.l3.more.samples,
+                           feature.names = LETTERS[1:5]) + ggtitle("L^3"),
+  plotHypercube.sampledgraph3(xao.l3.more.samples, no.times = FALSE,
+                              feature.names = LETTERS[1:5],
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 4)
+)
+
+## Even more clear: all gains of D that we know are not possible
+## have a time 10^8.
+ggarrange(
+  plotHypercube.bubbles(xao.m1.more.samples) + ggtitle("Full"),
+  plotHypercube.timeseries(xao.m1.more.samples,
+                           feature.names = LETTERS[1:5]) + ggtitle("Full"),
+  plotHypercube.sampledgraph3(xao.m1.more.samples, no.times = FALSE,
+                              feature.names = LETTERS[1:5],
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 4)
+)
+
+
+
+
+
+## FIXME: evamTools should give bubble plots for all models and for the true model 
