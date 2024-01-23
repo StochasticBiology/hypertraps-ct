@@ -141,7 +141,8 @@ HyperTraPS needs at least a set of observations. *This is the only essential inp
 | Use SA (0/1) | sa=*N* | --sa | 0 |
 | Use SGD (0/1) | sgd=*N* | --sgd | 0 |
 | Use PLI (0/1) | pli=*N* | --pli | 0 |
-| Regularise model (0/1) | regularise=*N* | --regularise | 0 |
+| Regularisation by penalised likelihood | penalty=*X* | --penalty *X* | 0 (controls penalty per non-zero parameter) 
+| Stepwise regularise model after best parameterisation (0/1) | regularise=*N* | --regularise | 0 |
 | Transition format observations | (not available) | --transitionformat | (off) |
 | Output exact transitions (0/1) | output_transitions=*N* | --outputtransitions *N* | Switched off for L > 15 to avoid large output; consider switching off for CT 
 
@@ -151,7 +152,8 @@ So some example calls are (see the various demo scripts for more):
 |------|---|--------------|
 | Run HyperTraPS with default settings | HyperTraPS(*matrix*) | ./hypertraps.ce --obs *filename* |
 | Run HyperTraPS-CT with default settings | HyperTraPS(*matrix*, starttimes=*vector*, endtimes=*vector*) | ./hypertraps.ce --obs *filename* --times *filename* --endtimes *filename* |
-| Run HyperTraPS with all-edges model, then regularise | HyperTraPS(*matrix*, model=-1, regularise=1) | ./hypertraps.ce --obs *filename* --model -1 --regularise |
+| Run HyperTraPS with all-edges model and regularise by penalised likelihood | HyperTraPS(*matrix*, model=-1, penalty=1) | ./hypertraps.ce --obs *filename* --model -1 --penalty 1 |
+| Run HyperTraPS with all-edges model, then stepwise regularise | HyperTraPS(*matrix*, model=-1, regularise=1) | ./hypertraps.ce --obs *filename* --model -1 --regularise |
 
 Visualising and using output
 --------
@@ -209,7 +211,8 @@ Scripts wrapping the curation, inference, and analysis process for different cas
   * `infer-tb.sh` -- runs HyperTraPS for TB data
   * `infer-mro.sh` -- runs HyperTraPS for (different versions of) MRO data
   * `infer-others.sh` -- runs HyperTraPS for various other scientific cases
-    
+  * `cancer-examples.R` -- R script running examples of cancer progression analysis    
+
 `Verify/`
 ---------
 Code to generate synthetic test datasets
