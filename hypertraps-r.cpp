@@ -1053,6 +1053,11 @@ List PosteriorAnalysis(List L,
 
   if(featurenames.isUsable()) {
     CharacterVector _featurenames(featurenames);
+    if(_featurenames.size() != len)
+      {
+	Rprintf("Error: Feature names vector has a length different from L (number of features).\n");
+	myexit(0);
+      }
     for(i = 0; i < len; i++)
       {
 	sprintf(&names[i*FLEN], "%s", (char*)_featurenames[i]);
