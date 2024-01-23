@@ -108,7 +108,7 @@ plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, 
 plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05, 
                                        node.labels = TRUE, use.arc = TRUE, no.times = FALSE, 
                                        edge.label.size = 2, edge.label.angle = "across",
-                                       feature.names = c(""),
+                                       featurenames = c(""),
                                        node.label.size = 2) {
   edge.from = edge.to = edge.time = edge.change = c()
   bigL = my.post$L
@@ -125,8 +125,8 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
   }
   df = data.frame(From=edge.from, To=edge.to, Change=edge.change, Time=edge.time)
   dfu = unique(df)
-  if(length(feature.names) > 1) {
-    dfu$Change = feature.names[dfu$Change+1]
+  if(length(featurenames) > 1) {
+    dfu$Change = featurenames[dfu$Change+1]
   }
   dfu$Flux = dfu$MeanT = dfu$SDT = NA
   for(i in 1:nrow(dfu)) {
@@ -175,7 +175,7 @@ plotHypercube.sampledgraph3 = function(my.post, max.samps = 1000, thresh = 0.05,
                                        node.labels = TRUE, use.arc = TRUE, no.times = FALSE, 
                                        edge.label.size = 2, edge.label.angle = "across",
                                        edge.label.colour = "#000000",
-                                       feature.names = c(""), truncate = -1,
+                                       featurenames = c(""), truncate = -1,
                                        node.label.size = 2) {
   edge.from = edge.to = edge.time = edge.change = c()
   bigL = my.post$L
@@ -194,8 +194,8 @@ plotHypercube.sampledgraph3 = function(my.post, max.samps = 1000, thresh = 0.05,
   }
   df = data.frame(From=edge.from, To=edge.to, Change=edge.change, Time=edge.time)
   dfu = unique(df)
-  if(length(feature.names) > 1) {
-    dfu$Change = feature.names[dfu$Change+1]
+  if(length(featurenames) > 1) {
+    dfu$Change = featurenames[dfu$Change+1]
   }
   dfu$Flux = dfu$MeanT = dfu$SDT = NA
   for(i in 1:nrow(dfu)) {
@@ -243,10 +243,10 @@ plotHypercube.sampledgraph3 = function(my.post, max.samps = 1000, thresh = 0.05,
 }
 
 
-plotHypercube.timehists = function(my.post, t.thresh = 20, feature.names = c(""), log.time = TRUE) {
+plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = c(""), log.time = TRUE) {
   thdfp = data.frame()
-  if(length(feature.names) > 1) {
-    my.post$timehists$feature.label = feature.names[my.post$timehists$OriginalIndex+1]
+  if(length(featurenames) > 1) {
+    my.post$timehists$feature.label = featurenames[my.post$timehists$OriginalIndex+1]
   } else {
     my.post$timehists$feature.label = my.post$timehists$OriginalIndex
   }
@@ -284,10 +284,10 @@ plotHypercube.regularisation = function(my.post) {
                 aes(x=nparam, y=AIC)) + geom_point() + theme_light() )
 }
 
-plotHypercube.motifs = function(my.post, feature.names = c("")) {
+plotHypercube.motifs = function(my.post, featurenames = c("")) {
   # motif plot
-  if(length(feature.names) > 1) {
-    labels = feature.names
+  if(length(featurenames) > 1) {
+    labels = featurenames
   } else {
     labels = 1:my.post$L
   }
@@ -305,10 +305,10 @@ plotHypercube.motifs = function(my.post, feature.names = c("")) {
            scale_fill_brewer(palette = "PuRd") + theme_light())
 }
 
-plotHypercube.timeseries = function(my.post, log.axis = TRUE, feature.names=c("")) {
+plotHypercube.timeseries = function(my.post, log.axis = TRUE, featurenames=c("")) {
   # time series illustration
-  if(length(feature.names) > 1) {
-    labels = feature.names
+  if(length(featurenames) > 1) {
+    labels = featurenames
   } else {
     labels = 1:my.post$L
   }
@@ -344,10 +344,10 @@ plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, contin
   }
 }
 
-plotHypercube.influences = function(my.post, feature.names=c(""), use.regularised = FALSE, reorder = FALSE, upper.right = FALSE) {
+plotHypercube.influences = function(my.post, featurenames=c(""), use.regularised = FALSE, reorder = FALSE, upper.right = FALSE) {
   plot.df = data.frame()
-  if(length(feature.names) > 1) {
-    labels = feature.names
+  if(length(featurenames) > 1) {
+    labels = featurenames
   } else {
     labels = 1:my.post$L
   }
