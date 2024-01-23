@@ -54,17 +54,60 @@ for(aml.list in 1:length(AML[[5]])) {
 befores = matrix(unlist(lapply(strsplit(trans.df$before, ""), as.numeric)), ncol=AML[[1]], byrow=TRUE)
 afters = matrix(unlist(lapply(strsplit(trans.df$after, ""), as.numeric)), ncol=AML[[1]], byrow=TRUE)
 
+# Running the analysis can take around an hour (and close to 30 minutes if parallelized)
+# Alternatively, you can set run.simulations to FALSE and load the pre-run analysis
+# FIXME: for this to work, a 1.6 MB binary file would be added to the repo
+#   I am not sure if that is acceptable. 
 if(run.simulations == TRUE) {
   # run HyperTraPS and regularise
-  cancer.post = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3)
-  cancer.post.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, autoregularise = 1)
-  cancer.post.sa.autoreg = HyperTraPS(afters, initialstates = befores, sa = 1, length = 4, kernel = 3, autoregularise = 1)
+  # FIXME: autoregularise option is not explained anywhere else, I think.
+  #  How does it differ from regularise?
 
-  writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
-  writeHyperinf(cancer.post.autoreg, "cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
-  writeHyperinf(cancer.post.sa.autoreg, "cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
+  # FIXME: a general concern about having, by default, seed = 1.
+  #  I think this is different from the way most code does this in R,
+  #  where the seed is not fixed, so different runs lead to possibly different
+  #  results, unless the user explicitly sets the seed.
+  #  It might also be worth thinking/illustrating how to do this if running in
+  #  parallel (getting an appropriate seed from R)
+  
+  # FIXME: run in parallel?. Set as an option. This more than halves (2.6) the
+  # running time for me
+  
+  parallelize = TRUE
+
+  if (parallelize) {
+    require(parallel)
+    # Create the data frame of options, print to check it is what we want
+    # and pass to mcmapply
+    (aml.opts <- data.frame(autoregularise = c(0, 1, 1),
+                            sa = c(0, 0, 1)))
+    parallelised.runs <- mcmapply(HyperTraPS,
+                                  autoregularise = aml.opts$autoregularise,
+                     sa = aml.opts$sa,
+                     MoreArgs = list(obs = afters,
+                                     initialstates = befores,
+                                     length = 4,
+                                     kernel = 3),
+                     SIMPLIFY = FALSE,
+                     mc.cores = min(detectCores(), nrow(aml.opts)))
+    
+    cancer.post = parallelised.runs[[1]]
+    cancer.post.autoreg = parallelised.runs[[2]]
+    cancer.post.sa.autoreg = parallelised.runs[[3]]
+  } else {
+    cancer.post = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3)
+    cancer.post.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, autoregularise = 1)
+    cancer.post.sa.autoreg = HyperTraPS(afters, initialstates = befores, sa = 1, length = 4, kernel = 3, autoregularise = 1)
+    
+    writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
+    writeHyperinf(cancer.post.autoreg, "cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
+    writeHyperinf(cancer.post.sa.autoreg, "cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
+  }
+} else {
+  load("../Pre-run-analysis/cancer.post.RData")
 }
 
+# FIXME: why is readHyperinf a better idea than load'ing the RData?
 # example subsequent read
 cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
 cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
@@ -73,6 +116,7 @@ cancer.post.sa.autoreg = readHyperinf("cancer.post.sa.autoreg", postlabel="cance
 cancer.post.autoreg$lik.traces[79,]
 cancer.post.sa.autoreg$lik.traces[79,]
 
+# FIXME:  (the current version of) plotHypercube.influences does not take a use.final argument
 plot.null = plotHypercube.influences(cancer.post, feature.names = AML[[4]], 
                                      use.final = TRUE, upper.right = TRUE, reorder = TRUE) +
   guides(alpha=FALSE)
@@ -97,8 +141,13 @@ print(ggarrange(plot.null, plot.autoreg,
 dev.off()
 
 # more samples from the regularised parameterisation
+# FIXME: when/why should we run PosteriorAnalysis?
+#     The plot below using cancer.more.samples is a plot of samples
+#     from the posterior? I do not see any (obvious) differences between the plots
 cancer.more.samples = PosteriorAnalysis(cancer.post.autoreg, samples_per_row = 1000)
 
+# FIXME: sampledgraph3 is used here for the first time and not mentioned in the README
+#    either
 plotHypercube.sampledgraph3(cancer.post.autoreg, use.arc = FALSE, node.labels = FALSE, 
                             no.times = TRUE, truncate = 6, edge.label.size=4, thresh = 0.01,
                             feature.names = AML[[4]])
