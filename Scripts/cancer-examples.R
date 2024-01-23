@@ -59,10 +59,8 @@ afters = matrix(unlist(lapply(strsplit(trans.df$after, ""), as.numeric)), ncol=A
 # FIXME: for this to work, a 1.6 MB binary file would be added to the repo
 #   I am not sure if that is acceptable. 
 if(run.simulations == TRUE) {
-  # run HyperTraPS and regularise
-  # FIXME: autoregularise option is not explained anywhere else, I think.
-  #  How does it differ from regularise?
-
+  # run HyperTraPS and regularise via penalised likelihood
+ 
   # FIXME: a general concern about having, by default, seed = 1.
   #  I think this is different from the way most code does this in R,
   #  where the seed is not fixed, so different runs lead to possibly different
@@ -98,25 +96,23 @@ if(run.simulations == TRUE) {
     cancer.post = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3)
     cancer.post.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, penalty = 1)
     cancer.post.sa.autoreg = HyperTraPS(afters, initialstates = befores, sa = 1, length = 4, kernel = 3, penalty = 1)
-    
-    writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
-    writeHyperinf(cancer.post.autoreg, "cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
-    writeHyperinf(cancer.post.sa.autoreg, "cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
   }
+  
+  writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
+  writeHyperinf(cancer.post.autoreg, "cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
+  writeHyperinf(cancer.post.sa.autoreg, "cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
 } else {
-  load("../Pre-run-analysis/cancer.post.RData")
+  # example subsequent read
+  cancer.post = readHyperinf("cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
+  cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
+  cancer.post.sa.autoreg = readHyperinf("cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
 }
 
-# FIXME: why is readHyperinf a better idea than load'ing the RData?
-# example subsequent read
-cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
-cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
-cancer.post.sa.autoreg = readHyperinf("cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
-
+# check outputs
 cancer.post.autoreg$lik.traces[79,]
 cancer.post.sa.autoreg$lik.traces[79,]
 
-# FIXME:  (the current version of) plotHypercube.influences does not take a use.final argument
+# create plots of influences under different regularisation protocols
 plot.null = plotHypercube.influences(cancer.post, feature.names = AML[[4]], 
                                      use.final = TRUE, upper.right = TRUE, reorder = TRUE) +
   guides(alpha=FALSE)
