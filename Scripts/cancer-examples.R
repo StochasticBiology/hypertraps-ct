@@ -79,10 +79,10 @@ if(run.simulations == TRUE) {
     require(parallel)
     # Create the data frame of options, print to check it is what we want
     # and pass to mcmapply
-    (aml.opts <- data.frame(autoregularise = c(0, 1, 1),
+    (aml.opts <- data.frame(penalty = c(0, 1, 1),
                             sa = c(0, 0, 1)))
     parallelised.runs <- mcmapply(HyperTraPS,
-                                  autoregularise = aml.opts$autoregularise,
+                                  penalty = aml.opts$penalty,
                      sa = aml.opts$sa,
                      MoreArgs = list(obs = afters,
                                      initialstates = befores,
@@ -96,8 +96,8 @@ if(run.simulations == TRUE) {
     cancer.post.sa.autoreg = parallelised.runs[[3]]
   } else {
     cancer.post = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3)
-    cancer.post.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, autoregularise = 1)
-    cancer.post.sa.autoreg = HyperTraPS(afters, initialstates = befores, sa = 1, length = 4, kernel = 3, autoregularise = 1)
+    cancer.post.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, penalty = 1)
+    cancer.post.sa.autoreg = HyperTraPS(afters, initialstates = befores, sa = 1, length = 4, kernel = 3, penalty = 1)
     
     writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
     writeHyperinf(cancer.post.autoreg, "cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
@@ -180,7 +180,7 @@ for(i in 1:nrow(big.c.df)) {
 # put into matrix form and run HyperTraPS
 if(run.simulations == TRUE) {
   big.c.m = as.matrix(data.df[1:(ncol(data.df)-1)])
-  big.c.post = HyperTraPS(big.c.m, autoregularise = 1, kernel = 3)
+  big.c.post = HyperTraPS(big.c.m, penalty = 1, kernel = 3)
   writeHyperinf(big.c.post, "big-c-post", fulloutput = FALSE, regularised = FALSE)
 }
 big.c.post = readHyperinf("big-c-post", fulloutput = FALSE, regularised = FALSE)
