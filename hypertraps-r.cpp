@@ -27,7 +27,7 @@ List HyperTraPS(NumericMatrix obs,
 		NumericVector seed,
 		NumericVector outputinput,
 		NumericVector regularise,
-		NumericVector autoregularise,
+		NumericVector penalise,
 		NumericVector model,
 		NumericVector pli,
 		NumericVector walkers,
@@ -321,7 +321,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		NumericVector seed = 1,
 		NumericVector outputinput = 0,
 		NumericVector regularise = 0,
-		NumericVector autoregularise = 0,
+		NumericVector penalty = 0,
 		NumericVector model = 2,
 		NumericVector pli = 0,
 		NumericVector walkers = 200,
@@ -373,8 +373,8 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   int _PLI;
   int _limited_output;
   int _samples_per_row;
-  int _autoregularise;
-  double regterm;
+  double _penalty;
+  int regterm;
   
   // default values
   num_error = 0;
@@ -389,7 +389,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   searchmethod = 0;
   BANK = walkers[0];
   _limited_output = limited_output[0];
-  _autoregularise = autoregularise[0];
+  _penalty = penalty[0];
   
   if(sgd[0] == 1) searchmethod = 1;
   if(sa[0] == 1) searchmethod = 2;
@@ -499,11 +499,11 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
       Rprintf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
       if(_PLI == 1) {
-	Rprintf("Running Phenotype Landscape Inference with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, _seed, _lengthindex, _kernelindex, BANK, _losses, _apm_type, _model);
+	Rprintf("Running Phenotype Landscape Inference with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n[penalty]: %.3e\n\n", obsfile, timefile, endtimefile, _seed, _lengthindex, _kernelindex, BANK, _losses, _apm_type, _model, _penalty);
       } else if(spectrumtype == 1) {
-	Rprintf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, _seed, _lengthindex, _kernelindex, BANK, _losses, _apm_type, _model);
+	Rprintf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n[penalty]: %.3e\n\n", obsfile, timefile, endtimefile, _seed, _lengthindex, _kernelindex, BANK, _losses, _apm_type, _model, _penalty);
       } else {
-	Rprintf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, _seed, _lengthindex, _kernelindex, BANK, _losses, _apm_type, _model);
+	Rprintf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n[penalty]: %.3e\n\n", obsfile, _seed, _lengthindex, _kernelindex, BANK, _losses, _apm_type, _model, _penalty);
       }
       switch(searchmethod) {
       case 0: Rprintf("Using MH MCMC\n"); break;
@@ -648,13 +648,20 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   // compute initial likelihood given this matrix
   time(&start_t);
   gettimeofday(&t_start, NULL);
-  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI);
+  // count nonzero parameters for likelihood penalisation
+  regterm = 0;
+  for(i = 0; i < NVAL; i++)
+    {
+      regterm += (trans[i] != 0);
+    }
+  
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty;
   time(&end_t);
   gettimeofday(&t_stop, NULL);
   diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
   //  diff_t = difftime(end_t, start_t);
   Rprintf("One likelihood estimation took %e seconds.\nInitial likelihood is %e\n", diff_t, lik);
-  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI);
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty;
   Rprintf("Second guess is %e\n", lik);
  
   // MCMC or simulated annealing
@@ -672,7 +679,13 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
       do{
 	i++;
 	InitialMatrix(trans, len, _model, 1);
-	lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI);
+	regterm = 0;
+	for(j = 0; j < NVAL; j++)
+	  {
+	    regterm += (trans[j] != 0);
+	  }
+ 
+	lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty;
       }while(isinf(lik) && i < 100);
       if(i >= 100) {
 	Rprintf("I didn't find a sensible start within 100 steps. I suspect something's wrong numerically.\n");
@@ -724,22 +737,26 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 
       if(t > maxt/5 && t % SAMPLE == 0)
 	{
+	  regterm = 0;
 	  // if we're burnt in, periodically sample the current parameterisation to an output file
 	  // most appropriate for Bayesian MCMC but useful for all
 	  for(i = 0; i < NVAL; i++)
-	    posterior_output(sampleref, i) = trans[i];
-
+	    {
+	      posterior_output(sampleref, i) = trans[i];
+	      if(trans[i] != 0) regterm++;
+	    }
+	  
 	  // if MCMC, store a set of samples, otherwise the single best
 	  if(searchmethod == 0)
 	    sampleref++;
 	  
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty;
 	  lik1_output.push_back(nlik);
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty;
 	  lik2_output.push_back(nlik);
 	  L_output.push_back(len);
 	  model_output.push_back(_model);
-	  nparam_output.push_back(NVAL);
+	  nparam_output.push_back(regterm);
 	  t_output.push_back(t);
 	}
 
@@ -757,14 +774,14 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		  r = RND;
 		  if(r < MU)
 		    {
-		      if(_autoregularise == 0 || ntrans[i] != 0 || RND < 1./NVAL)
+		      if(_penalty == 0 || ntrans[i] != 0 || RND < 1./NVAL)
 		        ntrans[i] += gsl_ran_gaussian(DELTA);
 		    }
-		  if(_autoregularise && RND < 1./NVAL)
+		  if(_penalty && RND < 1./NVAL)
 		    ntrans[i] = 0;
 		  if(ntrans[i] < _priors(i,0)) ntrans[i] = _priors(i,0);
 		  if(ntrans[i] > _priors(i,1)) ntrans[i] = _priors(i,1);
-		  if(_autoregularise && ntrans[i] == 0) regterm++;
+		  if(ntrans[i] != 0) regterm++;
 		}
 	      if(APM_VERBOSE)
 		{
@@ -793,7 +810,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		  Rprintf("r seeded with %i, first call is %f\n", apm_seed, RND);
 		}
 	    }
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, _model, _PLI) + regterm;
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty;
 
 	  if(APM_VERBOSE)
 	    {
@@ -876,7 +893,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
       if(t % TMODULE == 0 && searchmethod != 1)
 	{
 	  if(!_limited_output)
-	    Rprintf("Iteration %i likelihood %f total-acceptance %f recent-acceptance %f trial-likelihood %f regterm %f\n", t, lik, acc/(acc+rej), lacc/(lacc+lrej), nlik, regterm);
+	    Rprintf("Iteration %i likelihood %f total-acceptance %f recent-acceptance %f trial-likelihood %f penalty %f\n", t, lik, acc/(acc+rej), lacc/(lacc+lrej), nlik, regterm*_penalty);
 	  lacc = lrej = 0;
 	}
     }

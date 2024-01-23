@@ -33,6 +33,7 @@ times = rep(c(0.1, 0.2, 0.3, 0.4, 0.5), 10)
 my.post = HyperTraPS(m.2, initialstates = m.1, 
                      starttimes = times, endtimes = times, 
                      length = 4,
+                     output_transitions = 1,
                      featurenames = c("A", "B", "C", "D", "E")); 
 plotHypercube.summary(my.post)
 plotHypercube.sampledgraph2(my.post, thresh=0.1, use.arc=FALSE, edge.label.size=3) + 
@@ -105,13 +106,28 @@ ggarrange(plotHypercube.timehists(my.post.time.precise, t.thresh=3),
 
 # output selected demos to file
 sf = 2
-png("plot-demos.png", width=1200*sf, height=1200*sf, res=72*sf)
-ggarrange(plotHypercube.sampledgraph2(my.post), plotHypercube.timehists(my.post),
-          plotHypercube.influences(my.post), plotHypercube.timeseries(my.post),
-          plotHypercube.prediction(prediction.step), plotHypercube.prediction(prediction.hidden),
-          plotHypercube.sampledgraph2(my.post.priors), plotHypercube.timehists(my.post.time.uncertain, t.thresh=3),
-          plotHypercube.timehists(my.post.time.inf, t.thresh=3), nrow=3, ncol=3,
-          labels=c("A","B","C","D","E","F","G","H","I"))
+png("plot-demos-si.png", width=800*sf, height=800*sf, res=72*sf)
+ggarrange(plotHypercube.prediction(prediction.step), plotHypercube.prediction(prediction.hidden),
+          plotHypercube.timehists(my.post.time.uncertain, t.thresh=3),
+          plotHypercube.timehists(my.post.time.inf, t.thresh=3),
+          plotHypercube.sampledgraph2(my.post.priors, use.arc = FALSE) + theme(legend.position="none"), 
+          ncol=2, nrow=3,
+          labels=c("A","B","C","D","E"))
+dev.off()
+
+sf = 2
+png("plot-demos-timings-si.png", width=800*sf, height=600*sf, res=72*sf)
+ggarrange(plotHypercube.timehists(my.post.time.precise, t.thresh=3),
+          plotHypercube.timehists(my.post.time.uncertain, t.thresh=3),
+          plotHypercube.timehists(my.post.time.inf, t.thresh=3),
+nrow=2, ncol=2, labels=c("A","B","C"))
+dev.off()
+
+png("plot-demos.png", width=800*sf, height=600*sf, res=72*sf)
+ggarrange(plotHypercube.sampledgraph2(my.post, use.arc = FALSE) + theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1)),
+          plotHypercube.timehists(my.post),
+         plotHypercube.influences(my.post), 
+         plotHypercube.timeseries(my.post), labels=c("A","B","C","D"))
 dev.off()
 
 # write output to files
@@ -183,12 +199,33 @@ ggarrange(plotHypercube.graph(logic.post.m1) + ggtitle("All edges") + theme(lege
           plotHypercube.regularisation(logic.post.m1r))
 dev.off()
 
-ggarrange(plotHypercube.graph(logic.post.m1) + ggtitle("All edges") + theme(legend.position="none"),
-          plotHypercube.graph(logic.post.1) + ggtitle("L") + theme(legend.position="none"),
-          plotHypercube.graph(logic.post.2)+ ggtitle("L^2") + theme(legend.position="none"),
-          plotHypercube.graph(logic.post.3)+ ggtitle("L^3") + theme(legend.position="none"),
-          plotHypercube.graph(logic.post.m1r)+ ggtitle("All edges, regularised") + theme(legend.position="none"),
-          plotHypercube.regularisation(logic.post.m1r))
+g.logic = ggarrange(plotHypercube.graph(logic.post.m1) + theme(legend.position="none"),
+          plotHypercube.graph(logic.post.1) +  theme(legend.position="none"),
+          plotHypercube.graph(logic.post.2)+ theme(legend.position="none"),
+          plotHypercube.graph(logic.post.3)+ theme(legend.position="none"),
+          plotHypercube.graph(logic.post.m1r)+ theme(legend.position="none"),
+          plotHypercube.regularisation(logic.post.m1r),
+          labels=c("i, all edges", "ii, L", "iii, L^2", "iv, L^3", "v, all edges regularised", "vi"))
+
+prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2))
+g.hidden = plotHypercube.prediction(prediction.hidden, max.size = 10)
+g.step = plotHypercube.prediction(prediction.step, max.size=10)
+g.priors = plotHypercube.sampledgraph2(my.post.priors, use.arc = FALSE) + theme(legend.position="none")
+my.post.70 = readHyperinf("VerifyData/test-bigcross-hard-70", postlabel = "VerifyData/test-bigcross-hard-70")
+g.big.70 = ggplot(my.post.70$bubbles, aes(x=Time, y=OriginalIndex, 
+               size=Probability, alpha=Probability)) + 
+  geom_point() + theme_light() + theme(legend.position="none") +
+  scale_alpha_continuous(range=c(0,1))
+
+png("plot-demo-features.png", width=800*sf, height=800*sf, res=72*sf)
+ggarrange(g.logic,
+          ggarrange(
+            g.big.70, 
+            g.priors, 
+            ggarrange(g.hidden, g.step, labels=c("D i", "D ii"), nrow=2),
+            widths = c(1,0.5,1), labels=c("B", "C", ""), nrow=1), 
+          labels=c("A", ""), nrow=2, heights=c(1,0.75))
+dev.off()
 
 #refs = which(logic.post.m1r$regularisation$best != -20)-1
 #data.frame(state=floor(refs/5), locus=refs%%5)
