@@ -1152,7 +1152,7 @@ void ReadPriors(char *priorfile, int NVAL, double *priormin, double *priormax)
 
 void helpandquit(int debug)
 {
-  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--transitionformat\tInterpet obs matrix as paired before-after observations [0]\n--initialstates file.txt\tinitial states file (if not in 'obs') [NA]\n--starttimes file.txt\tstart timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NA]\n--priors file.txt\tspecify prior range for parameters\n--params file.txt\tuse parameterisation in file as initial guess\n--lscale X\t\tscale for observation counts\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--pli\t\t\tuse phenotypic landscape inference [0]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--outputtransitions N\toutput transition matrix (0 no, 1 yes) [1]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
+  printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--transitionformat\tInterpet obs matrix as paired before-after observations [0]\n--initialstates file.txt\tinitial states file (if not in 'obs') [NA]\n--starttimes file.txt\tstart timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NA]\n--priors file.txt\tspecify prior range for parameters\n--params file.txt\tuse parameterisation in file as initial guess\n--lscale X\t\tscale for observation counts\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--pli\t\t\tuse phenotypic landscape inference [0]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--penalty X\t\tpenalise likelihood by X per nonzero param [0]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--outputtransitions N\toutput transition matrix (0 no, 1 yes) [1]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
   if(debug)
     printf("debugging options:\n--verbose\t\tgeneral verbose output [OFF]\n--spectrumverbose\tverbose output for CT calculations [OFF]\n--apmverbose\t\tverbose output for APM approach [OFF]\n--outputperiod N\tperiod of stdout output [100]\n--outputinput\t\toutput the data we read in(note: an undocumented option exists to pass CSV data as the observations file: file should have a header, and two columns of (ignored) before + after sample IDs, before subsequent columns with all \"before\" features followed by all \"after\" features on the same row.  \n\n");
   myexit(0);
@@ -1236,6 +1236,8 @@ int main(int argc, char *argv[])
   int inference;
   double *priormin, *priormax;
   int priors;
+  double penalty;
+  int regterm;
   
   printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
 
@@ -1251,6 +1253,7 @@ int main(int argc, char *argv[])
   searchmethod = 0;
   outputinput = 0;
   regularise = 0;
+  penalty = 0;
   model = 2;
   readparams = 0;
   PLI = 0;
@@ -1305,6 +1308,7 @@ int main(int argc, char *argv[])
       else if(strcmp(argv[i], "--regularise\0") == 0) { regularise = 1; i--; }
       else if(strcmp(argv[i], "--model\0") == 0) { model = atoi(argv[i+1]); }
       else if(strcmp(argv[i], "--priors\0") == 0) { strcpy(priorfile, argv[i+1]); }
+      else if(strcmp(argv[i], "--penalty\0") == 0) { penalty = atof(argv[i+1]); }
 	
       else if(strcmp(argv[i], "--noinference\0") == 0) { inference = 0; i--; }
       else if(strcmp(argv[i], "--noposterior\0") == 0) { posterior_analysis = 0; i--; }
@@ -1335,11 +1339,11 @@ int main(int argc, char *argv[])
 	}
 
       if(PLI == 1) {
-	printf("Running Phenotype Landscape Inference with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
+	printf("Running Phenotype Landscape Inference with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n[penalty]: %.3e\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model, penalty);
       } else if(spectrumtype == 1) {
-	printf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
+	printf("Running HyperTraPS-CT with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n[penalty]: %.3e\n\n", obsfile, timefile, endtimefile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model, penalty);
       } else {
-	printf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n\n", obsfile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model);
+	printf("Running HyperTraPS with:\n[observations-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n[penalty]: %.3e\n\n", obsfile, seed, lengthindex, kernelindex, BANK, losses, apm_type, model, penalty);
       }
       switch(searchmethod) {
       case 0: printf("Using MH MCMC\n"); break;
@@ -1611,13 +1615,19 @@ int main(int argc, char *argv[])
       // compute initial likelihood given this matrix
       time(&start_t);
       gettimeofday(&t_start, NULL);
-      lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
+      // count nonzero parameters for likelihood penalisation
+      regterm = 0;
+      for(i = 0; i < NVAL; i++)
+	{
+	  regterm += (trans[i] != 0);
+	}
+      lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI) - regterm*penalty;
       time(&end_t);
       gettimeofday(&t_stop, NULL);
       diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
       //  diff_t = difftime(end_t, start_t);
       printf("One likelihood estimation took %e seconds.\nInitial likelihood is %e\n", diff_t, lik);
-      lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
+      lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI) - regterm*penalty;
       printf("Second guess is %e\n", lik);
       // MCMC or simulated annealing
       if(searchmethod == 0 || searchmethod == 2)
@@ -1630,10 +1640,20 @@ int main(int argc, char *argv[])
 	  if(PLI) {
 	    printf("With PLI, this often means we're not using enough random walkers to hit every datapoint on the hypercube. If this takes a while to find a suitable start parameterisation, consider re-running with more random walkers.\n");
 	  }
+	  i = 0;
 	  do{
 	    InitialMatrix(trans, len, model, 1);
-	    lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
-	  }while(isinf(lik));
+	    regterm = 0;
+	    for(i = 0; i < NVAL; i++)
+	      {
+		regterm += (trans[i] != 0);
+	      }
+	    lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI) - regterm*penalty;
+	  }while(isinf(lik) && i < 100);
+	   if(i >= 100) {
+	printf("I didn't find a sensible start within 100 steps. I suspect something's wrong numerically.\n");
+	myexit(0);
+      }
 	  printf("OK, starting with initial likelihood %e\n", lik);
 	}
   
@@ -1688,13 +1708,16 @@ int main(int argc, char *argv[])
 	      // most appropriate for Bayesian MCMC but useful for all
 	      fp = fopen(shotstr, "a");
 	      for(i = 0; i < NVAL; i++)
-		fprintf(fp, "%f ", trans[i]);
+		{
+		  fprintf(fp, "%f ", trans[i]);
+		  if(trans[i] != 0) regterm++;
+		}
 	      fprintf(fp, "\n");
 	      fclose(fp);
 	      fp = fopen(likstr, "a");
-	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
-	      fprintf(fp, "%i,%i,%i,%i,%f,", t, len, model, NVAL, nlik);
-	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
+	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI) - regterm*penalty;
+	      fprintf(fp, "%i,%i,%i,%i,%f,", t, len, model, regterm, nlik);
+	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI) - regterm*penalty;
 	      fprintf(fp, "%f\n", nlik);
 	      fclose(fp);
 	    }
@@ -1702,7 +1725,7 @@ int main(int argc, char *argv[])
 	  // MCMC or simulated annealing
 	  if(searchmethod == 0 || searchmethod == 2)
 	    {
-
+	      regterm = 0;
 	      if(apm_type == 0 || t%2 == 0)
 		{
 		  // apply a perturbation to the existing parameterisation
@@ -1713,10 +1736,16 @@ int main(int argc, char *argv[])
 		      r = RND;
 		      if(r < MU)
 			{
-			  ntrans[i] += gsl_ran_gaussian(DELTA);
+			  // if we're not penalising params, or this param was already nonzero, or we pass a random draw for zero -> nonzero step
+			  if(penalty == 0 || ntrans[i] != 0 || RND < 1./NVAL)
+ 			    ntrans[i] += gsl_ran_gaussian(DELTA);
 			}
+		      // if we're penalising params and we pass a random draw for nonzero -> zero step
+		      if(penalty && RND < 1./NVAL)
+			ntrans[i] = 0;
 		      if(ntrans[i] < priormin[i]) ntrans[i] = priormin[i];
 		      if(ntrans[i] > priormax[i]) ntrans[i] = priormax[i];
+		      if(ntrans[i] != 0) regterm++;
 		    }
 		  if(APM_VERBOSE)
 		    {
@@ -1745,7 +1774,7 @@ int main(int argc, char *argv[])
 		      printf("r seeded with %i, first call is %f\n", apm_seed, RND);
 		    }
 		}
-	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI);
+	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI) - regterm*penalty;
 
 	      if(APM_VERBOSE)
 		{
@@ -1825,7 +1854,7 @@ int main(int argc, char *argv[])
 	  // output information periodically
 	  if(t % TMODULE == 0 && searchmethod != 1)
 	    {
-	      printf("Iteration %i likelihood %f total-acceptance %f recent-acceptance %f trial-likelihood %f\n", t, lik, acc/(acc+rej), lacc/(lacc+lrej), nlik);
+	      printf("Iteration %i likelihood %f total-acceptance %f recent-acceptance %f trial-likelihood %f penalty %f\n", t, lik, acc/(acc+rej), lacc/(lacc+lrej), nlik, regterm*penalty);
 	      lacc = lrej = 0;
 	    }
 	}

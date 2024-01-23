@@ -344,10 +344,10 @@ plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, contin
   }
 }
 
-plotHypercube.influences = function(my.post, featurenames=c(""), use.regularised = FALSE, reorder = FALSE, upper.right = FALSE) {
+plotHypercube.influences = function(my.post, feature.names=c(""), use.regularised = FALSE, use.final = FALSE, reorder = FALSE, upper.right = FALSE) {
   plot.df = data.frame()
-  if(length(featurenames) > 1) {
-    labels = featurenames
+  if(length(feature.names) > 1) {
+    labels = feature.names
   } else {
     labels = 1:my.post$L
   }
@@ -356,6 +356,9 @@ plotHypercube.influences = function(my.post, featurenames=c(""), use.regularised
       ref = (i-1)*my.post$L + j
       if(use.regularised == TRUE) {
         ref.mean = as.numeric(my.post$regularisation$best[ref])
+        ref.sd = 0
+      } else if(use.final == TRUE) {
+        ref.mean = mean(my.post$posterior.samples[nrow(my.post$posterior.samples),ref])
         ref.sd = 0
       } else {
         ref.mean = mean(my.post$posterior.samples[,ref])
