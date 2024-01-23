@@ -142,12 +142,10 @@ dev.off()
 #     from the posterior? I do not see any (obvious) differences between the plots
 cancer.more.samples = PosteriorAnalysis(cancer.post.autoreg, samples_per_row = 1000)
 
-# FIXME: sampledgraph3 is used here for the first time and not mentioned in the README
-#    either
-plotHypercube.sampledgraph3(cancer.post.autoreg, use.arc = FALSE, node.labels = FALSE, 
+plotHypercube.sampledgraph2(cancer.post.autoreg, use.arc = FALSE, node.labels = FALSE, 
                             no.times = TRUE, truncate = 6, edge.label.size=4, thresh = 0.01,
                             feature.names = AML[[4]])
-plotHypercube.sampledgraph3(cancer.more.samples, use.arc = FALSE, node.labels = FALSE, 
+plotHypercube.sampledgraph2(cancer.more.samples, use.arc = FALSE, node.labels = FALSE, 
                             no.times = TRUE, truncate = 6, edge.label.size=2, thresh = 0.02,
                             feature.names = AML[[4]])
 
@@ -192,9 +190,9 @@ dev.off()
 big.c.more = PosteriorAnalysis(big.c.post, samples_per_row = 100)
 
 # followup plots
-plotHypercube.sampledgraph3(big.c.post, use.arc = FALSE, node.labels = FALSE, feature.names = genes, 
+plotHypercube.sampledgraph2(big.c.post, use.arc = FALSE, node.labels = FALSE, feature.names = genes, 
                             no.times = TRUE, thresh=0.02, truncate = 3)
 
-plotHypercube.sampledgraph3(big.c.more, use.arc = FALSE, node.labels = FALSE, feature.names = genes, 
+plotHypercube.sampledgraph2(big.c.more, use.arc = FALSE, node.labels = FALSE, feature.names = genes, 
                             no.times = TRUE, thresh=0.005, truncate = 3)
 
