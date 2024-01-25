@@ -13,7 +13,7 @@ if (simulate_from_evamtools) {
   # Simplified from generate_sample_from_dag
   sim_data_evam <- function(edges,
                             noise = 0.01,
-                            N = 10000) {
+                            N = 500) {
     parent_set <- evamtools:::parent_set_from_edges(edges)
     gene_names <- names(parent_set)
     n_genes <- length(parent_set)
@@ -47,6 +47,8 @@ if (simulate_from_evamtools) {
                        Lambdas = c(1.6, 1.8, 2.2, rep(2.0, 3)))
   sim_X3 <- sim_data_evam(dag_X3)
 
+  save(file = "sim_XOR_AND_OR-X3.RData", sim_X3, sim_XOR_AND_OR)
+  
   # Simplified from plot_evam
   plot_model <- function(x, main = "") {
     method_info <- igraph::graph_from_data_frame(x[, c("From", "To")])
@@ -75,7 +77,6 @@ if (simulate_from_evamtools) {
   title("X3: \nTrue transitions between genotypes")
   dev.off()
   
-  # save(file = "sim_XOR_AND_OR-X3.RData", sim_X3, sim_XOR_AND_OR)
 } else {
   # Load RData. Otherwise, provide the RDS files downloaded from evamtools
   load("sim_XOR_AND_OR-X3.RData")
@@ -107,7 +108,7 @@ if (run_analyses) {
                         featurenames = c("A", "B", "C", "D"),
                         length = 4,
                         kernel = 3,
-                        regularise = 1,
+                        penalty = 1,
                         limited_output = 1),
                       SIMPLIFY = FALSE,
                       mc.cores = detectCores()
@@ -124,7 +125,7 @@ if (run_analyses) {
                          featurenames = c("A", "B", "C", "D", "E"),
                          length = 4,
                          kernel = 3,
-                         regularise = 1,
+                         penalty = 1,
                          limited_output = 1),
                        SIMPLIFY = FALSE,
                        mc.cores = detectCores()
