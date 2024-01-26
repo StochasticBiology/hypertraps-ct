@@ -19,12 +19,13 @@ if (simulate_from_evamtools) {
     n_genes <- length(parent_set)
     dag_trm <- evamtools:::HESBCN_model_2_output(edges, parent_set)$HESBCN_trans_rate_mat
     dag_probs <- evamtools:::probs_from_trm(dag_trm)
-    tmp_samples_as_vector <- evamtools:::genot_probs_2_pD_ordered_sample(x = dag_probs,
-                                                                         ngenes = n_genes,
-                                                                         gene_names = gene_names,
-                                                                         N = N,
-                                                                         out = "vector"
-                                                                         )
+    tmp_samples_as_vector <-
+      evamtools:::genot_probs_2_pD_ordered_sample(x = dag_probs,
+                                                  ngenes = n_genes,
+                                                  gene_names = gene_names,
+                                                  N = N,
+                                                  out = "vector"
+                                                  )
     data_with_noise <- evamtools:::genotypeCounts_to_data(tmp_samples_as_vector,
                                                           e = noise)
     csd_counts <- evamtools:::data_to_counts(data_with_noise, out="data.frame")
@@ -80,13 +81,13 @@ if (simulate_from_evamtools) {
 } else {
   # Load RData. Otherwise, provide the RDS files downloaded from evamtools
   load("sim_XOR_AND_OR-X3.RData")
-  ## d_xao <- readRDS("DAG_A_O_X_data.rds")$data
   ## d_x3  <- readRDS(DAG_X3_data.rds)$data
-  d_xao <- sim_XOR_AND_OR$data
+  ## d_xao <- readRDS("DAG_A_O_X_data.rds")$data
   d_x3  <- sim_X3$data
+  d_xao <- sim_XOR_AND_OR$data
   # Genotype frequencies
-  sim_XOR_AND_OR$csd_counts
   sim_X3$csd_counts
+  sim_XOR_AND_OR$csd_counts
 }
 
 pwd <- getwd()
@@ -94,46 +95,100 @@ setwd("../.")
 source("hypertraps.R")
 setwd(pwd)
 
-## Analyses take about 6 and 8 minutes for x3 and xao
+## Analyses take about 50 and 80 minutes for x3 and xao
 ## datasets. The pre-run analyses are available as RData files
 run_analyses <- FALSE
 if (run_analyses) {
   library(parallel)
   ## (We could parallelise over data set too. Not done here
   ## to keep the examples separate)
-  date()
   x3.runs <- mcmapply(HyperTraPS,
                       model = c(2, 3, -1),
                       MoreArgs = list(
                         obs = d_x3,
                         featurenames = c("A", "B", "C", "D"),
-                        length = 4,
+                        length = 5,
                         kernel = 3,
                         penalty = 1,
                         limited_output = 1),
                       SIMPLIFY = FALSE,
                       mc.cores = detectCores()
                       )
-  date()
   save(file = "x3.runs.RData", x3.runs)
+
   xao.runs <- mcmapply(HyperTraPS,
                        model = c(2, 3, -1),
                        MoreArgs = list(
                          obs = d_xao,
                          featurenames = c("A", "B", "C", "D", "E"),
-                         length = 4,
+                         length = 5,
                          kernel = 3,
                          penalty = 1,
                          limited_output = 1),
                        SIMPLIFY = FALSE,
                        mc.cores = detectCores()
                        )
-  date()
   save(file = "xao.runs.RData", xao.runs)
+
+  ## Stepwise regularise. These take about 50 and 80 minutes
+  x3_step.runs <- mcmapply(HyperTraPS,
+                           model = c(2, 3, -1),
+                          MoreArgs = list(
+                            obs = d_x3,
+                            featurenames = c("A", "B", "C", "D"),
+                            length = 5,
+                            kernel = 3,
+                            penalty = 0,
+                            regularise = 1,
+                            limited_output = 1),
+                          SIMPLIFY = FALSE,
+                          mc.cores = detectCores())
+  save(file = "x3_step.runs.RData", x3_step.runs)
+
+  xao_step.runs <- mcmapply(HyperTraPS,
+                            model = c(2, 3, -1),
+                           MoreArgs = list(
+                             obs = d_xao,
+                             featurenames = c("A", "B", "C", "D", "E"),
+                             length = 5,
+                             kernel = 3,
+                             penalty = 0,
+                             regularise = 1,
+                             limited_output = 1),
+                           SIMPLIFY = FALSE,
+                           mc.cores = detectCores())
+  save(file = "xao_step.runs.RData", xao_step.runs)
 } else {
   load("x3.runs.RData")
   load("xao.runs.RData")
+  load("x3_step.runs.RData")
+  load("xao_step.runs.RData")
 }
+
+
+## Check traces before continuing
+do.call(ggarrange, lapply(x3.runs, plotHypercube.lik.trace))
+do.call(ggarrange, lapply(x3_step.runs, plotHypercube.lik.trace))
+do.call(ggarrange, lapply(xao.runs, plotHypercube.lik.trace))
+do.call(ggarrange, lapply(xao_step.runs, plotHypercube.lik.trace))
+
+## Easier names
+x3.l2 <- x3.runs[[1]]
+x3.l3 <- x3.runs[[2]]
+x3.m1 <- x3.runs[[3]]
+
+x3_step.l2 <- x3_step.runs[[1]]
+x3_step.l3 <- x3_step.runs[[2]]
+x3_step.m1 <- x3_step.runs[[3]]
+
+xao.l2 <- xao.runs[[1]]
+xao.l3 <- xao.runs[[2]]
+xao.m1 <- xao.runs[[3]]
+
+xao_step.l2 <- xao_step.runs[[1]]
+xao_step.l3 <- xao_step.runs[[2]]
+xao_step.m1 <- xao_step.runs[[3]]
+
 
 
 ########################################
@@ -142,31 +197,15 @@ if (run_analyses) {
 ##
 ########################################
 
-## Easier names
-x3.l2 <- x3.runs[[1]]
-x3.l3 <- x3.runs[[2]]
-x3.m1 <- x3.runs[[3]]
 
-## Check traces
-do.call(ggarrange, lapply(x3.runs, plotHypercube.lik.trace))
-
-## Influences. The results seem very different from those of MHN
-## (compare with p. 1 of mhn_hesbcn_plots.pdf)
-plotHypercube.influences(x3.l2,
-                         feature.names = c("A", "B", "C", "D"),
-                         upper.right = TRUE)
-
-## FIXME: I don't understand the number of parameters for L = -1
-dim(x3.runs[[3]]$posterior.samples) ## 4^3 = 64.
-## But the number of possible transitions is 32 = 2^(4-1) * 4
-## Similarly for the example in the Rmd vignette.
-## I am missing something obvious here.
-
-lapply(x3.runs, function(x) dim(x$posterior.samples))
+## Regularisation
+do.call(ggarrange, lapply(x3_step.runs, plotHypercube.regularisation))
 
 
 
 ## As in cancer-examples.R, get more samples from the regularised parameterisation
+## To make results comparable between stepwise regularisation and penalty =1,
+## we will represent results using the output from PosteriorAnalysis.
 
 ## FIXME: It is unclear to me if all plots are using the regularised results:
 ## see this comment in cancer-examples.R: "add use.regularised to all plot functions"
@@ -187,34 +226,77 @@ x3.m1.more.samples <- PosteriorAnalysis(x3.m1,
                                         featurenames = c("A", "B", "C", "D"),
                                         samples_per_row = 1000)
 
+## Same as above. Note "use_regularised = TRUE"
+x3_step.l2.more.samples <- PosteriorAnalysis(x3_step.l2,
+                                             featurenames = c("A", "B", "C", "D"),
+                                             samples_per_row = 1000,
+                                             use_regularised = TRUE)
+
+x3_step.l3.more.samples <- PosteriorAnalysis(x3_step.l3,
+                                             featurenames = c("A", "B", "C", "D"),
+                                             samples_per_row = 1000,
+                                             use_regularised = TRUE)
+
+x3_step.m1.more.samples <- PosteriorAnalysis(x3_step.m1,
+                                             featurenames = c("A", "B", "C", "D"),
+                                             samples_per_row = 1000,
+                                             use_regularised = TRUE)
 
 
-## FIXME: Using original fit or PosteriorAnalysis does not seem to make much
-## difference
+## FIXME: I don't understand the number of parameters for L = -1
+dim(x3.runs[[3]]$posterior.samples) ## 4^3 = 64.
+## But the number of possible transitions is 32 = 2^(4-1) * 4
+## Similarly for the example in the Rmd vignette.
+## I am missing something obvious here.
+lapply(x3.runs, function(x) dim(x$posterior.samples))
+lapply(x3_step.runs, function(x) dim(x$posterior.samples))
+
+
+####### Comparing stepwise regularisation with penalty = 1
+
+## Influences. The results seem very different from those of MHN
+## (compare with p. 1 of mhn_hesbcn_plots.pdf) and between
+## types of regularisation
+## FIXME: is this difference between regularisations expected?
+ggarrange(plotHypercube.influences(x3.l2.more.samples,
+                                   feature.names = c("A", "B", "C", "D"),
+                                   upper.right = TRUE),
+          plotHypercube.influences(x3_step.l2.more.samples,
+                                   feature.names = c("A", "B", "C", "D"),
+                                   upper.right = TRUE,
+                                   use.regularised = TRUE)
+          )
+
 ggarrange(
-  plotHypercube.sampledgraph2(x3.l2,  no.times = TRUE, use.arc = FALSE,
-                              node.label.size = 4, edge.label.size = 0),
   plotHypercube.sampledgraph2(x3.l2.more.samples, no.times = TRUE,
                               use.arc = FALSE, node.label.size = 4,
-                              edge.label.size = 0)) 
+                              edge.label.size = 0),
+  plotHypercube.sampledgraph2(x3_step.l2.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0)
+)
 
 ggarrange(
-  plotHypercube.sampledgraph2(x3.l3,  no.times = TRUE, use.arc = FALSE,
-                              node.label.size = 4, edge.label.size = 0),
   plotHypercube.sampledgraph2(x3.l3.more.samples, no.times = TRUE,
                               use.arc = FALSE, node.label.size = 4,
-                              edge.label.size = 0))
+                              edge.label.size = 0),
+  plotHypercube.sampledgraph2(x3_step.l3.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0)
+)
 
 ggarrange(
-  plotHypercube.sampledgraph2(x3.m1,  no.times = TRUE, use.arc = FALSE,
-                              node.label.size = 4, edge.label.size = 0),
   plotHypercube.sampledgraph2(x3.m1.more.samples, no.times = TRUE,
                               use.arc = FALSE, node.label.size = 4,
-                              edge.label.size = 0))
+                              edge.label.size = 0),
+  plotHypercube.sampledgraph2(x3_step.m1.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0)
+) 
 
 
-## The three models, regularised.
-## L2 is different from MHN
+
+## The three models, penalty = 1.
 ## The full model captures the true dependency patterns for D (fourth locus)
 ## on second acquisition, but then it is incorrect on third acquisition
 ## (non-negligible transitions to 1011, 0111, 1101) and
@@ -232,18 +314,27 @@ ggarrange(
                               edge.label.size = 0) + ggtitle("Full")
 )
 
+## The three models, stepwise regularisation. This improves upon the penalty=1
+## model in not showing transitions to 1011 (though 0111, 1101, and 1111 are
+## shown).
+ggarrange(
+  plotHypercube.sampledgraph2(x3_step.l2.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0) + ggtitle("L^2"),
+  plotHypercube.sampledgraph2(x3_step.l3.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0) + ggtitle("L^3"),
+  plotHypercube.sampledgraph2(x3_step.m1.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0) + ggtitle("Full")
+)
 
-####### Bubbles.
+
+
 ## All of them think D can be acquired last, but that is not possible.
 ## All of them, but mostly L^2 and L^3, also incorrectly think D can be acquired
-## first.
-## (These mistakes not surprising, given previous plot)
+## first. (These mistakes are not surprising, given previous plot)
 
-ggarrange(
-  plotHypercube.bubbles(x3.l2) + ggtitle("L^2"),
-  plotHypercube.bubbles(x3.l3) + ggtitle("L^3"),
-  plotHypercube.bubbles(x3.m1) + ggtitle("Full")
-)
 
 ## FIXME: Is it correct to call it on the output from
 ## PosteriorAnalysis? No major changes, though
@@ -253,10 +344,13 @@ ggarrange(
   plotHypercube.bubbles(x3.m1.more.samples) + ggtitle("Full")
 )
 
-## FIXME: As above: can we use PosteriorAnalysis output here?
+## FIXME: As above: can we use PosteriorAnalysis output here?  The full model
+## seems to be getting wrong the acquisition of the fourth character, in contrast
+## to L^2 and L^3, where that acquisition takes place a very long time after the
+## others.
 ggarrange(
   plotHypercube.timeseries(x3.l2.more.samples,
-                         featurenames = LETTERS[1:4]) + ggtitle("L^2"),
+                           featurenames = LETTERS[1:4]) + ggtitle("L^2"),
   plotHypercube.timeseries(x3.l3.more.samples,
                            featurenames = LETTERS[1:4]) + ggtitle("L^3"),
   plotHypercube.timeseries(x3.m1.more.samples,
@@ -264,21 +358,9 @@ ggarrange(
 )
 
 
-## Trying to see how the three plots complement each other
-## So D is gained last, but a very long time after all others
-## (bottom plot: 60, compared to value less than 0.5)
-## which turns this last transition suspicious?
-ggarrange(
-    plotHypercube.bubbles(x3.l2.more.samples) + ggtitle("L^2"),
-    plotHypercube.timeseries(x3.l2.more.samples,
-                             featurenames = LETTERS[1:4]) + ggtitle("L^2"),
-    plotHypercube.sampledgraph2(x3.l2.more.samples, no.times = FALSE,
-                                featurenames = LETTERS[1:4],
-                                use.arc = FALSE, node.label.size = 4,
-                                edge.label.size = 4)
-)
-
-## Same thing
+## L^3 is doing a better job than Full, even when it cannot really
+## represent the true dependency. Acquiring D last, which is not possible
+## under the true model, are happening a long time after the rest.
 ggarrange(
   plotHypercube.bubbles(x3.l3.more.samples) + ggtitle("L^3"),
   plotHypercube.timeseries(x3.l3.more.samples,
@@ -288,9 +370,7 @@ ggarrange(
                               use.arc = FALSE, node.label.size = 4,
                               edge.label.size = 4)
 )
-
-## Even more clear: all gains of D that we know are not possible
-## have a time 10^8.
+## But the full model is missing this.
 ggarrange(
   plotHypercube.bubbles(x3.m1.more.samples) + ggtitle("Full"),
   plotHypercube.timeseries(x3.m1.more.samples,
@@ -301,11 +381,34 @@ ggarrange(
                               edge.label.size = 4)
 )
 
-## Easier to see times if single plot
-plotHypercube.sampledgraph2(x3.m1.more.samples, no.times = FALSE,
-                            featurenames = LETTERS[1:4],
-                            use.arc = FALSE, node.label.size = 4,
-                            edge.label.size = 4)
+## Repeat the above with stepwise regularisation
+ggarrange(
+  plotHypercube.bubbles(x3_step.l2.more.samples) + ggtitle("L^2"),
+  plotHypercube.bubbles(x3_step.l3.more.samples) + ggtitle("L^3"),
+  plotHypercube.bubbles(x3_step.m1.more.samples) + ggtitle("Full")
+)
+
+## Here, the full model is doing a much better job. The true forbidden
+## acquisitions occur after very long times.
+ggarrange(
+  plotHypercube.timeseries(x3_step.l2.more.samples,
+                           featurenames = LETTERS[1:4]) + ggtitle("L^2"),
+  plotHypercube.timeseries(x3_step.l3.more.samples,
+                           featurenames = LETTERS[1:4]) + ggtitle("L^3"),
+  plotHypercube.timeseries(x3_step.m1.more.samples,
+                           featurenames = LETTERS[1:4]) + ggtitle("Full")
+)
+
+## It can be confirmed here: all gains of D that we know are not possible
+## have times of occurrence several orders of magnitude larger than the others.
+ggarrange(
+  plotHypercube.timeseries(x3_step.m1.more.samples,
+                           featurenames = LETTERS[1:4]) + ggtitle("Full"),
+  plotHypercube.sampledgraph2(x3_step.m1.more.samples, no.times = FALSE,
+                              featurenames = LETTERS[1:4],
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 4)
+)
 
 
 ## FIXME: Would it be possible to filter in sampledgraph* plots by time, so that
@@ -329,82 +432,76 @@ plotHypercube.sampledgraph2(x3.m1.more.samples, no.times = FALSE,
 ##
 ########################################
 
-## Follows the same logic as for x3.
-
-## Check traces
-do.call(ggarrange, lapply(xao.runs, plotHypercube.lik.trace))
-
 ## Regularisation
-do.call(ggarrange, lapply(xao.runs, plotHypercube.regularisation))
+do.call(ggarrange, lapply(xao_step.runs, plotHypercube.regularisation))
 
-## Influences. The results seem very more similar to from those of MHN
-## (compare with p. 1 of mhn_hesbcn_plots.pdf)
-plotHypercube.influences(xao.runs[[1]],
-                         feature.names = c("A", "B", "C", "D", "E"),
-                         upper.right = TRUE)
-
-## Easier names
-xao.l2 <- xao.runs[[1]]
-xao.l3 <- xao.runs[[2]]
-xao.m1 <- xao.runs[[3]]
-
-
-
+## Get samples from the posterior for all models.
 xao.l2.more.samples <- PosteriorAnalysis(xao.l2,
                                          featurenames = c("A", "B", "C", "D", "E"),
-                                         samples_per_row = 1000,
-                                        use_regularised = 1)
+                                         samples_per_row = 1000)
 
 xao.l3.more.samples <- PosteriorAnalysis(xao.l3,
                                          featurenames = c("A", "B", "C", "D", "E"),
-                                         samples_per_row = 1000,
-                                        use_regularised = 1)
+                                         samples_per_row = 1000)
 
 xao.m1.more.samples <- PosteriorAnalysis(xao.m1,
                                          featurenames = c("A", "B", "C", "D", "E"),
-                                         samples_per_row = 1000,
-                                        use_regularised = 1)
+                                         samples_per_row = 1000)
 
-## Regularisation does not seem to make much of a difference
+xao_step.l2.more.samples <- PosteriorAnalysis(xao_step.l2,
+                                              featurenames = c("A", "B", "C", "D", "E"),
+                                              samples_per_row = 1000,
+                                              use_regularised = 1)
+
+xao_step.l3.more.samples <- PosteriorAnalysis(xao_step.l3,
+                                              featurenames = c("A", "B", "C", "D", "E"),
+                                              samples_per_row = 1000,
+                                              use_regularised = 1)
+
+xao_step.m1.more.samples <- PosteriorAnalysis(xao_step.m1,
+                                              featurenames = c("A", "B", "C", "D", "E"),
+                                              samples_per_row = 1000,
+                                              use_regularised = 1)
+
+## Influences. These look more similar to MHN, and more similar
+## between themselves, than in the x3 example.
+ggarrange(plotHypercube.influences(xao.l2.more.samples,
+                                   feature.names = c("A", "B", "C", "D", "E"),
+                                   upper.right = TRUE),
+          plotHypercube.influences(xao_step.l2.more.samples,
+                                   feature.names = c("A", "B", "C", "D", "E"),
+                                   upper.right = TRUE,
+                                   use.regularised = TRUE)
+          )
+
+## In the rest, we focus on the L^3 and Full model, since we know the L^2
+## cannot adequately recover the true model
+
+## L^3
+## Both types of regularisation do a fairly good job of showing mostly only genotypes that can exist
+## for genotypes with 1, 2, and 3 mutations, and for 4 mutations most prob.
+## flux goes through 11110, which is the only four mutations genotype that can
+## exist.
 ggarrange(
-  plotHypercube.sampledgraph2(xao.l2,  no.times = TRUE, use.arc = FALSE,
-                              node.label.size = 4, edge.label.size = 0),
-  plotHypercube.sampledgraph3(xao.l2.more.samples, no.times = TRUE,
+  plotHypercube.sampledgraph2(xao.l3.more.samples, no.times = TRUE,
                               use.arc = FALSE, node.label.size = 4,
-                              edge.label.size = 0)) 
-
-ggarrange(
-  plotHypercube.sampledgraph2(xao.l3,  no.times = TRUE, use.arc = FALSE,
-                              node.label.size = 4, edge.label.size = 0),
-  plotHypercube.sampledgraph3(xao.l3.more.samples, no.times = TRUE,
+                              edge.label.size = 0),
+  plotHypercube.sampledgraph2(xao_step.l3.more.samples, no.times = TRUE,
                               use.arc = FALSE, node.label.size = 4,
-                              edge.label.size = 0))
-
-ggarrange(
-  plotHypercube.sampledgraph2(xao.m1,  no.times = TRUE, use.arc = FALSE,
-                              node.label.size = 4, edge.label.size = 0),
-  plotHypercube.sampledgraph3(xao.m1.more.samples, no.times = TRUE,
-                              use.arc = FALSE, node.label.size = 4,
-                              edge.label.size = 0))
-
-## The three models, regularised.
-## All models capture the key patterns, but L^3 does a better job than Full
-
-ggarrange(
-  plotHypercube.sampledgraph3(xao.l2.more.samples, no.times = TRUE,
-                              use.arc = FALSE, node.label.size = 4,
-                              edge.label.size = 0) + ggtitle("L^2"),
-  plotHypercube.sampledgraph3(xao.l3.more.samples, no.times = TRUE,
-                              use.arc = FALSE, node.label.size = 4,
-                              edge.label.size = 0) + ggtitle("L^3"),
-  plotHypercube.sampledgraph3(xao.m1.more.samples, no.times = TRUE,
-                              use.arc = FALSE, node.label.size = 4,
-                              edge.label.size = 0) + ggtitle("Full")
+                              edge.label.size = 0)
 )
+## Full: same as above
+ggarrange(
+  plotHypercube.sampledgraph2(xao.m1.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0),
+  plotHypercube.sampledgraph2(xao_step.m1.more.samples, no.times = TRUE,
+                              use.arc = FALSE, node.label.size = 4,
+                              edge.label.size = 0)
+) 
 
 ## Bubbles.
-## All models are similar. In contrast to x3, there are no ordinal
-## times precluded for any event in the true model.
+## All models are similar. 
 ggarrange(
   plotHypercube.bubbles(xao.l2.more.samples) + ggtitle("L^2"),
   plotHypercube.bubbles(xao.l3.more.samples) + ggtitle("L^3"),
@@ -412,43 +509,24 @@ ggarrange(
 )
 
 
-## Using three plots together for each model. Again, the time to the forbidden
-## transition has a much larger time.
-ggarrange(
-  plotHypercube.bubbles(xao.l2.more.samples) + ggtitle("L^2"),
-  plotHypercube.timeseries(xao.l2.more.samples,
-                           feature.names = LETTERS[1:5]) + ggtitle("L^2"),
-  plotHypercube.sampledgraph3(xao.l2.more.samples, no.times = FALSE,
-                              feature.names = LETTERS[1:5],
-                              use.arc = FALSE, node.label.size = 4,
-                              edge.label.size = 4)
-)
-
-## Same thing
+## Generally OK but many forbidden transitions do not have huge times.
 ggarrange(
   plotHypercube.bubbles(xao.l3.more.samples) + ggtitle("L^3"),
   plotHypercube.timeseries(xao.l3.more.samples,
-                           feature.names = LETTERS[1:5]) + ggtitle("L^3"),
-  plotHypercube.sampledgraph3(xao.l3.more.samples, no.times = FALSE,
-                              feature.names = LETTERS[1:5],
+                           featurenames = LETTERS[1:5]) + ggtitle("L^3"),
+  plotHypercube.sampledgraph2(xao.l3.more.samples, no.times = FALSE,
+                              featurenames = LETTERS[1:5],
                               use.arc = FALSE, node.label.size = 4,
                               edge.label.size = 4)
 )
 
-## Even more clear: all gains of D that we know are not possible
-## have a time 10^8.
+## Generally OK but many forbidden transitions do not have huge times.
 ggarrange(
   plotHypercube.bubbles(xao.m1.more.samples) + ggtitle("Full"),
   plotHypercube.timeseries(xao.m1.more.samples,
-                           feature.names = LETTERS[1:5]) + ggtitle("Full"),
-  plotHypercube.sampledgraph3(xao.m1.more.samples, no.times = FALSE,
-                              feature.names = LETTERS[1:5],
+                           featurenames = LETTERS[1:5]) + ggtitle("Full"),
+  plotHypercube.sampledgraph2(xao.m1.more.samples, no.times = FALSE,
+                              featurenames = LETTERS[1:5],
                               use.arc = FALSE, node.label.size = 4,
                               edge.label.size = 4)
 )
-
-
-
-
-
-## FIXME: evamTools should give bubble plots for all models and for the true model 

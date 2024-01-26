@@ -1,4 +1,5 @@
-Two examples of data simulated under models expressed as DAGs with XOR, AND, OR relationships.
+Two examples of data simulated under models expressed as DAGs with XOR, AND, OR relationships. We use a sample size used of 500, on the upper range of sample sizes for many cancer cross-sectional data sets. This sample size, however, makes it really hard to detect some patterns. In fact, H-ESBCN cannot detect the true patterns (even when the model was generated under H-ESBCN). When HypertTraPS-ct was run with much larger samples sizes (not shown here) it was able to achieve much better performance.
+
 
 Files:
 - XOR-AND-OR-X3-example.R
