@@ -9,15 +9,15 @@ d_x3  <- sim_X3$data
 ## Results from HESBCN for d_xao are not always the same
 ## i.e., there is some run-to-run variability despite the large
 ## number of iterations
-r_xao <- evam(d_xao, methods = c("MHN", "HESBCN"),
-              hesbcn_opts = list(MCMC_iter = 5e6))
-
 r_x3 <- evam(d_x3, methods = c("MHN", "HESBCN"),
              hesbcn_opts = list(MCMC_iter = 5e6))
 
+r_xao <- evam(d_xao, methods = c("MHN", "HESBCN"),
+              hesbcn_opts = list(MCMC_iter = 5e6))
+
 pdf("mhn_hesbcn_plots.pdf", height = 12, width = 12)
-plot_evam(r_xao, top_paths = 10, methods = c("MHN", "HESBCN"))
 plot_evam(r_x3, top_paths = 10, methods = c("MHN", "HESBCN"))
+plot_evam(r_xao, top_paths = 10, methods = c("MHN", "HESBCN"))
 dev.off()
 
 save(file = "output_mhn_hesbcn.RData", r_xao, r_x3)

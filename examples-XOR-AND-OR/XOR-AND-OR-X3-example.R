@@ -69,12 +69,12 @@ if (simulate_from_evamtools) {
   pdf(file = "true_models.pdf", width = 11, height = 11)
   par(mfrow = c(2, 2))
   par(oma = c(2, 2, 2, 2))
-  plot_model(dag_XOR_AND_OR, "XOR_AND_OR")
   plot_model(dag_X3, "X3")
-  plot_hypercube_transitions(dag_XOR_AND_OR)
-  title("XOR_AND_OR: \nTrue transitions between genotypes")
+  plot_model(dag_XOR_AND_OR, "XOR_AND_OR")
   plot_hypercube_transitions(dag_X3)
   title("X3: \nTrue transitions between genotypes")
+  plot_hypercube_transitions(dag_XOR_AND_OR)
+  title("XOR_AND_OR: \nTrue transitions between genotypes")
   dev.off()
   
 } else {
