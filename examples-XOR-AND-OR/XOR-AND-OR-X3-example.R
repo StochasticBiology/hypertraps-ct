@@ -94,13 +94,14 @@ setwd("../.")
 source("hypertraps.R")
 setwd(pwd)
 
-## Analyses take about 2 and 5 hours for x3 and xao
-## datasets. The pre-run analyses are available as an RData
+## Analyses take about 6 and 8 minutes for x3 and xao
+## datasets. The pre-run analyses are available as RData files
 run_analyses <- FALSE
 if (run_analyses) {
   library(parallel)
   ## (We could parallelise over data set too. Not done here
   ## to keep the examples separate)
+  date()
   x3.runs <- mcmapply(HyperTraPS,
                       model = c(2, 3, -1),
                       MoreArgs = list(
@@ -113,11 +114,8 @@ if (run_analyses) {
                       SIMPLIFY = FALSE,
                       mc.cores = detectCores()
                       )
+  date()
   save(file = "x3.runs.RData", x3.runs)
-
-  
-  ## L = 4 is taking > 70 h, and is probably not sensible
-  ## The runs here take about 4.5 hours (2, 4.5 and 3.5)
   xao.runs <- mcmapply(HyperTraPS,
                        model = c(2, 3, -1),
                        MoreArgs = list(
@@ -130,10 +128,11 @@ if (run_analyses) {
                        SIMPLIFY = FALSE,
                        mc.cores = detectCores()
                        )
+  date()
   save(file = "xao.runs.RData", xao.runs)
 } else {
-  load("xao.runs.RData")
   load("x3.runs.RData")
+  load("xao.runs.RData")
 }
 
 
@@ -143,16 +142,18 @@ if (run_analyses) {
 ##
 ########################################
 
+## Easier names
+x3.l2 <- x3.runs[[1]]
+x3.l3 <- x3.runs[[2]]
+x3.m1 <- x3.runs[[3]]
+
 ## Check traces
-## The second one might benefit from a longer run?
 do.call(ggarrange, lapply(x3.runs, plotHypercube.lik.trace))
 
-## Regularisation
-do.call(ggarrange, lapply(x3.runs, plotHypercube.regularisation))
-
 ## Influences. The results seem very different from those of MHN
-## (compare with p.2 of mhn_hesbcn_plots.pdf)
-plotHypercube.influences(x3.runs[[1]], feature.names = c("A", "B", "C", "D"),
+## (compare with p. 1 of mhn_hesbcn_plots.pdf)
+plotHypercube.influences(x3.l2,
+                         feature.names = c("A", "B", "C", "D"),
                          upper.right = TRUE)
 
 ## FIXME: I don't understand the number of parameters for L = -1
@@ -163,54 +164,51 @@ dim(x3.runs[[3]]$posterior.samples) ## 4^3 = 64.
 
 lapply(x3.runs, function(x) dim(x$posterior.samples))
 
-## Easier names
-x3.l2 <- x3.runs[[1]]
-x3.l3 <- x3.runs[[2]]
-x3.m1 <- x3.runs[[3]]
 
 
 ## As in cancer-examples.R, get more samples from the regularised parameterisation
 
 ## FIXME: It is unclear to me if all plots are using the regularised results:
 ## see this comment in cancer-examples.R: "add use.regularised to all plot functions"
-## Calling PosteriorAnalysis with "use_regularised = 1" and then plotting
+## FIXME Calling PosteriorAnalysis with "use_regularised = 1" and then plotting
 ## those samples, is this the way to see the paths from the regularised results?
+## FIXME "use_regularised" fails if the model has been fit using
+## penalty. Makes sense, but should probably be documented?
+
 x3.l2.more.samples <- PosteriorAnalysis(x3.l2,
                                         featurenames = c("A", "B", "C", "D"),
-                                        samples_per_row = 1000,
-                                        use_regularised = 1)
+                                        samples_per_row = 1000)
 
 x3.l3.more.samples <- PosteriorAnalysis(x3.l3,
                                         featurenames = c("A", "B", "C", "D"),
-                                        samples_per_row = 1000,
-                                        use_regularised = 1)
+                                        samples_per_row = 1000)
 
 x3.m1.more.samples <- PosteriorAnalysis(x3.m1,
                                         featurenames = c("A", "B", "C", "D"),
-                                        samples_per_row = 1000,
-                                        use_regularised = 1)
+                                        samples_per_row = 1000)
 
 
 
-## Regularisation does not seem to make much of a difference
+## FIXME: Using original fit or PosteriorAnalysis does not seem to make much
+## difference
 ggarrange(
   plotHypercube.sampledgraph2(x3.l2,  no.times = TRUE, use.arc = FALSE,
                               node.label.size = 4, edge.label.size = 0),
-  plotHypercube.sampledgraph3(x3.l2.more.samples, no.times = TRUE,
+  plotHypercube.sampledgraph2(x3.l2.more.samples, no.times = TRUE,
                               use.arc = FALSE, node.label.size = 4,
                               edge.label.size = 0)) 
 
 ggarrange(
   plotHypercube.sampledgraph2(x3.l3,  no.times = TRUE, use.arc = FALSE,
                               node.label.size = 4, edge.label.size = 0),
-  plotHypercube.sampledgraph3(x3.l3.more.samples, no.times = TRUE,
+  plotHypercube.sampledgraph2(x3.l3.more.samples, no.times = TRUE,
                               use.arc = FALSE, node.label.size = 4,
                               edge.label.size = 0))
 
 ggarrange(
   plotHypercube.sampledgraph2(x3.m1,  no.times = TRUE, use.arc = FALSE,
                               node.label.size = 4, edge.label.size = 0),
-  plotHypercube.sampledgraph3(x3.m1.more.samples, no.times = TRUE,
+  plotHypercube.sampledgraph2(x3.m1.more.samples, no.times = TRUE,
                               use.arc = FALSE, node.label.size = 4,
                               edge.label.size = 0))
 
@@ -223,21 +221,22 @@ ggarrange(
 ## on the final one (but see below)
 
 ggarrange(
-  plotHypercube.sampledgraph3(x3.l2.more.samples, no.times = TRUE,
+  plotHypercube.sampledgraph2(x3.l2.more.samples, no.times = TRUE,
                               use.arc = FALSE, node.label.size = 4,
                               edge.label.size = 0) + ggtitle("L^2"),
-  plotHypercube.sampledgraph3(x3.l3.more.samples, no.times = TRUE,
+  plotHypercube.sampledgraph2(x3.l3.more.samples, no.times = TRUE,
                               use.arc = FALSE, node.label.size = 4,
                               edge.label.size = 0) + ggtitle("L^3"),
-  plotHypercube.sampledgraph3(x3.m1.more.samples, no.times = TRUE,
+  plotHypercube.sampledgraph2(x3.m1.more.samples, no.times = TRUE,
                               use.arc = FALSE, node.label.size = 4,
                               edge.label.size = 0) + ggtitle("Full")
 )
 
 
-## Bubbles.
+####### Bubbles.
 ## All of them think D can be acquired last, but that is not possible.
-## All of them also incorrectly think D can be acquired first.
+## All of them, but mostly L^2 and L^3, also incorrectly think D can be acquired
+## first.
 ## (These mistakes not surprising, given previous plot)
 
 ggarrange(
@@ -254,14 +253,14 @@ ggarrange(
   plotHypercube.bubbles(x3.m1.more.samples) + ggtitle("Full")
 )
 
-## As above: can we use PosteriorAnalysis output here?
+## FIXME: As above: can we use PosteriorAnalysis output here?
 ggarrange(
   plotHypercube.timeseries(x3.l2.more.samples,
-                         feature.names = LETTERS[1:4]) + ggtitle("L^2"),
+                         featurenames = LETTERS[1:4]) + ggtitle("L^2"),
   plotHypercube.timeseries(x3.l3.more.samples,
-                           feature.names = LETTERS[1:4]) + ggtitle("L^3"),
+                           featurenames = LETTERS[1:4]) + ggtitle("L^3"),
   plotHypercube.timeseries(x3.m1.more.samples,
-                           feature.names = LETTERS[1:4]) + ggtitle("Full")
+                           featurenames = LETTERS[1:4]) + ggtitle("Full")
 )
 
 
@@ -272,9 +271,9 @@ ggarrange(
 ggarrange(
     plotHypercube.bubbles(x3.l2.more.samples) + ggtitle("L^2"),
     plotHypercube.timeseries(x3.l2.more.samples,
-                             feature.names = LETTERS[1:4]) + ggtitle("L^2"),
-    plotHypercube.sampledgraph3(x3.l2.more.samples, no.times = FALSE,
-                                feature.names = LETTERS[1:4],
+                             featurenames = LETTERS[1:4]) + ggtitle("L^2"),
+    plotHypercube.sampledgraph2(x3.l2.more.samples, no.times = FALSE,
+                                featurenames = LETTERS[1:4],
                                 use.arc = FALSE, node.label.size = 4,
                                 edge.label.size = 4)
 )
@@ -283,9 +282,9 @@ ggarrange(
 ggarrange(
   plotHypercube.bubbles(x3.l3.more.samples) + ggtitle("L^3"),
   plotHypercube.timeseries(x3.l3.more.samples,
-                           feature.names = LETTERS[1:4]) + ggtitle("L^3"),
-  plotHypercube.sampledgraph3(x3.l3.more.samples, no.times = FALSE,
-                              feature.names = LETTERS[1:4],
+                           featurenames = LETTERS[1:4]) + ggtitle("L^3"),
+  plotHypercube.sampledgraph2(x3.l3.more.samples, no.times = FALSE,
+                              featurenames = LETTERS[1:4],
                               use.arc = FALSE, node.label.size = 4,
                               edge.label.size = 4)
 )
@@ -295,16 +294,16 @@ ggarrange(
 ggarrange(
   plotHypercube.bubbles(x3.m1.more.samples) + ggtitle("Full"),
   plotHypercube.timeseries(x3.m1.more.samples,
-                           feature.names = LETTERS[1:4]) + ggtitle("Full"),
-  plotHypercube.sampledgraph3(x3.m1.more.samples, no.times = FALSE,
-                              feature.names = LETTERS[1:4],
+                           featurenames = LETTERS[1:4]) + ggtitle("Full"),
+  plotHypercube.sampledgraph2(x3.m1.more.samples, no.times = FALSE,
+                              featurenames = LETTERS[1:4],
                               use.arc = FALSE, node.label.size = 4,
                               edge.label.size = 4)
 )
 
 ## Easier to see times if single plot
-plotHypercube.sampledgraph3(x3.m1.more.samples, no.times = FALSE,
-                            feature.names = LETTERS[1:4],
+plotHypercube.sampledgraph2(x3.m1.more.samples, no.times = FALSE,
+                            featurenames = LETTERS[1:4],
                             use.arc = FALSE, node.label.size = 4,
                             edge.label.size = 4)
 
