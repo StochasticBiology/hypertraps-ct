@@ -167,6 +167,12 @@ if (run_analyses) {
 
 
 ## Check traces before continuing
+## FIXME: I am not sure that what the traces are displaying is detailed in
+## the README or anywhere else. Looking at the plots, they do not seem to be
+## two separate, independent, chains (the two traces always trace very similar
+## paths). And, as something for further work, would it make sense
+## to have multiple chains, possibly parallelized, to better assess convergence
+## and have more samples from the posterior?
 do.call(ggarrange, lapply(x3.runs, plotHypercube.lik.trace))
 do.call(ggarrange, lapply(x3_step.runs, plotHypercube.lik.trace))
 do.call(ggarrange, lapply(xao.runs, plotHypercube.lik.trace))
