@@ -199,6 +199,14 @@ where `fit` is the fitted model and `state` is a given state. This will return a
 
 You can pass the output of both these prediction functions to `plotHypercube.prediction` for a visualisation of the corresponding prediction.
 
+HyperTraPS will also estimate the probability of a particular state for either the discrete or the continuous time cases. In the discrete case, this is returned in `fit$dynamics`, where the probabilities of different states and different transitions are reported. The state probabilities are reported in normalised form (assuming uniform sampling over all the L+1 states in a complete trajectory) and unnormalised (the probability of a state given that we have acquired that particular number of features).
+
+In the continuous case, the function `prob.by.time` will use the sampled dynamics from the inferred parameterisation(s) to output a set of state probabilities at a given sampling time. For example
+
+`prob.by.time(fit, 0.1)` 
+
+will return a set of states and their associated probabilities at time 0.1.
+
 Specific content for introduction paper
 =======
 
