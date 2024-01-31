@@ -249,6 +249,7 @@ plotHypercube.timeseries = function(my.post, log.axis = TRUE, featurenames=c("")
   } else {
     labels = 1:my.post$L
   }
+  rtdf = data.frame()
   for(i in 1:(min(nrow(my.post$routes),1000))) {
     prevtime = 0
     for(j in 1:ncol(my.post$routes)) {
@@ -259,11 +260,11 @@ plotHypercube.timeseries = function(my.post, log.axis = TRUE, featurenames=c("")
   if(log.axis == TRUE) {
     return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
               scale_x_continuous(trans="log10") + scale_color_brewer(palette = "Spectral") +
-              labs(x= "t", t="Number of features", color = "Feature") + theme_light())
+              labs(x= "t", y="Number of features", color = "Feature") + theme_light())
   } else {
     return ( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
       scale_color_brewer(palette = "Spectral")+ 
-        labs(x= "t", t="Number of features", color = "Feature") + theme_light() )
+        labs(x= "t", y="Number of features", color = "Feature") + theme_light() )
   }
 }
 
