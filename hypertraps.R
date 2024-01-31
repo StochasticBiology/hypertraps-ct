@@ -569,6 +569,21 @@ plotHypercube.prediction = function(prediction, max.size = 30) {
   return(ggarrange(g.1, g.2))
 }
 
+# return sampled state probabilities at a given time tau (only well-posed for the continuous time case)
+prob.by.time = function(my.post, tau) {
+  tset = my.post$times
+  fset = my.post$routes
+  for(i in 2:ncol(tset)) {
+    tset[,i] = tset[,i] + tset[,i-1]
+  }
+  sset = fset*ifelse(tset<tau, 1, NA)
+  states = rowSums(2**sset, na.rm=TRUE)
+  binstates = unlist(lapply(states, DecToBin, len=my.post$L))
+  freqs = as.data.frame(table(binstates))
+  df = data.frame(State = freqs$binstates, Probability = freqs$Freq/sum(freqs$Freq))
+  return(df)
+}
+
 sourceCpp("hypertraps-r.cpp")
 
 ## Note: the warning
