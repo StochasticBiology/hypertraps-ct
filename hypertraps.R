@@ -238,7 +238,8 @@ plotHypercube.motifs = function(my.post, featurenames = c("")) {
     }
   }
   return(ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Label))) +
-           geom_text(aes(x=Time,y=(Start+End)/2,label=Label), color="#FFFFFF") + ylab("Probability") + 
+           geom_text(aes(x=Time,y=(Start+End)/2,label=Label), color="#FFFFFF") + 
+           labs(x = "Ordering", y="Probability", fill="Feature") + 
            scale_fill_brewer(palette = "PuRd") + theme_light())
 }
 
