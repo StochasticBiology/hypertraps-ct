@@ -77,8 +77,9 @@ if(run.simulations == TRUE) {
     require(parallel)
     # Create the data frame of options, print to check it is what we want
     # and pass to mcmapply
-    (aml.opts <- data.frame(penalty = c(0, 1, 1),
-                            sa = c(0, 0, 1)))
+    (aml.opts <- data.frame(penalty = c(0, 1, 1, 0, 0),
+                            sa = c(0, 0, 1, 0, 0),
+                            lasso = c(0, 0, 0, 1, 1)))
     parallelised.runs <- mcmapply(HyperTraPS,
                                   penalty = aml.opts$penalty,
                      sa = aml.opts$sa,
@@ -92,6 +93,8 @@ if(run.simulations == TRUE) {
     cancer.post = parallelised.runs[[1]]
     cancer.post.autoreg = parallelised.runs[[2]]
     cancer.post.sa.autoreg = parallelised.runs[[3]]
+    cancer.post.lasso = parallelised.runs[[4]]
+    cancer.post.sa.lasso = parallelised.runs[[5]]
   } else {
     cancer.post = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3)
     cancer.post.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, penalty = 1)
@@ -108,27 +111,34 @@ if(run.simulations == TRUE) {
   cancer.post.sa.autoreg = readHyperinf("cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
 }
 
+cancer.post.l3.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, model=3, penalty = 1)
+  
 # check outputs
 cancer.post.autoreg$lik.traces[79,]
 cancer.post.sa.autoreg$lik.traces[79,]
 
+g.cancer.graph2 = plotHypercube.sampledgraph2(cancer.post.autoreg, use.arc = FALSE, featurenames = AML[[4]], 
+                                          edge.label.size=3, edge.label.angle = "none", node.labels=FALSE,
+                                          no.times=TRUE, small.times=FALSE, thresh=0.004, truncate=6)
+
 # create plots of influences under different regularisation protocols
-plot.null = plotHypercube.influences(cancer.post, feature.names = AML[[4]], 
+plot.null = plotHypercube.influences(cancer.post, featurenames = AML[[4]], 
                                      use.final = TRUE, upper.right = TRUE, reorder = TRUE) +
   guides(alpha=FALSE)
-plot.autoreg = plotHypercube.influences(cancer.post.autoreg, feature.names = AML[[4]], 
+plot.autoreg = plotHypercube.influences(cancer.post.autoreg, featurenames = AML[[4]], 
                                         upper.right = TRUE, reorder = TRUE) +
   guides(alpha = FALSE)
-plot.autoreg.last = plotHypercube.influences(cancer.post.autoreg, feature.names = AML[[4]], 
+plot.autoreg.last = plotHypercube.influences(cancer.post.autoreg, featurenames = AML[[4]], 
                                              use.final = TRUE, upper.right = TRUE, reorder = TRUE) +
   guides(alpha=FALSE)
-plot.sa.autoreg = plotHypercube.influences(cancer.post.sa.autoreg, feature.names = AML[[4]], 
+plot.sa.autoreg = plotHypercube.influences(cancer.post.sa.autoreg, featurenames = AML[[4]], 
                                            use.final = TRUE, upper.right = TRUE, reorder = TRUE) + 
   guides(alpha = FALSE)
 
 sf = 3
-png("cancer-post-autoreg.png", width=600*sf, height=400*sf, res=72*sf)
-print(plot.autoreg)
+png("cancer-post-autoreg.png", width=600*sf, height=800*sf, res=72*sf)
+print(ggarrange(g.cancer.graph2 + theme(legend.position = "none"),
+                plot.autoreg, nrow=2, labels=c("A", "B")))
 dev.off()
 
 png("cancer-post-all.png", width=1200*sf, height=800*sf, res=72*sf)
@@ -144,10 +154,10 @@ cancer.more.samples = PosteriorAnalysis(cancer.post.autoreg, samples_per_row = 1
 
 plotHypercube.sampledgraph2(cancer.post.autoreg, use.arc = FALSE, node.labels = FALSE, 
                             no.times = TRUE, truncate = 6, edge.label.size=4, thresh = 0.01,
-                            feature.names = AML[[4]])
+                            featurenames = AML[[4]])
 plotHypercube.sampledgraph2(cancer.more.samples, use.arc = FALSE, node.labels = FALSE, 
                             no.times = TRUE, truncate = 6, edge.label.size=2, thresh = 0.02,
-                            feature.names = AML[[4]])
+                            featurenames = AML[[4]])
 
 
 # put parameter loss details in regularisation output; add use.regularised to all plot functions
@@ -182,7 +192,7 @@ big.c.post = readHyperinf("big-c-post", fulloutput = FALSE, regularised = FALSE)
 # plot influences between genes
 sf = 3
 png("cancer-big-post-autoreg.png", width=600*sf, height=600*sf, res=72*sf)
-plotHypercube.influences(big.c.post, feature.names = genes, 
+plotHypercube.influences(big.c.post, featurenames = genes, 
                          upper.right = FALSE, reorder = TRUE)
 dev.off()
 
@@ -190,9 +200,9 @@ dev.off()
 big.c.more = PosteriorAnalysis(big.c.post, samples_per_row = 100)
 
 # followup plots
-plotHypercube.sampledgraph2(big.c.post, use.arc = FALSE, node.labels = FALSE, feature.names = genes, 
+plotHypercube.sampledgraph2(big.c.post, use.arc = FALSE, node.labels = FALSE, featurenames = genes, 
                             no.times = TRUE, thresh=0.02, truncate = 3)
 
-plotHypercube.sampledgraph2(big.c.more, use.arc = FALSE, node.labels = FALSE, feature.names = genes, 
+plotHypercube.sampledgraph2(big.c.more, use.arc = FALSE, node.labels = FALSE, featurenames = genes, 
                             no.times = TRUE, thresh=0.005, truncate = 3)
 
