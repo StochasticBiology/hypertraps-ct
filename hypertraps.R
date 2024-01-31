@@ -285,7 +285,7 @@ plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, contin
 
 # plot pairwise influences between features in the L^2 picture
 plotHypercube.influences = function(my.post, 
-                                    feature.names=c(""), 
+                                    featurenames=c(""), 
                                     use.regularised = FALSE, 
                                     use.final = FALSE, 
                                     reorder = FALSE, 
@@ -294,8 +294,8 @@ plotHypercube.influences = function(my.post,
     stop("Influence plot currently only supported for model type 2 (pairwise influences)")
   }
   plot.df = data.frame()
-  if(length(feature.names) > 1) {
-    labels = feature.names
+  if(length(featurenames) > 1) {
+    labels = featurenames
   } else {
     labels = 1:my.post$L
   }
