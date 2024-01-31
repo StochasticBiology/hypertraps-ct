@@ -107,7 +107,7 @@ ggarrange(plotHypercube.timehists(my.post.time.precise, t.thresh=3),
 # output selected demos to file
 sf = 2
 png("plot-demos-si.png", width=800*sf, height=800*sf, res=72*sf)
-ggarrange(plotHypercube.prediction(prediction.step), plotHypercube.prediction(prediction.hidden),
+ggarrange(plotHypercube.prediction(prediction.step, max.size=15), plotHypercube.prediction(prediction.hidden, max.size=15),
           plotHypercube.timehists(my.post.time.uncertain, t.thresh=3),
           plotHypercube.timehists(my.post.time.inf, t.thresh=3),
           plotHypercube.sampledgraph2(my.post.priors, use.arc = FALSE) + theme(legend.position="none"), 
@@ -123,11 +123,15 @@ ggarrange(plotHypercube.timehists(my.post.time.precise, t.thresh=3),
 nrow=2, ncol=2, labels=c("A","B","C"))
 dev.off()
 
+fig.1a = plotHypercube.sampledgraph2(my.post, use.arc = FALSE, edge.label.size = 3) + 
+  theme(legend.position="none") + 
+  expand_limits(x = c(-0.5, 4))
+fig.1b = plotHypercube.timehists(my.post)
+fig.1c = plotHypercube.influences(my.post)
+fig.1d = plotHypercube.timeseries(my.post)
+
 png("plot-demos.png", width=800*sf, height=600*sf, res=72*sf)
-ggarrange(plotHypercube.sampledgraph2(my.post, use.arc = FALSE) + theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1)),
-          plotHypercube.timehists(my.post),
-         plotHypercube.influences(my.post), 
-         plotHypercube.timeseries(my.post), labels=c("A","B","C","D"))
+ggarrange(fig.1a, fig.1b, fig.1c, fig.1d, labels=c("A","B","C","D"))
 dev.off()
 
 # write output to files
@@ -214,6 +218,7 @@ g.priors = plotHypercube.sampledgraph2(my.post.priors, use.arc = FALSE) + theme(
 my.post.70 = readHyperinf("VerifyData/test-bigcross-hard-70", postlabel = "VerifyData/test-bigcross-hard-70")
 g.big.70 = ggplot(my.post.70$bubbles, aes(x=Time, y=OriginalIndex, 
                size=Probability, alpha=Probability)) + 
+  labs(x = "Ordering", y = "Feature") +
   geom_point() + theme_light() + theme(legend.position="none") +
   scale_alpha_continuous(range=c(0,1))
 
