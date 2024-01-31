@@ -107,9 +107,9 @@ The output structures are
 | Number of parameters, likelihood, and information criteria during regularisation | *list*$regularisation$reg.process | *label*-regularising.csv | Optional |
 | "Bubble" probabilities of trait *i* acquisition at ordinal time *j* | *list*$bubbles | *label*-bubbles.csv | |
 | Histograms of times of trait *i* acquisition | *list*$timehists | *label*-timehists.csv | |
-| Individual sampled routes of accumulation | *list*$routes | *label*-routes.txt | |
-| Transition times for individual sampled routes of accumulation | *list*$times | *label*-times.txt | |
-| Dwelling statistics for individual sampled routes of accumulation | *list*$betas | *label*-betas.txt | |
+| Individual sampled routes of accumulation | *list*$routes | *label*-routes.txt | Matrix with L columns; jth element of a row gives the feature acquired at step j. Each row is a sampled trajectory; there are *samples_per_row* samples per output parameterisation in the (posterior) sample set |
+| Transition times for individual sampled routes of accumulation | *list*$times | *label*-times.txt | Matrix with L columns, with elements corresponding to the timings of each of the steps in the routes matrix above |
+| Dwelling statistics for individual sampled routes of accumulation | *list*$betas | *label*-betas.txt | Matrix with L columns, with elements corresponding to the dwell times between the steps in the routes matrix above |
 
 The named list in R can be passed to plotting and prediction functions for analysis -- see "Visualising and using output" below.
 
@@ -142,6 +142,8 @@ HyperTraPS needs at least a set of observations. *This is the only essential inp
 | Use SGD (0/1) | sgd=*N* | --sgd | 0 |
 | Use PLI (0/1) | pli=*N* | --pli | 0 |
 | Regularisation by penalised likelihood | penalty=*X* | --penalty *X* | 0 (controls penalty per non-zero parameter) 
+| Regularisation by LASSO | lasso=*X* | (not available yet) | 0 (controls lambda, LASSO penalty for absolute parameter values) 
+| Number of simulations per parameter sample | samples_per_row=*N* | (not available yet) | 10 (number of samples to use for each parameter set when simulating routes and times for output)
 | Stepwise regularise model after best parameterisation (0/1) | regularise=*N* | --regularise | 0 |
 | Transition format observations | (not available) | --transitionformat | (off) |
 | Output exact transitions (0/1) | output_transitions=*N* | --outputtransitions *N* | Switched off for L > 15 to avoid large output; consider switching off for CT 
