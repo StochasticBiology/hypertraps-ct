@@ -127,7 +127,7 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
     }
   }
   df = data.frame(From=edge.from, To=edge.to, Change=edge.change, Time=edge.time)
-  dfu = unique(df)
+  dfu = unique(df[,1:3])
   if(length(featurenames) > 1) {
     dfu$Change = featurenames[dfu$Change+1]
   }
