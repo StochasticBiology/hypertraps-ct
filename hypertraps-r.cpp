@@ -36,6 +36,8 @@ List HyperTraPS(NumericMatrix obs,
 		NumericVector output_transitions,
 		Nullable<CharacterVector> featurenames);
 
+
+
 List OutputStatesR(double *ntrans, int LEN, int model)
 {
   int i, j, k, a;
@@ -51,7 +53,7 @@ List OutputStatesR(double *ntrans, int LEN, int model)
   
   //  fp = fopen(beststatesstr, "w");
   //fprintf(fp, "State Probability\n");
-  NumericVector state_v, prob_v;
+  NumericVector state_v, prob_v, prob_dt_v;
   NumericVector from_v, to_v, edgeprob_v, flux_v;
 
   probs = (double*)malloc(sizeof(double)*mypow2(LEN));
@@ -134,11 +136,13 @@ List OutputStatesR(double *ntrans, int LEN, int model)
     {
       state_v.push_back(dest);
       prob_v.push_back(probs[dest]);
+      prob_dt_v.push_back(probs[dest]/(LEN+1));
     }
   //    fprintf(fp, "%i %e\n", dest, probs[dest]);
 
   List L = List::create(Named("State") = state_v,
-			Named("Probability") = prob_v);
+			Named("Probability") = prob_v,
+			Named("Probability.DT") = prob_dt_v);
   DataFrame Ldf(L);
 
   List Lflux = List::create(Named("From") = from_v,
@@ -287,7 +291,6 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
   return Lout;
   
 }
-
 
 //' Runs HyperTraPS-related inference on a dataset of observations
 //'
@@ -1029,6 +1032,7 @@ List PosteriorAnalysis(List L,
     {
       Rprintf("Verbose flag is %i\n", verbose);
       Rprintf("Bin scale is %f\n", BINSCALE);
+      Rprintf("Taking %i samples per parameterisation\n", samples_per_row);
     }
 
   NumericMatrix posterior;

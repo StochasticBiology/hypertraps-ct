@@ -195,10 +195,12 @@ plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = c(""),
 
   if (log.time) {
     g.thist = ggplot(thdfp[thdfp$Time < t.thresh,],
-                     aes(x=log(Time+1), y=Probability))
+                     aes(x=log(Time+1), y=Probability)) +
+      labs(x = "log(t+1)", y="Probability")
   } else {
     g.thist = ggplot(thdfp[thdfp$Time < t.thresh,],
                      aes(x=Time, y=Probability))
+    + labs(x = "t", y="Probability")
   }
   g.thist = g.thist + 
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
@@ -208,14 +210,15 @@ plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = c(""),
   g.thist2 = ggplot(thdfp[thdfp$Time == t.thresh,], aes(x=feature.label, y=Probability)) + 
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
     geom_col(position="dodge") + 
-    theme_light() #+ scale_x_continuous(trans="log10")
+    theme_light() + labs(x = "Feature", y="Probability") #+ scale_x_continuous(trans="log10")
   
   return(ggarrange(g.thist, g.thist2))
 }
 
 plotHypercube.regularisation = function(my.post) {
   return(ggplot(my.post$regularisation$reg.process, 
-                aes(x=nparam, y=AIC)) + geom_point() + theme_light() )
+                aes(x=nparam, y=AIC)) + geom_point() + 
+           labs(x = "Number of non-zero parameters", y="AIC") + theme_light() )
 }
 
 plotHypercube.motifs = function(my.post, featurenames = c("")) {
@@ -246,7 +249,6 @@ plotHypercube.timeseries = function(my.post, log.axis = TRUE, featurenames=c("")
   } else {
     labels = 1:my.post$L
   }
-  rtdf = data.frame()
   for(i in 1:(min(nrow(my.post$routes),1000))) {
     prevtime = 0
     for(j in 1:ncol(my.post$routes)) {
@@ -256,10 +258,12 @@ plotHypercube.timeseries = function(my.post, log.axis = TRUE, featurenames=c("")
   }
   if(log.axis == TRUE) {
     return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
-              scale_x_continuous(trans="log10") + scale_color_brewer(palette = "Spectral") + theme_light())
+              scale_x_continuous(trans="log10") + scale_color_brewer(palette = "Spectral") +
+              labs(x= "t", t="Number of features", color = "Feature") + theme_light())
   } else {
-    ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
-      scale_color_brewer(palette = "Spectral")+ theme_light()
+    return ( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
+      scale_color_brewer(palette = "Spectral")+ 
+        labs(x= "t", t="Number of features", color = "Feature") + theme_light() )
   }
 }
 
@@ -557,13 +561,15 @@ plotHypercube.prediction = function(prediction, max.size = 30) {
     g.1 = ggplot(prediction, aes(label=states, size=probs), angle=0) + 
       geom_text_wordcloud() + scale_size_area(max_size = max.size) +
       theme_minimal()
-    g.2 = ggplot(prediction, aes(x=states, y=probs)) + 
+    g.2 = ggplot(prediction, aes(x=states, y=probs)) +
+      labs(x = "State", y = "Probability") +
       geom_col() + theme_light()  
   } else {
     g.1 = ggplot(prediction$state.probs, aes(label=state, size=prob), angle=0) + 
       geom_text_wordcloud() + scale_size_area(max_size = max.size) +
       theme_minimal()
     g.2 = ggplot(prediction$locus.probs, aes(x=factor(locus), y=prob)) + 
+      labs(x = "State", y = "Probability") +
       geom_col() + theme_light() + xlab("Probability feature is a 1")
   }
   return(ggarrange(g.1, g.2))
