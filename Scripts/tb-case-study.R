@@ -76,6 +76,11 @@ g.tb.motifs = plotHypercube.motifs(tb.post.1, featurenames=tb.names)
 g.tb.influences = plotHypercube.influences(tb.post.1, featurenames=tb.names, reorder=TRUE)
 g.tb.tseries = plotHypercube.timeseries(tb.post.1, featurenames=tb.names)
 
+g.tb.influencegraph = plotHypercube.influencegraph(tb.post.1, featurenames=tb.names)
+g.tb.motifseries = plotHypercube.motifseries(tb.post.1, t.set=c(0.001, 0.01, 0.1, 0.5, 1, 10))
+
+ggarrange(ggarrange(g.tb.influences, g.tb.influencegraph, nrow=1), g.tb.motifseries, nrow=2)
+
 png("plot-tb-summary-si.png", width=800*sf, height=300*sf, res=72*sf)
 ggarrange(g.tb.motifs, g.tb.influences)
 dev.off()
