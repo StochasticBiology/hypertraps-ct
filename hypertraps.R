@@ -107,6 +107,7 @@ plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, 
 
 plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05, 
                                        node.labels = TRUE, use.arc = TRUE, no.times = FALSE, 
+                                       small.times = FALSE,
                                        edge.label.size = 2, edge.label.angle = "across",
                                        edge.label.colour = "#000000",
                                        featurenames = c(""), truncate = -1,
@@ -141,8 +142,9 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
     }
     if(no.times == TRUE) {
       dfu$label[i] = paste(c("+", dfu$Change[i]), collapse="")
+      dfu$tlabel[i] = paste(c(signif(dfu$MeanT[i], digits=2), " +- ", signif(dfu$SDT[i], digits=2)), collapse="") 
     } else {
-      dfu$label[i] = paste(c("+", dfu$Change[i], ": ", signif(dfu$MeanT[i], digits=2), " +- ", signif(dfu$SDT[i], digits=2)), collapse="") 
+      dfu$label[i] = paste(c("+", dfu$Change[i], ":\n", signif(dfu$MeanT[i], digits=2), " +- ", signif(dfu$SDT[i], digits=2)), collapse="") 
     }
     
   }
@@ -157,18 +159,24 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
   
   if(use.arc == TRUE) {
     this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + 
-      geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label), 
+      geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label, angle=45), 
                     label_size = edge.label.size, label_colour=edge.label.colour, color="#AAAAFF",
-                    label_parse = TRUE, angle_calc = edge.label.angle) + 
+                    label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = TRUE) + 
       scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
       theme_graph(base_family="sans")
   } else {
     this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + 
-      geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=label), 
+      geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=label, angle=45), 
                      label_size = edge.label.size, label_colour=edge.label.colour, color="#AAAAFF",
-                     label_parse = TRUE, angle_calc = edge.label.angle) + 
+                     label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = TRUE) + 
       scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
       theme_graph(base_family="sans")
+  }
+  if(small.times == TRUE) {
+    this.plot = this.plot + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=tlabel, angle=45), 
+                   label_size = edge.label.size-1, label_colour=edge.label.colour, alpha = 0, color="#AAAAFF",
+                   label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = TRUE,
+                   position = position_nudge(x=0.1, y = -0.1)) 
   }
   if(node.labels == TRUE) {
     this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=node.label.size) 
@@ -558,6 +566,83 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
   return(output.list)
 }
 
+# plot genotype probabilities at a given set of times as a "motif" plot
+plotHypercube.motifseries = function(my.post, t.set, thresh = 0.05) {
+  df = data.frame()
+  t.index = 1
+  # build up dataframe with rectangle co-ordinates and labels for high-probability states
+  for(this.t in t.set) {
+    tmp.df = prob.by.time(my.post, this.t)
+    tmp.df$t = this.t
+    tmp.df$t.index = t.index
+    tmp.df$s1 = tmp.df$s2 = 0
+    tmp.df$label = ""
+    tmp.df$s2[1] = tmp.df$Probability[1]
+    if(tmp.df$Probability[1] > thresh) { tmp.df$label[1] = as.character(tmp.df$State[1]) }
+    if(nrow(tmp.df) > 1) {
+    for(i in 2:nrow(tmp.df)) {
+      tmp.df$s1[i] = tmp.df$s2[i-1]
+      tmp.df$s2[i] = tmp.df$s1[i]+tmp.df$Probability[i]
+      if(tmp.df$Probability[i] > thresh) { tmp.df$label[i] = as.character(tmp.df$State[i]) }
+    }
+    }
+    df = rbind(df, tmp.df)
+    t.index = t.index + 1
+  }
+  return(
+    ggplot(df) + geom_rect(aes(xmin=t.index-0.5,xmax=t.index+0.5,ymin=s1,ymax=s2,fill=factor(State)), color="white") +
+    geom_text(aes(x=t.index,y=(s1+s2)/2,label=label), color="#FFFFFF") + 
+    labs(x = "Timestep", y="Probability", fill="State") + 
+      scale_fill_viridis(discrete = TRUE, option="inferno", begin=0.2, end=0.8) +
+      theme_light() + theme(legend.position = "none") +
+      scale_x_continuous(breaks = 1:length(t.set), labels=as.character(t.set))
+    )
+}
+
+# plot pairwise influences between features in the L^2 picture
+plotHypercube.influencegraph = function(my.post, 
+                                    featurenames=c(""), 
+                                    use.regularised = FALSE, 
+                                    use.final = FALSE,
+                                    thresh=0.05) {
+  if(my.post$model != 2) {
+    stop("Influence plot currently only supported for model type 2 (pairwise influences)")
+  }
+  plot.df = data.frame()
+  if(length(featurenames) > 1) {
+    labels = featurenames
+  } else {
+    labels = 1:my.post$L
+  }
+  for(i in 1:my.post$L) {
+    for(j in 1:my.post$L) {
+      ref = (i-1)*my.post$L + j
+      if(use.regularised == TRUE) {
+        ref.mean = as.numeric(my.post$regularisation$best[ref])
+        ref.sd = 0
+      } else if(use.final == TRUE) {
+        ref.mean = mean(my.post$posterior.samples[nrow(my.post$posterior.samples),ref])
+        ref.sd = 0
+      } else {
+        ref.mean = mean(my.post$posterior.samples[,ref])
+        ref.sd = sd(my.post$posterior.samples[,ref])
+      }
+      plot.df = rbind(plot.df, data.frame(x=labels[i], y=labels[j], mean=ref.mean, cv=abs(ref.sd/ref.mean)))
+    }
+  }  
+  to.g.df = plot.df[abs(plot.df$mean)>thresh,1:3]
+  colnames(to.g.df) = c("From", "To", "Weight")
+  to.g.df$Direction = as.character(sign(to.g.df$Weight))
+  g = graph_from_data_frame(to.g.df)
+ return( ggraph(g) + geom_edge_arc(aes(colour=Direction, alpha=abs(Weight), width=abs(Weight)),
+                            strength=0.1, arrow=arrow(length=unit(0.2, "inches"), type="closed")) +
+    geom_node_label(aes(label=name)) + theme_void() +
+    labs(width="Magnitude", colour="Direction") 
+ )
+  
+  
+  }
+
 plotHypercube.prediction = function(prediction, max.size = 30) {
   if(length(prediction$states) > 0) {
     g.1 = ggplot(prediction, aes(label=states, size=probs), angle=0) + 
@@ -585,7 +670,7 @@ prob.by.time = function(my.post, tau) {
     tset[,i] = tset[,i] + tset[,i-1]
   }
   sset = fset*ifelse(tset<tau, 1, NA)
-  states = rowSums(2**sset, na.rm=TRUE)
+  states = rowSums(2**(my.post$L-1-sset), na.rm=TRUE)
   binstates = unlist(lapply(states, DecToBin, len=my.post$L))
   freqs = as.data.frame(table(binstates))
   df = data.frame(State = freqs$binstates, Probability = freqs$Freq/sum(freqs$Freq))
