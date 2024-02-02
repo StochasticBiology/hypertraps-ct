@@ -107,7 +107,7 @@ plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, 
 
 plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05, 
                                        node.labels = TRUE, use.arc = TRUE, no.times = FALSE, 
-                                       small.times = FALSE,
+                                       small.times = FALSE, times.offset = c(0.1,-0.1),
                                        edge.label.size = 2, edge.label.angle = "across",
                                        edge.label.colour = "#000000",
                                        featurenames = c(""), truncate = -1,
@@ -174,9 +174,9 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
   }
   if(small.times == TRUE) {
     this.plot = this.plot + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=tlabel, angle=45), 
-                   label_size = edge.label.size-1, label_colour=edge.label.colour, alpha = 0, color="#AAAAFF",
-                   label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = TRUE,
-                   position = position_nudge(x=0.1, y = -0.1)) 
+                                           label_size = edge.label.size-1, label_colour=edge.label.colour, alpha = 0, color="#AAAAFF",
+                                           label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = TRUE,
+                                           position = position_nudge(x=times.offset[1], y = times.offset[2])) 
   }
   if(node.labels == TRUE) {
     this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=node.label.size) 
@@ -200,7 +200,7 @@ plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = c(""),
       thdfp = rbind(thdfp, data.frame(OriginalIndex = j, feature.label=j, Time=t.thresh, Probability=sum(sub1$Probability)))
     }
   }
-
+  
   if (log.time) {
     g.thist = ggplot(thdfp[thdfp$Time < t.thresh,],
                      aes(x=log(Time+1), y=Probability)) +
@@ -214,7 +214,7 @@ plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = c(""),
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
     geom_line() + xlim(-0.1,log(t.thresh+1)) + facet_wrap(~feature.label, nrow=2) +
     theme_light() #+ scale_x_continuous(trans="log10")
-
+  
   g.thist2 = ggplot(thdfp[thdfp$Time == t.thresh,], aes(x=feature.label, y=Probability)) + 
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
     geom_col(position="dodge") + 
@@ -272,8 +272,8 @@ plotHypercube.timeseries = function(my.post, log.axis = TRUE, featurenames=c("")
               labs(x= "t", y="Number of features", color = "Feature") + theme_light())
   } else {
     return ( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
-      scale_color_brewer(palette = "Spectral")+ 
-        labs(x= "t", y="Number of features", color = "Feature") + theme_light() )
+               scale_color_brewer(palette = "Spectral")+ 
+               labs(x= "t", y="Number of features", color = "Feature") + theme_light() )
   }
 }
 
@@ -298,7 +298,8 @@ plotHypercube.influences = function(my.post,
                                     use.regularised = FALSE, 
                                     use.final = FALSE, 
                                     reorder = FALSE, 
-                                    upper.right = FALSE) {
+                                    upper.right = FALSE,
+                                    cv.thresh = Inf) {
   if(my.post$model != 2) {
     stop("Influence plot currently only supported for model type 2 (pairwise influences)")
   }
@@ -335,6 +336,8 @@ plotHypercube.influences = function(my.post,
     plot.df$xlab = factor(plot.df$xlab)
     plot.df$ylab = factor(plot.df$ylab)
   }
+  plot.df = plot.df[plot.df$cv < cv.thresh | plot.df$x==plot.df$y,]
+  
   if(upper.right == TRUE) {
     return(ggplot(plot.df, aes(x=xlab,y=factor(ylab, levels=rev(levels(plot.df$ylab))),fill=mean,alpha=cv)) + geom_tile() + 
              scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
@@ -580,31 +583,32 @@ plotHypercube.motifseries = function(my.post, t.set, thresh = 0.05) {
     tmp.df$s2[1] = tmp.df$Probability[1]
     if(tmp.df$Probability[1] > thresh) { tmp.df$label[1] = as.character(tmp.df$State[1]) }
     if(nrow(tmp.df) > 1) {
-    for(i in 2:nrow(tmp.df)) {
-      tmp.df$s1[i] = tmp.df$s2[i-1]
-      tmp.df$s2[i] = tmp.df$s1[i]+tmp.df$Probability[i]
-      if(tmp.df$Probability[i] > thresh) { tmp.df$label[i] = as.character(tmp.df$State[i]) }
-    }
+      for(i in 2:nrow(tmp.df)) {
+        tmp.df$s1[i] = tmp.df$s2[i-1]
+        tmp.df$s2[i] = tmp.df$s1[i]+tmp.df$Probability[i]
+        if(tmp.df$Probability[i] > thresh) { tmp.df$label[i] = as.character(tmp.df$State[i]) }
+      }
     }
     df = rbind(df, tmp.df)
     t.index = t.index + 1
   }
   return(
     ggplot(df) + geom_rect(aes(xmin=t.index-0.5,xmax=t.index+0.5,ymin=s1,ymax=s2,fill=factor(State)), color="white") +
-    geom_text(aes(x=t.index,y=(s1+s2)/2,label=label), color="#FFFFFF") + 
-    labs(x = "Timestep", y="Probability", fill="State") + 
+      geom_text(aes(x=t.index,y=(s1+s2)/2,label=label), color="#FFFFFF") + 
+      labs(x = "Timestep", y="Probability", fill="State") + 
       scale_fill_viridis(discrete = TRUE, option="inferno", begin=0.2, end=0.8) +
       theme_light() + theme(legend.position = "none") +
       scale_x_continuous(breaks = 1:length(t.set), labels=as.character(t.set))
-    )
+  )
 }
 
 # plot pairwise influences between features in the L^2 picture
 plotHypercube.influencegraph = function(my.post, 
-                                    featurenames=c(""), 
-                                    use.regularised = FALSE, 
-                                    use.final = FALSE,
-                                    thresh=0.05) {
+                                        featurenames=c(""), 
+                                        use.regularised = FALSE, 
+                                        use.final = FALSE,
+                                        thresh=0.05,
+                                        cv.thresh = Inf) {
   if(my.post$model != 2) {
     stop("Influence plot currently only supported for model type 2 (pairwise influences)")
   }
@@ -616,7 +620,7 @@ plotHypercube.influencegraph = function(my.post,
   }
   for(i in 1:my.post$L) {
     for(j in 1:my.post$L) {
-      ref = (i-1)*my.post$L + j
+      ref = (i-1)*my.post$L + (j-1) + 1
       if(use.regularised == TRUE) {
         ref.mean = as.numeric(my.post$regularisation$best[ref])
         ref.sd = 0
@@ -630,18 +634,17 @@ plotHypercube.influencegraph = function(my.post,
       plot.df = rbind(plot.df, data.frame(x=labels[i], y=labels[j], mean=ref.mean, cv=abs(ref.sd/ref.mean)))
     }
   }  
+  plot.df = plot.df[plot.df$cv < cv.thresh,]
   to.g.df = plot.df[abs(plot.df$mean)>thresh,1:3]
   colnames(to.g.df) = c("From", "To", "Weight")
   to.g.df$Direction = as.character(sign(to.g.df$Weight))
   g = graph_from_data_frame(to.g.df)
- return( ggraph(g) + geom_edge_arc(aes(colour=Direction, alpha=abs(Weight), width=abs(Weight)),
-                            strength=0.1, arrow=arrow(length=unit(0.2, "inches"), type="closed")) +
-    geom_node_label(aes(label=name)) + theme_void() +
-    labs(width="Magnitude", colour="Direction") 
- )
-  
-  
-  }
+  return( ggraph(g) + geom_edge_arc(aes(colour=Direction, alpha=abs(Weight), width=abs(Weight)),
+                                    strength=0.1, arrow=arrow(length=unit(0.2, "inches"), type="closed")) +
+            geom_node_label(aes(label=name)) + theme_void() +
+            labs(edge_width="Magnitude", edge_alpha="Magnitude", colour="Direction") 
+  )
+}
 
 plotHypercube.prediction = function(prediction, max.size = 30) {
   if(length(prediction$states) > 0) {

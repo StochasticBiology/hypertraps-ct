@@ -33,12 +33,29 @@ times = rep(c(0.1, 0.2, 0.3, 0.4, 0.5), 10)
 my.post = HyperTraPS(m.2, initialstates = m.1, 
                      starttimes = times, endtimes = times, 
                      length = 4,
+                     samplegap = 10,
                      output_transitions = 1,
                      featurenames = c("A", "B", "C", "D", "E")); 
 plotHypercube.summary(my.post)
 plotHypercube.sampledgraph2(my.post, thresh=0.1, use.arc=FALSE, edge.label.size=3) + 
   theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1))
-plotHypercube.influences(my.post)
+plotHypercube.influences(my.post, cv.thresh = Inf)
+plotHypercube.influencegraph(my.post, cv.thresh = 1)
+plotHypercube.motifseries(my.post, c(0.001, 0.01, 0.5, 1, 5, 10))
+
+sf = 2
+png("plot-new-fig-3.png", width=600*sf, height=500*sf, res=72*sf)
+ggarrange(plotHypercube.sampledgraph2(my.post, thresh=0.1, use.arc=FALSE, edge.label.size=3, 
+                                      edge.label.angle = "none", node.labels=TRUE,
+                                      no.times=TRUE, small.times=TRUE,
+                                      times.offset = c(0.1,0.2)) + 
+            theme(legend.position="none") + expand_limits(x = c(-0.05,1.1)) ,
+          plotHypercube.influences(my.post, cv.thresh = Inf),
+          plotHypercube.influencegraph(my.post, cv.thresh = 1),
+          plotHypercube.motifseries(my.post, c(0.001, 0.01, 0.5, 1, 5, 10)),
+          labels = c("A", "B", "C", "D")
+          )
+dev.off()
 
 # demonstrate predictions of future behaviour
 prediction.step = predictNextStep(my.post, c(1,1,0,0,0))
