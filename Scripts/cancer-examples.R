@@ -7,8 +7,6 @@ setwd("..")
 source("hypertraps.R")
 setwd("Scripts/")
 
-run.simulations = TRUE
-
 ### Cancer case study 1
 
 # pull the AML data object from TreeMHN
@@ -51,113 +49,108 @@ for(aml.list in 1:length(AML[[5]])) {
 }
 
 # put data into a form we can work with
-befores = matrix(unlist(lapply(strsplit(trans.df$before, ""), as.numeric)), ncol=AML[[1]], byrow=TRUE)
-afters = matrix(unlist(lapply(strsplit(trans.df$after, ""), as.numeric)), ncol=AML[[1]], byrow=TRUE)
+srcs = matrix(unlist(lapply(strsplit(trans.df$before, ""), as.numeric)), ncol=AML[[1]], byrow=TRUE)
+dests = matrix(unlist(lapply(strsplit(trans.df$after, ""), as.numeric)), ncol=AML[[1]], byrow=TRUE)
 
-# Running the analysis can take around an hour (and close to 30 minutes if parallelized)
-# Alternatively, you can set run.simulations to FALSE and load the pre-run analysis
-# FIXME: for this to work, a 1.6 MB binary file would be added to the repo
-#   I am not sure if that is acceptable. 
-if(run.simulations == TRUE) {
-  # run HyperTraPS and regularise via penalised likelihood
- 
-  # FIXME: a general concern about having, by default, seed = 1.
-  #  I think this is different from the way most code does this in R,
-  #  where the seed is not fixed, so different runs lead to possibly different
-  #  results, unless the user explicitly sets the seed.
-  #  It might also be worth thinking/illustrating how to do this if running in
-  #  parallel (getting an appropriate seed from R)
-  
-  # FIXME: run in parallel?. Set as an option. This more than halves (2.6) the
-  # running time for me
-  
-  parallelize = TRUE
-
-  if (parallelize) {
-    require(parallel)
-    # Create the data frame of options, print to check it is what we want
-    # and pass to mcmapply
-    (aml.opts <- data.frame(penalty = c(0, 1, 1, 0, 0),
-                            sa = c(0, 0, 1, 0, 0),
-                            lasso = c(0, 0, 0, 1, 1)))
-    parallelised.runs <- mcmapply(HyperTraPS,
-                                  penalty = aml.opts$penalty,
-                     sa = aml.opts$sa,
-                     MoreArgs = list(obs = afters,
-                                     initialstates = befores,
-                                     length = 4,
-                                     kernel = 3),
-                     SIMPLIFY = FALSE,
-                     mc.cores = min(detectCores(), nrow(aml.opts)))
-    
-    cancer.post = parallelised.runs[[1]]
-    cancer.post.autoreg = parallelised.runs[[2]]
-    cancer.post.sa.autoreg = parallelised.runs[[3]]
-    cancer.post.lasso = parallelised.runs[[4]]
-    cancer.post.sa.lasso = parallelised.runs[[5]]
-  } else {
-    cancer.post = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3)
-    cancer.post.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, penalty = 1)
-    cancer.post.sa.autoreg = HyperTraPS(afters, initialstates = befores, sa = 1, length = 4, kernel = 3, penalty = 1)
-  }
-  
-  writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
-  writeHyperinf(cancer.post.autoreg, "cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
-  writeHyperinf(cancer.post.sa.autoreg, "cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
-} else {
-  # example subsequent read
-  cancer.post = readHyperinf("cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
-  cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
-  cancer.post.sa.autoreg = readHyperinf("cancer.post.sa.autoreg", postlabel="cancer.post.sa.autoreg", fulloutput = FALSE, regularised = FALSE)
+parallel.fn = function(fork, srcs, dests) {
+  if(fork == 1) { return(HyperTraPS(dests, initialstates = srcs, seed = 1, samplegap = 10, length = 4, kernel = 3))}
+  if(fork == 2) { return(HyperTraPS(dests, initialstates = srcs, seed = 2, samplegap = 10, length = 4, kernel = 3))}
+  if(fork == 3) { return(HyperTraPS(dests, initialstates = srcs, penalty = 1, seed = 1, samplegap = 10, length = 4, kernel = 3))}
+  if(fork == 4) { return(HyperTraPS(dests, initialstates = srcs, penalty = 1, seed = 2, samplegap = 10, length = 4, kernel = 3))}
+  if(fork == 5) { return(HyperTraPS(dests, initialstates = srcs, penalty = 1, seed = 1, samplegap = 10, model = 3, length = 4, kernel = 3))}
+  if(fork == 6) { return(HyperTraPS(dests, initialstates = srcs, penalty = 1, seed = 2, samplegap = 10, model = 3, length = 4, kernel = 3))}
 }
 
-cancer.post.l3.autoreg = HyperTraPS(afters, initialstates = befores, length = 4, kernel = 3, model=3, penalty = 1)
-  
-# check outputs
-cancer.post.autoreg$lik.traces[79,]
-cancer.post.sa.autoreg$lik.traces[79,]
 
+# run HyperTraPS and regularise via penalised likelihood
+
+# FIXME: a general concern about having, by default, seed = 1.
+#  I think this is different from the way most code does this in R,
+#  where the seed is not fixed, so different runs lead to possibly different
+#  results, unless the user explicitly sets the seed.
+#  It might also be worth thinking/illustrating how to do this if running in
+#  parallel (getting an appropriate seed from R)
+
+require(parallel)
+# Create the data frame of options, print to check it is what we want
+# and pass to mcmapply
+
+nfork = 6
+expt.names = c("seed 1", "seed 2", "pen seed 1", "pen seed 2", "pen mod 3 seed 1", "pen mod 3 seed 2")
+parallelised.runs <- mcmapply(parallel.fn,
+                              fork = 1:nfork,
+                              MoreArgs = list(srcs=srcs,
+                                              dests=dests),
+                              SIMPLIFY = FALSE,
+                              mc.cores = min(detectCores(), nrow(aml.opts)))
+
+cancer.post = parallelised.runs[[1]]
+cancer.post.1 = parallelised.runs[[2]]
+cancer.post.autoreg = parallelised.runs[[3]]
+cancer.post.autoreg.1 = parallelised.runs[[4]]
+cancer.post.3.autoreg = parallelised.runs[[5]]
+cancer.post.3.autoreg.1 = parallelised.runs[[6]]
+
+writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
+writeHyperinf(cancer.post.autoreg, "cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
+writeHyperinf(cancer.post.3.autoreg, "cancer.post.3.autoreg", postlabel="cancer.post.3.autoreg", fulloutput = FALSE, regularised = FALSE)
+
+# uncomment if we're reading previously computed experiments from file
+#  cancer.post = readHyperinf("cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
+#  cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
+#  cancer.post.3.autoreg = readHyperinf("cancer.post.3.autoreg", postlabel="cancer.post.3.autoreg", fulloutput = FALSE, regularised = FALSE)
+
+# hypercube without timings
 g.cancer.graph2 = plotHypercube.sampledgraph2(cancer.post.autoreg, use.arc = FALSE, featurenames = AML[[4]], 
-                                          edge.label.size=3, edge.label.angle = "none", node.labels=FALSE,
-                                          no.times=TRUE, small.times=FALSE, thresh=0.004, truncate=6)
+                                              edge.label.size=3, edge.label.angle = "none", node.labels=FALSE,
+                                              no.times=TRUE, small.times=FALSE, thresh=0.004, truncate=6)
+# hypercube with timings (messier)
+g.cancer.graph2t = plotHypercube.sampledgraph2(cancer.post.autoreg, use.arc = FALSE, featurenames = AML[[4]], 
+                                               edge.label.size=3, edge.label.angle = "none", node.labels=FALSE,
+                                               no.times=TRUE, small.times=TRUE, thresh=0.004, truncate=6)
 
 # create plots of influences under different regularisation protocols
-plot.null = plotHypercube.influences(cancer.post, featurenames = AML[[4]], 
+plot.base = plotHypercube.influences(cancer.post, featurenames = AML[[4]], 
                                      use.final = TRUE, upper.right = TRUE, reorder = TRUE) +
   guides(alpha=FALSE)
 plot.autoreg = plotHypercube.influences(cancer.post.autoreg, featurenames = AML[[4]], 
                                         upper.right = TRUE, reorder = TRUE) +
   guides(alpha = FALSE)
-plot.autoreg.last = plotHypercube.influences(cancer.post.autoreg, featurenames = AML[[4]], 
-                                             use.final = TRUE, upper.right = TRUE, reorder = TRUE) +
-  guides(alpha=FALSE)
-plot.sa.autoreg = plotHypercube.influences(cancer.post.sa.autoreg, featurenames = AML[[4]], 
-                                           use.final = TRUE, upper.right = TRUE, reorder = TRUE) + 
+
+plot.base.pruned = plotHypercube.influences(cancer.post, featurenames = AML[[4]], 
+                                            upper.right = TRUE, reorder = TRUE, cv.thresh = 0.5) +
   guides(alpha = FALSE)
+
+plot.autoreg.pruned = plotHypercube.influences(cancer.post.autoreg, cv.thresh = 2, featurenames = AML[[4]], 
+                                               upper.right = TRUE, reorder = TRUE) +
+  guides(alpha = FALSE) 
+
+# compare with and without penalised likelihood
+ggarrange(plot.base.pruned, plot.autoreg.pruned)
 
 sf = 3
 png("cancer-post-autoreg.png", width=600*sf, height=800*sf, res=72*sf)
 print(ggarrange(g.cancer.graph2 + theme(legend.position = "none"),
-                plot.autoreg, nrow=2, labels=c("A", "B")))
+                plot.autoreg.pruned, nrow=2, labels=c("A", "B")))
+dev.off()
+
+png("cancer-post-si.png", width=800*sf, height=1200*sf, res=72*sf)
+print(ggarrange( g.cancer.graph2 + theme(legend.position = "none"),
+                 plotHypercube.influencegraph(cancer.post.autoreg, cv.thresh = 2, thresh = 1, featurenames = AML[[4]]), nrow=2)
+)
+dev.off()
+
+png("cancer-post-v2.png", width=1200*sf, height=900*sf, res=72*sf)
+print(ggarrange( ggarrange(g.cancer.graph2 + theme(legend.position = "none"),
+                           plot.autoreg.pruned, nrow=1, labels=c("A", "B")),
+                 plotHypercube.motifs(cancer.post.autoreg, featurenames = AML[[4]]) + theme(legend.position="none"),
+                 labels=c("", "C"), nrow=2))
 dev.off()
 
 png("cancer-post-all.png", width=1200*sf, height=800*sf, res=72*sf)
-print(ggarrange(plot.null, plot.autoreg, 
-                plot.autoreg.last, plot.sa.autoreg, labels = c("A", "B", "C", "D")))
+print(ggarrange(plot.base, plot.autoreg, 
+                plot.base.pruned, plot.autoreg.pruned, labels = c("A", "B", "C", "D")))
 dev.off()
-
-# more samples from the regularised parameterisation
-# FIXME: when/why should we run PosteriorAnalysis?
-#     The plot below using cancer.more.samples is a plot of samples
-#     from the posterior? I do not see any (obvious) differences between the plots
-cancer.more.samples = PosteriorAnalysis(cancer.post.autoreg, samples_per_row = 1000)
-
-plotHypercube.sampledgraph2(cancer.post.autoreg, use.arc = FALSE, node.labels = FALSE, 
-                            no.times = TRUE, truncate = 6, edge.label.size=4, thresh = 0.01,
-                            featurenames = AML[[4]])
-plotHypercube.sampledgraph2(cancer.more.samples, use.arc = FALSE, node.labels = FALSE, 
-                            no.times = TRUE, truncate = 6, edge.label.size=2, thresh = 0.02,
-                            featurenames = AML[[4]])
 
 
 # put parameter loss details in regularisation output; add use.regularised to all plot functions
