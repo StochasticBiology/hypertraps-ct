@@ -248,7 +248,8 @@ plotHypercube.motifs = function(my.post, featurenames = c("")) {
   return(ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Label))) +
            geom_text(aes(x=Time,y=(Start+End)/2,label=Label), color="#FFFFFF") + 
            labs(x = "Ordering", y="Probability", fill="Feature") + 
-           scale_fill_brewer(palette = "PuRd") + theme_light())
+           scale_fill_viridis(discrete = TRUE, option="inferno", begin=0.2, end=0.8) +
+           theme_light())
 }
 
 plotHypercube.timeseries = function(my.post, log.axis = TRUE, featurenames=c("")) {
@@ -325,6 +326,7 @@ plotHypercube.influences = function(my.post,
       plot.df = rbind(plot.df, data.frame(x=i, y=j, mean=ref.mean, cv=abs(ref.sd/ref.mean)))
     }
   }  
+  plot.df$cv[is.na(plot.df$cv)] = 0
   plot.df$xlab = labels[plot.df$x]
   plot.df$ylab = labels[plot.df$y]
   if(reorder == TRUE) {

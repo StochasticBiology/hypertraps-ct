@@ -317,6 +317,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		Nullable<NumericVector> endtimes = R_NilValue,
 		NumericVector length = 3,
 		NumericVector kernel = 5,
+		NumericVector samplegap = -1,
 		NumericVector losses = 0,
 		NumericVector apm_type = 0,
 		NumericVector sa = 0,
@@ -382,6 +383,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   int _lasso;
   int regterm;
   double lassoterm;
+  int _samplegap;
   
   // default values
   num_error = 0;
@@ -391,6 +393,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   _losses = losses[0];
   _apm_type = apm_type[0];
   _sgdscale = sgd_scale[0];
+  _samplegap = samplegap[0];
   filelabel = 0;
   _seed = seed[0];
   searchmethod = 0;
@@ -526,10 +529,14 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   
   // initialise and allocate
   maxt = pow(10, _lengthindex);
+  if(_samplegap == -1) {
   SAMPLE = 1000;
   if(maxt <= 10000) SAMPLE = 100;
   if(maxt <= 100) SAMPLE = 1;
-
+  } else {
+    SAMPLE = _samplegap;
+  }
+  
   if(_EVERYITERATION)
     SAMPLE = 1;
 
