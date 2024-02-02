@@ -211,22 +211,26 @@ logic.post.1 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, 
 logic.post.2 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = 2, walkers = 20)
 logic.post.3 = HyperTraPS(logic.ends, initialstates = logic.starts, length = 4, model = 3, walkers = 20)
 
+#plotHypercube.influencegraph(logic.post.3, cv.thresh = 0.4)
+
 png("plot-demo-logic.png", width=800*sf, height=400*sf, res=72*sf)
 ggarrange(plotHypercube.graph(logic.post.m1) + ggtitle("All edges") + theme(legend.position="none"),
-          plotHypercube.graph(logic.post.1) + ggtitle("L") + theme(legend.position="none"),
+        #  plotHypercube.graph(logic.post.1) + ggtitle("L") + theme(legend.position="none"),
           plotHypercube.graph(logic.post.2)+ ggtitle("L^2") + theme(legend.position="none"),
           plotHypercube.graph(logic.post.3)+ ggtitle("L^3") + theme(legend.position="none"),
           plotHypercube.graph(logic.post.m1r)+ ggtitle("All edges, regularised") + theme(legend.position="none"),
+          plotHypercube.influencegraph(logic.post.3, cv.thresh = 0.4),
           plotHypercube.regularisation(logic.post.m1r))
 dev.off()
 
 g.logic = ggarrange(plotHypercube.graph(logic.post.m1) + theme(legend.position="none"),
-          plotHypercube.graph(logic.post.1) +  theme(legend.position="none"),
+      #    plotHypercube.graph(logic.post.1) +  theme(legend.position="none"),
           plotHypercube.graph(logic.post.2)+ theme(legend.position="none"),
           plotHypercube.graph(logic.post.3)+ theme(legend.position="none"),
           plotHypercube.graph(logic.post.m1r)+ theme(legend.position="none"),
+          plotHypercube.influencegraph(logic.post.3, cv.thresh = 0.4) + theme(legend.position="none"),
           plotHypercube.regularisation(logic.post.m1r),
-          labels=c("i, all edges", "ii, L", "iii, L^2", "iv, L^3", "v, all edges regularised", "vi"))
+          labels=c("i, all edges", "ii, L^2", "iii, L^3", "iv, all + reg", "v", "vi"))
 
 prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2))
 g.hidden = plotHypercube.prediction(prediction.hidden, max.size = 10)

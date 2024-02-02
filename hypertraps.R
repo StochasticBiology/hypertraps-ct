@@ -595,29 +595,29 @@ plotHypercube.motifseries = function(my.post, t.set, thresh = 0.05) {
   return(
     ggplot(df) + geom_rect(aes(xmin=t.index-0.5,xmax=t.index+0.5,ymin=s1,ymax=s2,fill=factor(State)), color="white") +
       geom_text(aes(x=t.index,y=(s1+s2)/2,label=label), color="#FFFFFF") + 
-      labs(x = "Timestep", y="Probability", fill="State") + 
+      labs(x = "Time", y="Probability", fill="State") + 
       scale_fill_viridis(discrete = TRUE, option="inferno", begin=0.2, end=0.8) +
       theme_light() + theme(legend.position = "none") +
       scale_x_continuous(breaks = 1:length(t.set), labels=as.character(t.set))
   )
 }
 
-# plot pairwise influences between features in the L^2 picture
+# plot pairwise influences between features in the L^2 or L^3 picture
 plotHypercube.influencegraph = function(my.post, 
                                         featurenames=c(""), 
                                         use.regularised = FALSE, 
                                         use.final = FALSE,
                                         thresh=0.05,
-                                        cv.thresh = Inf) {
-  if(my.post$model != 2) {
-    stop("Influence plot currently only supported for model type 2 (pairwise influences)")
-  }
+                                        cv.thresh = Inf,
+                                        label.size = 2) {
   plot.df = data.frame()
   if(length(featurenames) > 1) {
     labels = featurenames
   } else {
     labels = 1:my.post$L
   }
+  
+  if(my.post$model == 2) {
   for(i in 1:my.post$L) {
     for(j in 1:my.post$L) {
       ref = (i-1)*my.post$L + (j-1) + 1
@@ -631,9 +631,38 @@ plotHypercube.influencegraph = function(my.post,
         ref.mean = mean(my.post$posterior.samples[,ref])
         ref.sd = sd(my.post$posterior.samples[,ref])
       }
+      if(i != j) {
       plot.df = rbind(plot.df, data.frame(x=labels[i], y=labels[j], mean=ref.mean, cv=abs(ref.sd/ref.mean)))
+      }
     }
   }  
+  } else if(my.post$model == 3) {
+    for(i in 1:my.post$L) {
+      for(j in 1:my.post$L) {
+        for(k in 1:my.post$L) {
+        ref = (j-1)*my.post$L*my.post$L + (i-1)*my.post$L + k
+        if(use.regularised == TRUE) {
+          ref.mean = as.numeric(my.post$regularisation$best[ref])
+          ref.sd = 0
+        } else if(use.final == TRUE) {
+          ref.mean = mean(my.post$posterior.samples[nrow(my.post$posterior.samples),ref])
+          ref.sd = 0
+        } else {
+          ref.mean = mean(my.post$posterior.samples[,ref])
+          ref.sd = sd(my.post$posterior.samples[,ref])
+        }
+        if(i == j) { this.xlab = labels[i] }
+        if(i != j) { this.xlab = paste0(labels[i], "+", labels[j]) }
+        if(i != k & j != k) {
+        plot.df = rbind(plot.df, data.frame(x=this.xlab, y=labels[k], mean=ref.mean, cv=abs(ref.sd/ref.mean)))
+        }
+      }
+      }  
+    }
+    
+  } else {
+    stop("Influence plot currently only supported for model type 2 or 3 (pairwise/tripletwise influences)")
+  }
   plot.df = plot.df[plot.df$cv < cv.thresh,]
   to.g.df = plot.df[abs(plot.df$mean)>thresh,1:3]
   colnames(to.g.df) = c("From", "To", "Weight")
@@ -641,7 +670,7 @@ plotHypercube.influencegraph = function(my.post,
   g = graph_from_data_frame(to.g.df)
   return( ggraph(g) + geom_edge_arc(aes(colour=Direction, alpha=abs(Weight), width=abs(Weight)),
                                     strength=0.1, arrow=arrow(length=unit(0.2, "inches"), type="closed")) +
-            geom_node_label(aes(label=name)) + theme_void() +
+            geom_node_label(aes(label=name), size=label.size) + theme_void() +
             labs(edge_width="Magnitude", edge_alpha="Magnitude", colour="Direction") 
   )
 }
@@ -660,7 +689,7 @@ plotHypercube.prediction = function(prediction, max.size = 30) {
       theme_minimal()
     g.2 = ggplot(prediction$locus.probs, aes(x=factor(locus), y=prob)) + 
       labs(x = "State", y = "Probability") +
-      geom_col() + theme_light() + xlab("Probability feature is a 1")
+      geom_col() + theme_light() + labs(x="Feature",y="Probability feature is a 1")
   }
   return(ggarrange(g.1, g.2))
 }
