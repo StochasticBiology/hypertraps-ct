@@ -141,6 +141,7 @@ HyperTraPS needs at least a set of observations. *This is the only essential inp
 | Use SA (0/1) | sa=*N* | --sa | 0 |
 | Use SGD (0/1) | sgd=*N* | --sgd | 0 |
 | Use PLI (0/1) | pli=*N* | --pli | 0 |
+| Gap between samples | samplegap=*N* | (not available yet) | 1e3 (>1e4 steps) or 1e2 (>1e2 steps)
 | Regularisation by penalised likelihood | penalty=*X* | --penalty *X* | 0 (controls penalty per non-zero parameter) 
 | Regularisation by LASSO | lasso=*X* | (not available yet) | 0 (controls lambda, LASSO penalty for absolute parameter values) 
 | Number of simulations per parameter sample | samples_per_row=*N* | (not available yet) | 10 (number of samples to use for each parameter set when simulating routes and times for output)
@@ -168,7 +169,8 @@ The various outputs of HyperTraPS can be used in the R plotting functions below,
 | More specific plots: |||
 | `plotHypercube.lik.trace` | Trace of likelihood over inference run, calculated twice (to show consistency or lack thereof) | |
 | `plotHypercube.bubbles` | "Bubble plot" of probability of acquiring trait *i* at ordinal step *j* | *transpose*=FALSE (horizontal and vertical axis), *reorder*=FALSE (order traits by mean acquisition ordering) |
-| `plotHypercube.motifs` | Motif-style plot of probability of acquiring trait *i* at ordinal step *j* | |
+| `plotHypercube.motifs` | Motif-style plot of probability of acquiring trait *i* at ordinal step *j* |  |
+| `plotHypercube.motifseries` | Motif-style plot of probability of specific states at a set of given snapshot times | *t.set*=0 (a set of snapshot times); *thresh*=0.05 (minimum probability for a state to be labelled) |
 | `plotHypercube.graph` | Transition graph with edge weights showing probability flux (from full output) | *thresh*=0.05 (minimum threshold of flux for drawing an edge) |
 | `plotHypercube.sampledgraph` | Transition graph with edge weights showing probability flux (from sampled paths) | *thresh*=0.05 (minimum threshold of flux for drawing an edge), max=1000 (maximum number of sampled routes to consider) |
 | `plotHypercube.sampledgraph2` | As above, with mean and s.d. of absolute timings for each step | *thresh*=0.05 (minimum threshold of flux for drawing an edge), *max*=1000 (maximum number of sampled routes to consider), *no.times*=FALSE (avoid annotating edges with time information), *use.arc*=TRUE (arc edge format -- looks messier but less prone to overlapping edge labels), *node.labels*=TRUE (binary labels for nodes), *edge.label.size*=2 (font size for edge labels) |
@@ -176,7 +178,8 @@ The various outputs of HyperTraPS can be used in the R plotting functions below,
 | `plotHypercube.regularisation` | Information criterion vs number of nonzero parameters during regularisation | |
 | `plotHypercube.timeseries` | Time series of acquisitions across sampled routes | |
 | `plotHypercube.prediction` | Visualise predictions of unobserved features or future behaviour, given a model fit | *prediction* (required, the output of `predictHiddenVals` or `predictNextStep` (see below) |
-| `plotHypercube.influences` | For the L^2 model, visualise how each feature acquisition influences the rate of acquisition of other features | |
+| `plotHypercube.influences` | For the L^2 model, visualise how each feature acquisition influences the rate of acquisition of other features as a matrix |  *featurenames*=c("") (set of names for features); *use.regularised*=FALSE (use stepwise-regularised param set); *reorder*=FALSE (order features by base rate); *upper.right*=FALSE (control orientation of diagonal); *cv.thresh*=Inf (threshold posterior coefficient of variation, only plot interactions below this)|
+| `plotHypercube.influencegraph` | For the L^2 or L^3 model, visualise how each feature acquisition influences the rate of acquisition of other features as a network |  as `plotHypercube.influences` |
 
 Some useful ones are demonstrated here:
 ![image](https://github.com/StochasticBiology/hypertraps-ct/assets/50171196/153ed0d7-88ea-4dc2-a3bc-0c24b25923db)
