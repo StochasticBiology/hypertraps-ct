@@ -436,9 +436,9 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
     for(i = 0; i < ntarg/2; i++)
       {
 	for(j = 0; j < len; j++)
-	  matrix[i*(2*len)+j] = _initialstates(i, j);
+	  matrix[i*(2*len)+j] = (_losses != 1 || _initialstates(i,j) == 2 ? _initialstates(i, j) : 1 - _initialstates(i,j));
 	for(j = 0; j < len; j++)
-	  matrix[i*(2*len)+len+j] = obs(i,j);
+	  matrix[i*(2*len)+len+j] = (_losses != 1 || obs(i,j) == 2 ? obs(i,j) : 1 - obs(i,j));
       }
  
   }
@@ -446,9 +446,9 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
     for(i = 0; i < ntarg/2; i++)
       {
 	for(j = 0; j < len; j++)
-	  matrix[i*(2*len)+j] = 0;
+	  matrix[i*(2*len)+j] = (_losses != 1 ? 0 : 1);
 	for(j = 0; j < len; j++)
-	  matrix[i*(2*len)+len+j] = obs(i,j);
+	  matrix[i*(2*len)+len+j] = (_losses != 1 || obs(i,j) == 2 ? obs(i,j) : 1 - obs(i,j));
       }
   }
 
@@ -729,7 +729,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   else
     NSAMPLES = 1;
   
-  NumericVector lik1_output, lik2_output, L_output, model_output, nparam_output, t_output;
+  NumericVector lik0_output, lik1_output, lik2_output, L_output, model_output, nparam_output, t_output;
   NumericVector best_output(NVAL);
   NumericMatrix posterior_output(NSAMPLES, NVAL);
   int sampleref = 0;
@@ -771,7 +771,8 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	  // if MCMC, store a set of samples, otherwise the single best
 	  if(searchmethod == 0)
 	    sampleref++;
-	  
+
+	  lik0_output.push_back(lik);
 	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
 	  lik1_output.push_back(nlik);
 	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
@@ -925,6 +926,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 			  Named("L") = L_output,
   			  Named("model") = model_output,
 			  Named("nparam") = nparam_output,
+			  Named("CurrentLogLikelihood") = lik0_output,
 			  Named("LogLikelihood1") = lik1_output,
 			  Named("LogLikelihood2") = lik2_output);
   DataFrame Ltsdf(Lts);

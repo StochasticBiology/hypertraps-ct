@@ -26,8 +26,11 @@ BinToDec <- function(state) {
 
 plotHypercube.lik.trace = function(my.post) {
   ### likelihood traces
-  return(ggplot(my.post$lik.traces) + geom_line(aes(x=Step, y=LogLikelihood1)) +
-           geom_line(aes(x=Step, y=LogLikelihood2)) + theme_light() )
+  return(ggplot(my.post$lik.traces) + 
+           geom_line(aes(x=Step, y=LogLikelihood1)) +
+           geom_line(aes(x=Step, y=LogLikelihood2)) + 
+           geom_line(aes(x=Step, y=CurrentLogLikelihood), color="#FF0000") +
+           theme_light() )
 }
 
 plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
@@ -572,7 +575,7 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
 }
 
 # plot genotype probabilities at a given set of times as a "motif" plot
-plotHypercube.motifseries = function(my.post, t.set, thresh = 0.05) {
+plotHypercube.motifseries = function(my.post, t.set=0, thresh = 0.05) {
   df = data.frame()
   t.index = 1
   # build up dataframe with rectangle co-ordinates and labels for high-probability states
