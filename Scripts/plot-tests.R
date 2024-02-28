@@ -1,5 +1,5 @@
 library(ggplot2)
-library(gridExtra)
+library(ggpubr)
 
 # compare bubble plot summaries with walker numbers and DT/CT
 df.1 = read.csv("../VerifyData/test-cross-1-bubbles.csv") 
@@ -18,7 +18,8 @@ df.6$expt = 3; df.6$t = 2; df.6$label = "CT n=20"
 df = rbind(df.1, df.2, df.3, df.4, df.5, df.6)
 
 g.bubbles = ggplot(df, aes(x=Time+expt/10,y=OriginalIndex+t/10,size=Probability,color=label)) + 
-  geom_point() + xlab("Time") + ylab("Feature") + theme_light()
+  geom_point() + labs(x = "Ordering", y = "Feature", size = "Probability", color = "Experiment") + 
+  theme_light()
 
 # compare likelihood values by walker number for direct time experiments
 lik.1 = read.csv("../VerifyData/test-cross-1-lik.csv")
@@ -41,7 +42,7 @@ ggplot(lik.df, aes(x=LogLikelihood1,y=LogLikelihood2, color=factor(expt))) +
 lik.ts.df = rbind(lik.1, lik.2, lik.3, lik.4, lik.5)
 
 g.dt.lik = ggplot(lik.ts.df, aes(x=Step, y=LogLikelihood1, color=expt)) +
-  geom_line() + ylab("log L") + theme_light()
+  geom_line() + labs(x = "Step", y = "log L", color = "Process") + theme_light()
 
 # compare likelihood values by walker number for continuous time experiments
 lik.1 = read.csv("../VerifyData/test-cross-ct-1-lik.csv")
@@ -64,11 +65,12 @@ ggplot(lik.df, aes(x=LogLikelihood1,y=LogLikelihood2, color=factor(expt))) +
 lik.ts.df = rbind(lik.1, lik.2, lik.3, lik.4, lik.5)
 
 g.ct.lik = ggplot(lik.ts.df, aes(x=Step, y=LogLikelihood1, color=expt)) +
-  geom_line() + ylab("log L") + theme_light()
+  geom_line() + labs(x = "Step", y = "log L", color = "Process") + theme_light()
 
 g.liks = grid.arrange(g.dt.lik, g.ct.lik, nrow=1)
 
 sf = 2
 png("plot-tests.png", width=800*sf, height=600*sf, res=72*sf)
-grid.arrange(g.bubbles, g.liks, nrow=2)
+ggarrange(g.bubbles, ggarrange(g.dt.lik, g.ct.lik, labels = c("B", "C"), nrow=1), labels = c("A", ""),
+          nrow=2)
 dev.off()
