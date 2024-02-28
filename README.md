@@ -167,7 +167,7 @@ The various outputs of HyperTraPS can be used in the R plotting functions below,
 |---------------|-------------|---------|
 | `plotHypercube.summary` | Summary plot combining several of the above | *f.thresh*=0.05 (flux threshold for graph plot), *t.thresh*=20 (time threshold for time histograms), *continuous.time*=TRUE (plot continuous time summary information) |
 | More specific plots: |||
-| `plotHypercube.lik.trace` | Trace of likelihood over inference run, calculated twice (to show consistency or lack thereof) | |
+| `plotHypercube.lik.trace` | Trace of likelihood over inference run, re-calculated twice with different samples (to show consistency or lack thereof), along with current "in use" likelihood | |
 | `plotHypercube.bubbles` | "Bubble plot" of probability of acquiring trait *i* at ordinal step *j* | *transpose*=FALSE (horizontal and vertical axis), *reorder*=FALSE (order traits by mean acquisition ordering) |
 | `plotHypercube.motifs` | Motif-style plot of probability of acquiring trait *i* at ordinal step *j* |  |
 | `plotHypercube.motifseries` | Motif-style plot of probability of specific states at a set of given snapshot times | *t.set*=0 (a set of snapshot times); *thresh*=0.05 (minimum probability for a state to be labelled) |
