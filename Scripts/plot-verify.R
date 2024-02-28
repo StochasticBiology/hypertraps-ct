@@ -1,18 +1,20 @@
 library(ggplot2)
-library(gridExtra)
+library(ggpubr)
 
 #### bubble and hypercube plots for test cases
 
 fname = c("cross-0", "cross-1", "cross-2")
+n.name = c("10", "40", "160")
 bdf = data.frame()
 for(i in 1:length(fname)) {
 bubble.name = paste(c("../VerifyData/", fname[i], "-bubbles.csv"), collapse="")
 tmpdf = read.csv(bubble.name)
 tmpdf$Expt=i
+tmpdf$Expt.name = n.name[i]
 bdf = rbind(bdf, tmpdf)
 }
-g.bubbles = ggplot(bdf, aes(x=Time+Expt/10, y=OriginalIndex, size=Probability, color=factor(Expt))) +
-  geom_point() +
+g.bubbles = ggplot(bdf, aes(x=Time+Expt/10, y=OriginalIndex, size=Probability, color=factor(Expt.name, levels=n.name))) +
+  geom_point() + labs(x="Ordering", y="Feature", size="Probability", color="Observations") +
   theme_light()
 
 #### let's try to reproduce the previous paper figures
@@ -138,8 +140,9 @@ for(i in 1:12) {
   trueval = as.numeric(edges.df$truelabel[i])
   hist.df = rbind(hist.df, data.frame(edge=i, probscale=df[,colref]/trueval))
 }
-g.hard.hist = ggplot(hist.df, aes(x=log(probscale),fill=factor(edge))) + 
+g.hard.hist = ggplot(hist.df, aes(x=log10(probscale),fill=factor(edge))) + 
   geom_histogram(position="identity", alpha=0.2) + 
+  labs(x="log10 Phat / P", y="Count", fill="Edge label") +
   theme_light()
 
 #### analytic vs sampling simulation
@@ -149,7 +152,7 @@ g.timehist = ggplot(rcdf[rcdf$V1!=0,]) +
   geom_line(aes(x=V2,y=V3, color=factor(V1))) +
   geom_point(aes(x=V2,y=V4, color=factor(V1)), size=5, alpha=0.2) +
   geom_point(aes(x=V2,y=V5, color=factor(V1))) +
-  xlim(0,12) + 
+  xlim(0,12) + labs(x="t", y="P(110,t|000,0)", color="Parameter set") +
   theme_light()
 
 #### time histograms for inferred cross case
@@ -161,12 +164,16 @@ h3.df = read.csv("../VerifyData/cross-2-timehists.csv")
 h3.df$expt=3
 h.df = rbind(h1.df, h2.df, h3.df)
 
-g.thist = ggplot(h.df, aes(x=Time, y=Probability, fill=factor(OriginalIndex))) + 
-  geom_col(position="dodge") + xlim(-0.1,1.05) + facet_wrap(~expt, nrow=3) +
-  theme_light() #+ scale_x_continuous(trans="log10")
+n.name = c("10", "40", "160")
+h.df$expt.name = factor(n.name[h.df$expt], levels=n.name)
+g.thist = ggplot(h.df, aes(x=Time, y=Probability, fill=factor(OriginalIndex+1))) + 
+  geom_col(position="dodge") + xlim(-0.1,1.05) + facet_wrap(~expt.name, nrow=3) +
+  labs(x="Time", y="Probability", fill="Feature") +
+  theme_light() #+ scale_x_continuous(trans="log10") 
 
 #### overall plot
 sf = 2
 png("plot-verify.png", width=800*sf, height=800*sf, res=72*sf)
-grid.arrange(g.timehist, g.easy, g.hard, g.hard.hist, g.bubbles, g.thist, nrow=3)
+ggarrange(g.timehist, g.easy, g.hard, g.hard.hist, g.bubbles, g.thist, 
+          labels = c("A", "B", "C", "D", "E", "F"), nrow=3, ncol=2)
 dev.off()
