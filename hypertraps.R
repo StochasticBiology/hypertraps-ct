@@ -67,7 +67,7 @@ plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE,
   V(trans.g)$binname = bs
   layers = str_count(bs, "1")
   this.plot =  ggraph(trans.g, layout="sugiyama", layers=layers) + 
-    geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
+    geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux), color="#AAAAFF") + 
     scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
     theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
@@ -680,7 +680,12 @@ plotHypercube.influencegraph = function(my.post,
   colnames(to.g.df) = c("From", "To", "Weight")
   to.g.df$Direction = as.character(sign(to.g.df$Weight))
   g = graph_from_data_frame(to.g.df)
-  return( ggraph(g) + geom_edge_arc(aes(colour=Direction, alpha=abs(Weight), width=abs(Weight)),
+  if(my.post$model == 2) {
+    this.plot = ggraph(g)
+  } else {
+    this.plot = ggraph(g, layout="kk")
+  }
+  return( this.plot + geom_edge_arc(aes(colour=Direction, alpha=abs(Weight), width=abs(Weight)),
                                     strength=0.1, arrow=arrow(length=unit(0.2, "inches"), type="closed")) +
             geom_node_label(aes(label=name), size=label.size) + theme_void() +
             labs(edge_width="Magnitude", edge_alpha="Magnitude", colour="Direction") 

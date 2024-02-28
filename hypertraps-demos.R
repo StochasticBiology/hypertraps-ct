@@ -74,11 +74,27 @@ predictHiddenVals(my.post, c(1,1,0,0,0))
 predictHiddenVals(my.post, c(1,1,2,2,0))
 
 # impose priors -- here disallowing every pairwise effect
+# prior format: n_param rows, 2 columns. [i,1] = min i; [i,2] = max i
+# here we set [i,1]=[i,2]=0 for all entries except the main (diagonal in L^2) effects
 priors = matrix(0, ncol=2, nrow=5*5)
 for(i in 0:4) {
   priors[i*5+i+1,1] = -10
   priors[i*5+i+1,2] = 10
 }
+
+# here we impose priors on the base rates: feature 1 > feature 5 >> all others
+priors = matrix(0, ncol=2, nrow=5*5)
+priors[,1] = -10
+priors[,2] = 10
+for(i in 0:4) {
+  priors[i*5+i+1,1] = -10
+  priors[i*5+i+1,2] = -10
+}
+priors[0*5+0+1,1] = 1
+priors[0*5+0+1,2] = 1
+priors[4*5+4+1,1] = 0
+priors[4*5+4+1,2] = 0
+
 my.post.priors = HyperTraPS(m.2, initialstates = m.1, 
                      starttimes = times, endtimes = times, 
                      priors = priors,
@@ -91,14 +107,6 @@ my.post.model1 = HyperTraPS(m.2, initialstates = m.1,
                             featurenames = c("A", "B", "C", "D", "E")); 
 plotHypercube.summary(my.post.model1)
 
-# impose priors -- here disallowing one possible first step
-priors = matrix(c(-10,10), ncol=2, nrow=5*5, byrow = TRUE)
-priors[1,2] = -10
-my.post.priors = HyperTraPS(m.2, initialstates = m.1, 
-                            starttimes = times, endtimes = times, 
-                            priors = priors,
-                            featurenames = c("A", "B", "C", "D", "E")); 
-plotHypercube.summary(my.post.priors)
 
 ### different levels of uncertainty in timings
 # precisely specified timings, as above
