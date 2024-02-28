@@ -220,6 +220,7 @@ In the `Scripts/`, `Verify/`, `RawData/`, and `Process/` directories are various
 Scripts wrapping the curation, inference, and analysis process for different case. In each case, datasets are produced and set in their own directory. The analysis code is then called to process these data, and plotting code follows.
   * `infer-verify.sh` plotted with `plot-verify.R` -- generates verification datasets and runs HyperTraPS
   * `infer-tests.sh` plotted with `plot-tests.R` -- generates tests of various parameters and experiments and runs HyperTraPS
+  * `infer-others.sh` -- examples of other scientific case studies run on the command line
   * `prepare-all.sh` -- Bash script using the code below in `Process/` to set up TB dataset. TB is processed using `cook-data.sh`.
   * `tb-case-study.R` -- runs HyperTraPS and plots TB case study. Alternative command line without plots: `infer-tb.sh` 
   * `cancer-examples.R` -- R script running examples of cancer progression analysis    
