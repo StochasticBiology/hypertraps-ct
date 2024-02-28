@@ -26,11 +26,13 @@ BinToDec <- function(state) {
 
 plotHypercube.lik.trace = function(my.post) {
   ### likelihood traces
-  return(ggplot(my.post$lik.traces) + 
-           geom_line(aes(x=Step, y=LogLikelihood1)) +
-           geom_line(aes(x=Step, y=LogLikelihood2)) + 
-           geom_line(aes(x=Step, y=CurrentLogLikelihood), color="#FF0000") +
-           theme_light() )
+  this.plot = ggplot(my.post$lik.traces) + 
+    geom_line(aes(x=Step, y=LogLikelihood1)) +
+    geom_line(aes(x=Step, y=LogLikelihood2))
+  if("CurrentLogLikelihood" %in% colnames(my.post$lik.traces)) {
+    this.plot = this.plot + geom_line(aes(x=Step, y=CurrentLogLikelihood), color="#FF0000") 
+  }
+  return(this.plot + theme_light() )
 }
 
 plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
