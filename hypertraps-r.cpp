@@ -446,7 +446,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
     for(i = 0; i < ntarg/2; i++)
       {
 	for(j = 0; j < len; j++)
-	  matrix[i*(2*len)+j] = (_losses != 1 ? 0 : 1);
+	  matrix[i*(2*len)+j] = 0;
 	for(j = 0; j < len; j++)
 	  matrix[i*(2*len)+len+j] = (_losses != 1 || obs(i,j) == 2 ? obs(i,j) : 1 - obs(i,j));
       }

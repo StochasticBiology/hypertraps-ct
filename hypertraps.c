@@ -600,7 +600,10 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 	myexit(0);
       }
       if(targ[i] == 0 && startpos[i] == 1) {
-	printf("Wrong ordering, or some other problem with input file. Data file rows should be ordered ancestor then descendant!\n");
+	printf("Wrong ordering, or some other problem with input file. Data file rows should be ordered ancestor then descendant! Problem transition was:\n");
+	for(j = 0; j < LEN; j++) printf("%i", startpos[j]);
+	printf(" -> ");
+	for(j = 0; j < LEN; j++) printf("%i", targ[j]);
 	myexit(0);
       }
       
@@ -609,7 +612,10 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
   if(n0 > n1)
     {
       // the target comes before the source
-      printf("Wrong ordering, or some other problem with input file. Data file rows should be ordered ancestor then descendant!\n");
+      printf("Wrong ordering, or some other problem with input file. Data file rows should be ordered ancestor then descendant! Problem transition was:\n");
+      for(j = 0; j < LEN; j++) printf("%i", startpos[j]);
+      printf(" -> ");
+      for(j = 0; j < LEN; j++) printf("%i", targ[j]);
       myexit(0);
     }
 

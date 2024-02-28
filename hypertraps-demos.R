@@ -293,7 +293,6 @@ c4.names = as.vector(read.table("RawData/c4-trait-names.txt", sep=","))[[1]]
 
 my.post.c4 = HyperTraPS(c4.mat, 
                         length = 4, outputinput= 1, 
-                        losses = 1,
                         featurenames = c4.names) 
 ggarrange(plotHypercube.lik.trace(my.post.c4), plotHypercube.bubbles(my.post.c4, reorder=TRUE), nrow=2)
 
