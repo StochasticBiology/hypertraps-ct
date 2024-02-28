@@ -102,7 +102,7 @@ writeHyperinf(cancer.post.3.autoreg, "cancer.post.3.autoreg", postlabel="cancer.
 
 # hypercube without timings
 g.cancer.graph2 = plotHypercube.sampledgraph2(cancer.post.autoreg, use.arc = FALSE, featurenames = AML[[4]], 
-                                              edge.label.size=3, edge.label.angle = "none", node.labels=FALSE,
+                                              edge.label.size=2, edge.label.angle = "none", node.labels=FALSE,
                                               no.times=TRUE, small.times=FALSE, thresh=0.004, truncate=6)
 # hypercube with timings (messier)
 g.cancer.graph2t = plotHypercube.sampledgraph2(cancer.post.autoreg, use.arc = FALSE, featurenames = AML[[4]], 
@@ -128,8 +128,9 @@ plot.autoreg.pruned = plotHypercube.influences(cancer.post.autoreg, cv.thresh = 
 # compare with and without penalised likelihood
 ggarrange(plot.base.pruned, plot.autoreg.pruned)
 
+
 sf = 3
-png("cancer-post-autoreg.png", width=600*sf, height=800*sf, res=72*sf)
+png("cancer-post-autoreg.png", width=800*sf, height=800*sf, res=72*sf)
 print(ggarrange(g.cancer.graph2 + theme(legend.position = "none"),
                 plot.autoreg.pruned, nrow=2, labels=c("A", "B")))
 dev.off()
