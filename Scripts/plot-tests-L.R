@@ -9,11 +9,12 @@ for(L in c(10, 30, 50, 70, 90)) {
                                           size=sqrt(Probability)/sqrt(max(Probability)), 
                                           alpha=sqrt(Probability)/sqrt(max(Probability)))) + 
     geom_point() + theme_light() + theme(legend.position="none") +
+    labs(x = "Ordering", y = "Feature") +
     scale_alpha_continuous(range=c(0,ifelse(L<50,1,0.3)))
 }
 sf = 2
 png("plot-tests-L.png", width=800*sf, height=500*sf, res=72*sf)
-ggarrange(plotlist=gset, nrow=2, ncol=3)
+ggarrange(plotlist=gset, nrow=2, ncol=3, labels = c("A", "B", "C", "D", "E"))
 dev.off()
 
 gset2 = list()
