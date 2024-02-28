@@ -160,15 +160,20 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
   V(trans.g)$binname = bs
   layers = str_count(bs, "1")
   
+  if(truncate > bigL/2) { 
+    this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) 
+  } else {
+    this.plot=  ggraph(trans.g, layout="tree")
+  }
   if(use.arc == TRUE) {
-    this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + 
+    this.plot= this.plot +
       geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label, angle=45), 
                     label_size = edge.label.size, label_colour=edge.label.colour, color="#AAAAFF",
                     label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = TRUE) + 
       scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
       theme_graph(base_family="sans")
   } else {
-    this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) + 
+    this.plot=  this.plot +
       geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=label, angle=45), 
                      label_size = edge.label.size, label_colour=edge.label.colour, color="#AAAAFF",
                      label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = TRUE) + 
