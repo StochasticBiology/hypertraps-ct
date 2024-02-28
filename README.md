@@ -218,12 +218,10 @@ In the `Scripts/`, `Verify/`, `RawData/`, and `Process/` directories are various
 `Scripts/`
 ----
 Scripts wrapping the curation, inference, and analysis process for different case. In each case, datasets are produced and set in their own directory. The analysis code is then called to process these data, and plotting code follows.
-  * `infer-verify.sh` -- generates verification datasets and runs HyperTraPS
-  * `infer-tests.sh` -- generates tests of various parameters and experiments and runs HyperTraPS
-  * `prepare-all.sh` -- Bash script using the code below in `Process/` to set up TB and MRO datasets. TB, and MRO with NCBI phylogeny, are straightforwardly processed using `cook-data.sh`. MRO with TimeTree phylogeny is a bit more involved and has its own script `mro-timetree-parse.sh`.
-  * `infer-tb.sh` -- runs HyperTraPS for TB data
-  * `infer-mro.sh` -- runs HyperTraPS for (different versions of) MRO data
-  * `infer-others.sh` -- runs HyperTraPS for various other scientific cases
+  * `infer-verify.sh` plotted with `plot-verify.R` -- generates verification datasets and runs HyperTraPS
+  * `infer-tests.sh` plotted with `plot-tests.R` -- generates tests of various parameters and experiments and runs HyperTraPS
+  * `prepare-all.sh` -- Bash script using the code below in `Process/` to set up TB dataset. TB is processed using `cook-data.sh`.
+  * `tb-case-study.R` -- runs HyperTraPS and plots TB case study. Alternative command line without plots: `infer-tb.sh` 
   * `cancer-examples.R` -- R script running examples of cancer progression analysis    
 
 `Verify/`
@@ -235,7 +233,7 @@ Code to generate synthetic test datasets
     
 `RawData/`
 ----------
-  * Phylogenies and feature lists for MRO and TB
+  * Phylogeny and feature list for TB
   * Feature lists and name sets for previously published case studies: C4 photosynthesis evolution, ovarian cancer progression, severe malaria clinical progression, tool use evolution
 
 `Process/`
@@ -245,4 +243,3 @@ Code for (1), distilling transition data suitable for HyperTraPS, for raw MRO an
   * `internal-labels.c` -- C code to introduce dummy internal node labels (for use in followup preparation)
   * `parse-new.py` -- Python code to infer internal node barcodes and produce transition datafiles ready for HyperTraPS (and summary graphic for checking)
   * `cook-data.sh` -- Bash script applying these steps to given data
-  * `mro-timetree-parse.sh` -- Bash script taking care of some subtleties when combining MRO data with TimeTree phylogeny
