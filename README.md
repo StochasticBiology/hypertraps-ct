@@ -213,34 +213,44 @@ will return a set of states and their associated probabilities at time 0.1.
 Specific content for introduction paper
 =======
 
-In the `Scripts/`, `Verify/`, `RawData/`, and `Process/` directories are various scripts, datafiles, and data-generating code to demonstrate HyperTraPS functionality and explore two scientific case studies (anti-microbial resistance in tuberculosis and reductive mitochondrial evolution). There's also data from previous studies using HyperTraPS for comparison and demonstration. The demonstration files in the root directory make use of these datafiles.
+In the `Scripts/`, `Verify/`, `RawData/`, and `Process/` directories are various scripts, datafiles, and data-generating code to demonstrate HyperTraPS functionality and explore two scientific case studies (anti-microbial resistance in tuberculosis and cancer progression). There's also data from previous studies using HyperTraPS for comparison and demonstration. The demonstration files in the root directory make use of these datafiles.
 
-`Scripts/`
+Raw data
 ----
-Scripts wrapping the curation, inference, and analysis process for different case. In each case, datasets are produced and set in their own directory. The analysis code is then called to process these data, and plotting code follows.
-  * `infer-verify.sh` plotted with `plot-verify.R` -- generates verification datasets and runs HyperTraPS
-  * `infer-tests.sh` plotted with `plot-tests.R` -- generates tests of various parameters and experiments and runs HyperTraPS
-  * `infer-others.sh` -- examples of other scientific case studies run on the command line
-  * `prepare-all.sh` -- Bash script using the code below in `Process/` to set up TB dataset. TB is processed using `cook-data.sh`.
-  * `tb-case-study.R` -- runs HyperTraPS and plots TB case study. Alternative command line without plots: `infer-tb.sh` 
-  * `cancer-examples.R` -- R script running examples of cancer progression analysis    
-
-`Verify/`
----------
-Code to generate synthetic test datasets
-  * `generate-easycube.c` -- C code to generate an easy L=3 case
-  * `generate-hardcube.c` -- C code to generate a more difficult L=3 case
-  * `generate-cross.c` -- C code to generate several L=5 cases supporting competing pathways
-    
-`RawData/`
-----------
+In `RawData/` there is externally-derived raw data:
   * Phylogeny and feature list for TB
   * Feature lists and name sets for previously published case studies: C4 photosynthesis evolution, ovarian cancer progression, severe malaria clinical progression, tool use evolution
 
-`Process/`
-----------
-Code for (1), distilling transition data suitable for HyperTraPS, for raw MRO and TB data. 
+Producing and curating data
+----
+
+The code to generate/curate these datasets is in `Scripts/`. Run at least these from the command line:
+  * `infer-verify.sh` -- generates verification datasets using code in `Verify/` (and runs HyperTraPS on the command-line)
+  * `infer-tests.sh` -- generates tests of various parameters and experiments using code in `Verify/` (and runs HyperTraPS on the command-line)
+  * `prepare-all.sh` -- Bash script using the code below in `Process/` to set up TB dataset. TB is processed using `cook-data.sh`.
+
+You can also run HyperTraPS from the command-line for the TB and other scientific case studies (but you can also do this within R)
+  * `infer-tb.sh` -- runs HyperTraPS on the command-line for TB case study (this can also be done in R, in `tb-case-study.R` below)
+  * `infer-others.sh` -- runs HyperTraPS on the command-line for other scientific case studies (this can also be done in R in the demo script)
+
+in `Verify` there is some code to generate synthetic datasets
+  * `generate-easycube.c` -- C code to generate an easy L=3 case
+  * `generate-hardcube.c` -- C code to generate a more difficult L=3 case
+  * `generate-cross.c` -- C code to generate several L=5 cases supporting competing pathways
+
+in `Process/` there is some code to curate the phylogenetic TB data:
   * `prune-tree.py` -- Python code to reduce a raw Newick tree to just those nodes contained a barcode datafile
   * `internal-labels.c` -- C code to introduce dummy internal node labels (for use in followup preparation)
   * `parse-new.py` -- Python code to infer internal node barcodes and produce transition datafiles ready for HyperTraPS (and summary graphic for checking)
   * `cook-data.sh` -- Bash script applying these steps to given data
+
+Analysing and plotting data
+----
+
+After setting up the data with the scripts above
+  * `tb-case-study.R` -- runs HyperTraPS and plots TB case study. 
+  * `cancer-examples.R` -- R script running examples of cancer progression analysis  
+  * `plot-verify.R` -- plot verification study (from `infer-verify.sh`)
+  * `plot-tests.R` -- plot test studies (from `infer-tests.sh`)
+  * `plot-trees.R` -- plot the TB phylogeny
+
