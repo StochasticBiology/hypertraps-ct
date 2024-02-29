@@ -9,6 +9,7 @@ tb.set = curate.tree("../Data/ng.2878-S2.txt", "../Data/tuberculosis-v5-header-1
 tb.srcs = tb.set$srcs
 tb.dests = tb.set$dests
 tb.times = tb.set$times*1000
+g.curated.tree = plotHypercube.curated.tree(tb.set)
 
 # for parallelisation -- with different control parameter "fork" this function will return different HyperTraPS experiments
 parallel.fn = function(fork, srcs, dests, times) {
@@ -39,7 +40,7 @@ parallelised.runs2 <- mcmapply(parallel.fn, fork=1:n.fork,
 
 # labels for experiments and features
 
-tb.names = readLines("../RawData/tb-labels.txt")
+tb.names = colnames(tb.set$data[2:ncol(tb.set$data)])
 
 # pull the "bubble" plot data together for comparison
 bdf = thdf = data.frame()
@@ -95,10 +96,9 @@ for(expt in 1:n.fork) {
   g.tb.influencegraph = plotHypercube.influencegraph(tb.post.1, featurenames=tb.names,
                                                      cv.thresh = cv.ts[expt])
   g.tb.motifseries = plotHypercube.motifseries(tb.post.1, t.set=c(0.001, 0.01, 0.1, 0.5, 1, 5, 10))
-  g.blank = ggplot(data.frame()) + geom_blank()
   
   png(paste0("plot-tb-summary-", expt, ".png"), width=800*sf, height=800*sf, res=72*sf)
-  print(ggarrange(ggarrange(g.blank, g.tb.graph + theme(legend.position="none"), widths=c(1,2), nrow=1), 
+  print(ggarrange(ggarrange(g.curated.tree, g.tb.graph + theme(legend.position="none"), widths=c(1,2), nrow=1), 
                   ggarrange(g.tb.influencegraph, g.tb.motifseries, widths=c(1,2), nrow=1), nrow=2))
   dev.off()
   
