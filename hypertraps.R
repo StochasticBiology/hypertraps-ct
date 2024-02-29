@@ -116,7 +116,7 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
                                        edge.label.size = 2, edge.label.angle = "across",
                                        edge.label.colour = "#000000",
                                        featurenames = c(""), truncate = -1,
-                                       node.label.size = 2) {
+                                       node.label.size = 2, use.timediffs = TRUE) {
   edge.from = edge.to = edge.time = edge.change = c()
   bigL = my.post$L
   if(truncate == -1 | truncate > bigL) { truncate = bigL }
@@ -129,9 +129,14 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
       substr(state, locus, locus) <- "1"
       edge.to = c(edge.to, state)
       edge.change = c(edge.change, my.post$routes[i,j])
-      edge.time = c(edge.time, my.post$times[i,j])
+      if(use.timediffs == TRUE) {
+        edge.time = c(edge.time, my.post$timediffs[i,j])
+      } else {
+        edge.time = c(edge.time, my.post$times[i,j])
+      }
     }
   }
+  
   df = data.frame(From=edge.from, To=edge.to, Change=edge.change, Time=edge.time)
   dfu = unique(df[,1:3])
   if(length(featurenames) > 1) {
@@ -630,29 +635,9 @@ plotHypercube.influencegraph = function(my.post,
   }
   
   if(my.post$model == 2) {
-  for(i in 1:my.post$L) {
-    for(j in 1:my.post$L) {
-      ref = (i-1)*my.post$L + (j-1) + 1
-      if(use.regularised == TRUE) {
-        ref.mean = as.numeric(my.post$regularisation$best[ref])
-        ref.sd = 0
-      } else if(use.final == TRUE) {
-        ref.mean = mean(my.post$posterior.samples[nrow(my.post$posterior.samples),ref])
-        ref.sd = 0
-      } else {
-        ref.mean = mean(my.post$posterior.samples[,ref])
-        ref.sd = sd(my.post$posterior.samples[,ref])
-      }
-      if(i != j) {
-      plot.df = rbind(plot.df, data.frame(x=labels[i], y=labels[j], mean=ref.mean, cv=abs(ref.sd/ref.mean)))
-      }
-    }
-  }  
-  } else if(my.post$model == 3) {
     for(i in 1:my.post$L) {
       for(j in 1:my.post$L) {
-        for(k in 1:my.post$L) {
-        ref = (j-1)*my.post$L*my.post$L + (i-1)*my.post$L + k
+        ref = (i-1)*my.post$L + (j-1) + 1
         if(use.regularised == TRUE) {
           ref.mean = as.numeric(my.post$regularisation$best[ref])
           ref.sd = 0
@@ -663,12 +648,32 @@ plotHypercube.influencegraph = function(my.post,
           ref.mean = mean(my.post$posterior.samples[,ref])
           ref.sd = sd(my.post$posterior.samples[,ref])
         }
-        if(i == j) { this.xlab = labels[i] }
-        if(i != j) { this.xlab = paste0(labels[i], "+", labels[j]) }
-        if(i != k & j != k) {
-        plot.df = rbind(plot.df, data.frame(x=this.xlab, y=labels[k], mean=ref.mean, cv=abs(ref.sd/ref.mean)))
+        if(i != j) {
+          plot.df = rbind(plot.df, data.frame(x=labels[i], y=labels[j], mean=ref.mean, cv=abs(ref.sd/ref.mean)))
         }
       }
+    }  
+  } else if(my.post$model == 3) {
+    for(i in 1:my.post$L) {
+      for(j in 1:my.post$L) {
+        for(k in 1:my.post$L) {
+          ref = (j-1)*my.post$L*my.post$L + (i-1)*my.post$L + k
+          if(use.regularised == TRUE) {
+            ref.mean = as.numeric(my.post$regularisation$best[ref])
+            ref.sd = 0
+          } else if(use.final == TRUE) {
+            ref.mean = mean(my.post$posterior.samples[nrow(my.post$posterior.samples),ref])
+            ref.sd = 0
+          } else {
+            ref.mean = mean(my.post$posterior.samples[,ref])
+            ref.sd = sd(my.post$posterior.samples[,ref])
+          }
+          if(i == j) { this.xlab = labels[i] }
+          if(i != j) { this.xlab = paste0(labels[i], "+", labels[j]) }
+          if(i != k & j != k) {
+            plot.df = rbind(plot.df, data.frame(x=this.xlab, y=labels[k], mean=ref.mean, cv=abs(ref.sd/ref.mean)))
+          }
+        }
       }  
     }
     
