@@ -114,7 +114,7 @@ plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, 
 }
 
 plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05, 
-                                       node.labels = TRUE, use.arc = TRUE, no.times = FALSE, 
+                                       node.labels = TRUE, use.arc = FALSE, no.times = FALSE, 
                                        small.times = FALSE, times.offset = c(0.1,-0.1),
                                        edge.label.size = 2, edge.label.angle = "across",
                                        edge.label.colour = "#000000",
