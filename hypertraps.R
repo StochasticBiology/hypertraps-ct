@@ -6,6 +6,8 @@ require(ggwordcloud)
 require(igraph)
 require(stringr)
 require(stringdist)
+require(phangorn)
+require(phytools)
 
 DecToBin <- function(x, len) {
   s = c()
@@ -409,6 +411,7 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
     rL$routes = read.table(mylabel(postlabel, "-routes.txt"), sep=" ")
     rL$betas = read.table(mylabel(postlabel, "-betas.txt"), sep=" ")
     rL$times = read.table(mylabel(postlabel, "-times.txt"), sep=" ") 
+    rL$timediffs = read.table(mylabel(postlabel, "-timediffs.txt"), sep=" ") 
   }
   
   return(rL)
@@ -435,6 +438,7 @@ writeHyperinf = function(wL, label, postlabel = "", fulloutput=FALSE, regularise
     write.table(wL$routes, mylabel(postlabel, "-routes.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
     write.table(wL$betas, mylabel(postlabel, "-betas.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
     write.table(wL$times, mylabel(postlabel, "-times.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
+    write.table(wL$timediffs, mylabel(postlabel, "-timediffs.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
   }
 }
 
@@ -731,8 +735,87 @@ prob.by.time = function(my.post, tau) {
   return(df)
 }
 
+curate.tree = function(tree.filename, data.filename) {
+  # read in Newick tree and root
+  my.tree = read.tree(tree.filename)
+  my.rooted.tree = root(my.tree, 1, resolve.root = TRUE)
+  
+  # read in barcode data
+  my.data = read.csv(data.filename)
+  colnames(my.data)[1] = "label"
+  
+  # prune tree to include only those tips in the barcode dataset
+  tree = drop.tip(my.rooted.tree,
+                  my.rooted.tree$tip.label[-match(my.data$label, my.rooted.tree$tip.label)])
+  
+  tree$node.label = as.character(length(tree$tip.label) + 1:tree$Nnode)
+  tree.labels = c(tree$tip.label, tree$node.label)
+  
+  cat("\n------- Painting ancestors...\n  ")
+  
+  # initialise "recursive" algorithm
+  change = T
+  new.row = my.data[1,]
+  changes = data.frame()
+  
+  # while we're still making changes
+  while(change == T) {
+    change = F
+    # loop through all nodes
+    for(tree.ref in 1:length(tree.labels)) {
+      this.label = tree.labels[tree.ref]
+      # see if this node exists in our barcode dataset
+      if(!(this.label %in% my.data$label)) {
+        # if not, check to see if its children are all characterised
+        descendant.refs = Children(tree, tree.ref)
+        if(all(tree.labels[descendant.refs] %in% my.data$label)) {
+          
+          ## ancestral state reconstruction
+          # pull the rows in our barcode dataset corresponding to children of this node
+          descendant.rows = which(my.data$label %in% tree.labels[descendant.refs])
+          # bitwise AND to construct the ancestral state
+          new.barcode = apply(my.data[descendant.rows,2:ncol(my.data)], 2, prod)
+          # add this ancestral state to the barcode dataset
+          new.data = new.row
+          new.data$label[1] = this.label
+          new.data[1,2:ncol(new.data)] = new.barcode
+          my.data = rbind(my.data, new.data)
+          
+          ## adding transitions to our observation set
+          # loop through children
+          for(d.ref in descendant.refs) {
+            # pull the barcodes and branch lengths together and add to data frame
+            d.row = which(my.data$label == tree.labels[d.ref])
+            # get the reference for this edge
+            e.ref = which(tree$edge[,2] == d.ref)
+            changes = rbind(changes, 
+                            data.frame(from=paste0(new.data[2:ncol(new.data)], collapse=""),
+                                       to=paste0(my.data[d.row,2:ncol(new.data)], collapse=""),
+                                       time=tree$edge.length[e.ref],
+                                       from.node=this.label,
+                                       to.node=tree.labels[d.ref]))
+          }
+          # we made a change, so keep the loop going
+          change = T
+        }
+      }
+    }
+  }
+  rL = list("tree" = tree,
+            "data" = my.data,
+            "transitions" = changes)
+  return(rL)
+}
+
+plot.curated.tree = function(tree, data) {
+  data.m = tree.set$data[,2:ncol(tree.set$data)]
+  rownames(data.m) = tree.set$data[,1]
+  data.m = tree.set$data[1:length(tree.set$tree$tip.label), 2:ncol(tree.set$data)]
+  rownames(data.m) = tree.set$data$label[1:length(tree.set$tree$tip.label)]
+  this.plot = gheatmap(ggtree(tree.set$tree), data.m, low="white", high="#AAAAAA") +
+    theme(legend.position="none")
+  return(this.plot)
+}
+
 sourceCpp("hypertraps-r.cpp")
 
-## Note: the warning
-## "Using the `size` aesthetic in this geom was deprecated in ggplot2 3.4.0."
-## is a known issue: https://github.com/thomasp85/ggraph/issues/333
