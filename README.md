@@ -58,6 +58,8 @@ A matrix of "before" states may be specified as a matrix in R or a file at the c
 
 with the above observations would now reflect the transitions 001->001 (i.e. remaining in state 001) and 001->011.
 
+If you have phylogenetic data, we can curate it into transition format. `curate.tree` takes two arguments: a filename for a tree in Newick format, and a filename for a CSV datafile. The CSV file should have labels in its first column that correspond to tip labels in the Newick tree, and the subsequent columns should give the L binary features for that tip. There's an example in the tuberculosis case study below.
+
 *If you're not interested in continuous time, uncertain data, priors, or old data formats, skip to the next section now.* 
 
 For continuous-time inference, HyperTraPS works with a time window for each observed transition, specified via a start time and an end time. If the start time and end time are equal, the transition is specified as taking exactly that time. If start time = 0 and end time = Inf, the transition can take any amount of time, which is mathematically equivalent to the case without continuous time. In general, the start and end times specify an allowed set of durations for the given transition, allowing uncertain timings to be accounted for.
@@ -227,9 +229,9 @@ Producing and curating data
 The code to generate/curate these datasets is in `Scripts/`. Run at least these from the command line:
   * `infer-verify.sh` -- generates verification datasets using code in `Verify/` (and runs HyperTraPS on the command-line)
   * `infer-tests.sh` -- generates tests of various parameters and experiments using code in `Verify/` (and runs HyperTraPS on the command-line)
-  * `prepare-all.sh` -- Bash script using the code below in `Process/` to set up TB dataset. TB is processed using `cook-data.sh`.
 
 You can also run HyperTraPS from the command-line for the TB and other scientific case studies (but you can also do this within R)
+  * `prepare-all.sh` -- Bash script using the code below in `Process/` to set up TB dataset. TB is processed using `cook-data.sh` (this can also be done in R, in `tb-case-study.R` below)
   * `infer-tb.sh` -- runs HyperTraPS on the command-line for TB case study (this can also be done in R, in `tb-case-study.R` below)
   * `infer-others.sh` -- runs HyperTraPS on the command-line for other scientific case studies (this can also be done in R in the demo script)
 
@@ -248,7 +250,7 @@ Analysing and plotting data
 ----
 
 After setting up the data with the scripts above
-  * `tb-case-study.R` -- runs HyperTraPS and plots TB case study. 
+  * `tb-case-study.R` -- curates TB data, runs HyperTraPS, and plots TB case study. 
   * `cancer-examples.R` -- R script running examples of cancer progression analysis  
   * `plot-verify.R` -- plot verification study (from `infer-verify.sh`)
   * `plot-tests.R` -- plot test studies (from `infer-tests.sh`)
