@@ -11,14 +11,14 @@ HyperTraPS will take a set of observed states, described by binary strings recor
 
 If we just want the HyperTraPS code without other dependencies, we only need Rcpp, and can use the following
 
-```{r}
+```{r, message=FALSE}
 library(Rcpp)
 sourceCpp("hypertraps-r.cpp")
 ```
 
 If we want various helper functions and ggplot functions in addition, use this
 
-```{r}
+```{r, message=FALSE}
 source("hypertraps.R")
 ```
 
@@ -197,11 +197,12 @@ my.post.sparse = HyperTraPS(m.2, initialstates = m.1,
                             limited_output = 1)
 ```
 
-The original, discrete-time HyperTraPS approach is recovered if we don't using timing information
+The original, discrete-time HyperTraPS approach is recovered if we don't use timing information
 
 ```{r}
 my.post.dt = HyperTraPS(m.2, initialstates = m.1, 
-                        featurenames = c("A", "B", "C", "D", "E")) 
+                        featurenames = c("A", "B", "C", "D", "E"),
+                        limited_output = 1) 
 plotHypercube.summary(my.post.dt, continuous.time = FALSE)
 ```
           
@@ -289,7 +290,8 @@ Running and visualising the posteriors shows this effect:
 my.post.priors = HyperTraPS(m.2, initialstates = m.1, 
                      starttimes = times, endtimes = times, 
                      priors = priors,
-                     featurenames = c("A", "B", "C", "D", "E")); 
+                     featurenames = c("A", "B", "C", "D", "E"),
+                     limited_output = 1)
 plotHypercube.summary(my.post.priors)
 ```
 
