@@ -13,16 +13,16 @@ g.curated.tree = plotHypercube.curated.tree(tb.set)
 
 # for parallelisation -- with different control parameter "fork" this function will return different HyperTraPS experiments
 parallel.fn = function(fork, srcs, dests, times) {
-  if(fork == 1) { return(HyperTraPS(dests, initialstates = srcs, samplegap = 10, seed = 1, length = 4, kernel = 3))}
-  if(fork == 2) { return(HyperTraPS(dests, initialstates = srcs, samplegap = 10, seed = 2, length = 4, kernel = 3))}
-  if(fork == 3) { return(HyperTraPS(dests, initialstates = srcs, samplegap = 10, starttimes = times, endtimes = times, penalty = 1, seed = 1, length = 4, kernel = 3))}
-  if(fork == 4) { return(HyperTraPS(dests, initialstates = srcs, samplegap = 10, starttimes = times, endtimes = times, penalty = 1, seed = 2, length = 4, kernel = 3))}
-  if(fork == 5) { return(HyperTraPS(dests, initialstates = srcs, samplegap = 10, endtimes = times, seed = 1, length = 4, kernel = 3))}
-  if(fork == 6) { return(HyperTraPS(dests, initialstates = srcs, samplegap = 10, endtimes = times, seed = 2, length = 4, kernel = 3))}
-  if(fork == 7) { return(HyperTraPS(dests, initialstates = srcs, samplegap = 10, endtimes = times, penalty = 1, seed = 1, length = 4, kernel = 3))}
-  if(fork == 8) { return(HyperTraPS(dests, initialstates = srcs, samplegap = 10, endtimes = times, penalty = 1, seed = 2, length = 4, kernel = 3))}
-  if(fork == 9) { return(HyperTraPS(dests, initialstates = srcs, samplegap = 10, endtimes = times, penalty = 1, seed = 1, model = 3, length = 4, kernel = 3))}
-  if(fork == 10) { return(HyperTraPS(dests, initialstates = srcs, samplegap = 10, endtimes = times, penalty = 1, seed = 2, model = 3, length = 4, kernel = 3))}
+  if(fork == 1) { return(HyperTraPS(dests, initialstates = srcs, seed = 1, length = 5, kernel = 3))}
+  if(fork == 2) { return(HyperTraPS(dests, initialstates = srcs, seed = 2, length = 5, kernel = 3))}
+  if(fork == 3) { return(HyperTraPS(dests, initialstates = srcs, starttimes = times, endtimes = times, penalty = 1, seed = 1, length = 5, kernel = 3))}
+  if(fork == 4) { return(HyperTraPS(dests, initialstates = srcs, starttimes = times, endtimes = times, penalty = 1, seed = 2, length = 5, kernel = 3))}
+  if(fork == 5) { return(HyperTraPS(dests, initialstates = srcs, endtimes = times, seed = 1, length = 5, kernel = 3))}
+  if(fork == 6) { return(HyperTraPS(dests, initialstates = srcs, endtimes = times, seed = 2, length = 5, kernel = 3))}
+  if(fork == 7) { return(HyperTraPS(dests, initialstates = srcs, endtimes = times, penalty = 1, seed = 1, length = 5, kernel = 3))}
+  if(fork == 8) { return(HyperTraPS(dests, initialstates = srcs, endtimes = times, penalty = 1, seed = 2, length = 5, kernel = 3))}
+  if(fork == 9) { return(HyperTraPS(dests, initialstates = srcs, endtimes = times, penalty = 1, seed = 1, model = 3, length = 5, kernel = 3))}
+  if(fork == 10) { return(HyperTraPS(dests, initialstates = srcs, endtimes = times, penalty = 1, seed = 2, model = 3, length = 5, kernel = 3))}
 }
 
 # run these experiments in parallel
@@ -98,11 +98,17 @@ for(expt in 1:n.fork) {
   g.tb.motifseries = plotHypercube.motifseries(tb.post.1, t.set=c(0.001, 0.01, 0.1, 0.5, 1, 5, 10))
   
   png(paste0("plot-tb-summary-", expt, ".png"), width=800*sf, height=800*sf, res=72*sf)
-  print(ggarrange(ggarrange(g.curated.tree, g.tb.graph + theme(legend.position="none"), widths=c(1,2), nrow=1), 
-                  ggarrange(g.tb.influencegraph, g.tb.motifseries, widths=c(1,2), nrow=1), nrow=2))
+  print(ggarrange(ggarrange(g.curated.tree, g.tb.graph + theme(legend.position="none"), widths=c(1,2), nrow=1, labels=c("A", "B")), 
+                  ggarrange(g.tb.influencegraph, g.tb.motifseries, widths=c(1,2), nrow=1, labels=c("C", "D")), nrow=2))
   dev.off()
   
   png(paste0("plot-tb-summary-si-", expt, ".png"), width=1000*sf, height=400*sf, res=72*sf)
-  print(ggarrange(g.tb.influences, g.tb.motifs, g.tb.tseries, nrow=1))
+  print(ggarrange(g.tb.influences, g.tb.motifs, g.tb.tseries, nrow=1, labels=c("A", "B", "C")))
   dev.off()
 }
+
+summary.list = lapply(parallelised.runs2, plotHypercube.lik.trace)
+ggarrange(plotlist=summary.list)
+
+
+
