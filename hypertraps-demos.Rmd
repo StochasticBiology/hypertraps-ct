@@ -134,6 +134,18 @@ This can be perhaps more intuitively, and certainly more generally, be represent
 plotHypercube.influencegraph(my.post, cv.thresh = 0.7)
 ```
 
+*Likelihood trace.* Last in this list, but perhaps the first to view, the trace of likelihood estimates through the course of the MCMC search (or optimisation process; see below) offers a first diagnostic about the performance of the inference process. There are two black lines and one red. The red line shows the likelihood estimate that is actually used in the MCMC process. The two black lines show periodic, independent recalculations of the estimate. In the perfect case they will totally overlap and resemble uncorrelated white noise with no systematic trend.
+
+```{r}
+plotHypercube.lik.trace(my.post)
+```
+
+Some things that can go wrong: 
+* The two black lines look very different. The path sampling process is not given consistent estimates for the likelihood. Use more walkers.
+* Red line is systematically above black line. A rare extreme estimate of the likelihood has been fixed and has frozen the simulation. Use more walkers as above for more precise estimation; consider using auxiliary pseudo-marginal MCMC.
+* Systematic trend in likelihood: gradual increase, changing the baseline level. Chain has not equilibrated and is taking a long time to locate good parameter sets; consider running longer chains, or increasing step size (but see below).
+* Systematic trend in likelihood: punctuated increases. Chain has not equilibrated and is getting stuck in local optima; consider running longer chains, or decreasing step size (but see above).
+
 ### Predictions of unseen and future behaviour
 
 We can use the inferred transition network to make predictions about what will happen next in a given state. Let's query the inferred hypercube to see what will happen next when we are part of the way down one pathway.
