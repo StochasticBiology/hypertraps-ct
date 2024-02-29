@@ -810,7 +810,7 @@ curate.tree = function(tree.filename, data.filename) {
             "transitions" = changes,
             "srcs" = srcs,
             "dests" = dests,
-            "times" = changes$times)
+            "times" = changes$time)
   return(rL)
 }
 
