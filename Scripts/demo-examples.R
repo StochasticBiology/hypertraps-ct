@@ -1,11 +1,8 @@
 #################
 
-# if we just want the HyperTraPS code without other dependencies, we only need Rcpp
-# library(Rcpp)
-# sourceCpp("hypertraps-r.cpp")
-
-# if we want various helper functions and ggplot functions in addition, use this
+setwd("..")
 source("hypertraps.R")
+setwd("Scripts")
 
 m.1 = matrix(rep(c(0,0,0,0,0,
                1,0,0,0,0,
@@ -234,7 +231,7 @@ prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2))
 g.hidden = plotHypercube.prediction(prediction.hidden, max.size = 10)
 g.step = plotHypercube.prediction(prediction.step, max.size=10)
 g.priors = plotHypercube.sampledgraph2(my.post.priors, use.arc = FALSE) + theme(legend.position="none")
-my.post.70 = readHyperinf("VerifyData/test-bigcross-hard-70", postlabel = "VerifyData/test-bigcross-hard-70")
+my.post.70 = readHyperinf("../VerifyData/test-bigcross-hard-70", postlabel = "VerifyData/test-bigcross-hard-70")
 g.big.70 = ggplot(my.post.70$bubbles, aes(x=Time, y=OriginalIndex, 
                size=Probability, alpha=Probability)) + 
   labs(x = "Ordering", y = "Feature") +
@@ -264,9 +261,9 @@ c(max(logic.post.m1$lik.traces$LogLikelihood1),
 
 # ovarian cancer case study reproduction
 # traits are chromosomal aberrations, observations are independent patient samples
-cgh.mat = readLines("RawData/ovarian.txt")
+cgh.mat = readLines("../RawData/ovarian.txt")
 cgh.mat = do.call(rbind, lapply(strsplit(cgh.mat, ""), as.numeric))
-cgh.names = as.vector(read.table("RawData/ovarian-names.txt", sep=","))[[1]]
+cgh.names = as.vector(read.table("../RawData/ovarian-names.txt", sep=","))[[1]]
 
 my.post.cgh = HyperTraPS(cgh.mat, 
                         length = 4, outputinput = 1, 
@@ -278,8 +275,8 @@ plotHypercube.sampledgraph2(my.post.cgh, no.times=TRUE)
 
 # C4 paper reproduction
 # traits are physical/genetic features associated with C4, observations are (incomplete) phylogenetically independent intermediate species
-c4.mat = as.matrix(read.table("RawData/c4-curated.csv", sep=","))
-c4.names = as.vector(read.table("RawData/c4-trait-names.txt", sep=","))[[1]]
+c4.mat = as.matrix(read.table("../RawData/c4-curated.csv", sep=","))
+c4.names = as.vector(read.table("../RawData/c4-trait-names.txt", sep=","))[[1]]
 
 my.post.c4 = HyperTraPS(c4.mat, 
                         length = 4, outputinput= 1, 
@@ -288,9 +285,9 @@ ggarrange(plotHypercube.lik.trace(my.post.c4), plotHypercube.bubbles(my.post.c4,
 
 # malaria paper reproduction
 # traits are clinical features, observations are (incomplete) independent patient presentations
-malaria.df = read.csv("RawData/jallow_dataset_binary_with2s.csv")
+malaria.df = read.csv("../RawData/jallow_dataset_binary_with2s.csv")
 malaria.mat = as.matrix(malaria.df[,2:ncol(malaria.df)])
-malaria.names = as.vector(read.table("RawData/malaria-names.txt", sep=","))[[1]]
+malaria.names = as.vector(read.table("../RawData/malaria-names.txt", sep=","))[[1]]
 
 my.post.malaria = HyperTraPS(malaria.mat, 
                         length = 3, outputinput= 1, 
@@ -301,8 +298,8 @@ ggarrange(plotHypercube.lik.trace(my.post.malaria), plotHypercube.bubbles(my.pos
 
 # tool use paper reproduction
 # traits are modes of tool use, observations are phylogenetically coupled species observations (phylogeny has been accounted for, giving transition pairs)
-tools.mat = as.matrix(read.table("RawData/total-observations.txt-trans.txt"))
-tools.names = as.vector(read.table("RawData/tools-names.txt"))[[1]]
+tools.mat = as.matrix(read.table("../RawData/total-observations.txt-trans.txt"))
+tools.names = as.vector(read.table("../RawData/tools-names.txt"))[[1]]
 tools.starts = tools.mat[seq(from=1, to=nrow(tools.mat), by=2),]
 tools.ends = tools.mat[seq(from=2, to=nrow(tools.mat), by=2),]
 
