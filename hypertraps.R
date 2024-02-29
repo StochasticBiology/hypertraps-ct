@@ -802,8 +802,8 @@ curate.tree = function(tree.filename, data.filename) {
       }
     }
   }
-  srcs = matrix(as.numeric(unlist(lapply(changes$from, strsplit, split=""))), ncol=ncol(new.data)-1)
-  dests = matrix(as.numeric(unlist(lapply(changes$to, strsplit, split=""))), ncol=ncol(new.data)-1)
+  srcs = matrix(as.numeric(unlist(lapply(changes$from, strsplit, split=""))), byrow=TRUE, ncol=ncol(new.data)-1)
+  dests = matrix(as.numeric(unlist(lapply(changes$to, strsplit, split=""))), byrow=TRUE, ncol=ncol(new.data)-1)
   
   rL = list("tree" = tree,
             "data" = my.data,
