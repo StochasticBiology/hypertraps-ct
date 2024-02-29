@@ -58,7 +58,7 @@ A matrix of "before" states may be specified as a matrix in R or a file at the c
 
 with the above observations would now reflect the transitions 001->001 (i.e. remaining in state 001) and 001->011.
 
-If you have phylogenetic data, we can curate it into transition format. `curate.tree` takes two arguments: a filename for a tree in Newick format, and a filename for a CSV datafile. The CSV file should have labels in its first column that correspond to tip labels in the Newick tree, and the subsequent columns should give the L binary features for that tip. There's an example in the tuberculosis case study below.
+If you have phylogenetic data, we can curate it into transition format. `curate.tree` takes two arguments: a filename for a tree in Newick format, and a filename for a CSV datafile. The CSV file should have labels in its first column that correspond to tip labels in the Newick tree, and the subsequent columns should give the L binary features for that tip. The list returned by `curate.tree` contains `srcs`, `dests`, and `times` elements which can be passed to HyperTraPS; the tree and data can be plotted with `plotHypercube.curated.tree`. There's an example in the tuberculosis case study below.
 
 *If you're not interested in continuous time, uncertain data, priors, or old data formats, skip to the next section now.* 
 
