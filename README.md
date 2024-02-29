@@ -248,11 +248,12 @@ in `Process/` there is some code to curate the phylogenetic TB data:
 
 Analysing and plotting data
 ----
-
-After setting up the data with the scripts above
   * `tb-case-study.R` -- curates TB data, runs HyperTraPS, and plots TB case study. 
-  * `cancer-examples.R` -- R script running examples of cancer progression analysis  
+  * `cancer-examples.R` -- R script running examples of cancer progression analysis
+
+and after setting up the data with the scripts above
+
   * `plot-verify.R` -- plot verification study (from `infer-verify.sh`)
   * `plot-tests.R` -- plot test studies (from `infer-tests.sh`)
-  * `plot-trees.R` -- plot the TB phylogeny
+
 
