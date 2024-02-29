@@ -8,6 +8,7 @@ require(stringr)
 require(stringdist)
 require(phangorn)
 require(phytools)
+require(ggtree)
 
 DecToBin <- function(x, len) {
   s = c()
@@ -813,12 +814,13 @@ curate.tree = function(tree.filename, data.filename) {
   return(rL)
 }
 
-plotHypercube.curated.tree = function(tree, data) {
+plotHypercube.curated.tree = function(tree.set) {
   data.m = tree.set$data[,2:ncol(tree.set$data)]
   rownames(data.m) = tree.set$data[,1]
   data.m = tree.set$data[1:length(tree.set$tree$tip.label), 2:ncol(tree.set$data)]
   rownames(data.m) = tree.set$data$label[1:length(tree.set$tree$tip.label)]
-  this.plot = gheatmap(ggtree(tree.set$tree), data.m, low="white", high="#AAAAAA") +
+  this.plot = gheatmap(ggtree(tree.set$tree), data.m, low="white", high="#AAAAAA",
+                       colnames_angle=90, hjust=0) +
     theme(legend.position="none")
   return(this.plot)
 }
