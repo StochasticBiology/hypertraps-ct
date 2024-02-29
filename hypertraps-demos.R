@@ -53,7 +53,7 @@ ggarrange(plotHypercube.sampledgraph2(my.post, thresh=0.1, use.arc=FALSE, edge.l
             theme(legend.position="none") + expand_limits(x = c(-0.05,1.1)) ,
           plotHypercube.influences(my.post, cv.thresh = Inf),
           plotHypercube.influencegraph(my.post, cv.thresh = 1),
-          plotHypercube.motifseries(my.post, c(0.001, 0.01, 0.5, 1, 5, 10)),
+          plotHypercube.motifseries(my.post, c(0.001, 0.01, 0.5, 1, 2, 5)),
           labels = c("A", "B", "C", "D")
           )
 dev.off()
@@ -61,7 +61,6 @@ dev.off()
 # demonstrate predictions of future behaviour
 prediction.step = predictNextStep(my.post, c(1,1,0,0,0))
 plotHypercube.prediction(prediction.step)
-predictNextStep(my.post, c(0,0,0,0,1))
 
 # demonstrate predictions of hidden values...
 # ... with no assumptions about progress on the hypercube
@@ -70,19 +69,9 @@ plotHypercube.prediction(prediction.hidden)
 # ... enforcing given belief about progress on the hypercube
 prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,0,0,0))
 plotHypercube.prediction(prediction.hidden)
-predictHiddenVals(my.post, c(1,2,2,2,2), level.weight=c(0,0,1,1,1,0))
-predictHiddenVals(my.post, c(1,1,0,0,0))
-predictHiddenVals(my.post, c(1,1,2,2,0))
 
 # impose priors -- here disallowing every pairwise effect
 # prior format: n_param rows, 2 columns. [i,1] = min i; [i,2] = max i
-# here we set [i,1]=[i,2]=0 for all entries except the main (diagonal in L^2) effects
-priors = matrix(0, ncol=2, nrow=5*5)
-for(i in 0:4) {
-  priors[i*5+i+1,1] = -10
-  priors[i*5+i+1,2] = 10
-}
-
 # here we impose priors on the base rates: feature 1 > feature 5 >> all others
 priors = matrix(0, ncol=2, nrow=5*5)
 priors[,1] = -10
