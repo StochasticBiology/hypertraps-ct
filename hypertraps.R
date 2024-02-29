@@ -801,13 +801,19 @@ curate.tree = function(tree.filename, data.filename) {
       }
     }
   }
+  srcs = matrix(as.numeric(unlist(lapply(changes$from, strsplit, split=""))), ncol=ncol(new.data)-1)
+  dests = matrix(as.numeric(unlist(lapply(changes$to, strsplit, split=""))), ncol=ncol(new.data)-1)
+  
   rL = list("tree" = tree,
             "data" = my.data,
-            "transitions" = changes)
+            "transitions" = changes,
+            "srcs" = srcs,
+            "dests" = dests,
+            "times" = changes$times)
   return(rL)
 }
 
-plot.curated.tree = function(tree, data) {
+plotHypercube.curated.tree = function(tree, data) {
   data.m = tree.set$data[,2:ncol(tree.set$data)]
   rownames(data.m) = tree.set$data[,1]
   data.m = tree.set$data[1:length(tree.set$tree$tip.label), 2:ncol(tree.set$data)]
