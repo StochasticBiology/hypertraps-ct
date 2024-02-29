@@ -983,7 +983,7 @@ List PosteriorAnalysis(List L,
   int count;
   double *meanstore, *fmeanstore;
   double *ctrec, ctnorm;
-  double *times, *betas;
+  double *times, *timediffs, *betas;
   int *route;
   int tlen;
   int verbose;
@@ -1120,6 +1120,7 @@ List PosteriorAnalysis(List L,
   matrix = (int*)malloc(sizeof(int)*10000);
   ctrec = (double*)malloc(sizeof(double)*MAXCT*len);
   times = (double*)malloc(sizeof(double)*len);
+  timediffs = (double*)malloc(sizeof(double)*len);
   betas = (double*)malloc(sizeof(double)*len);
   route = (int*)malloc(sizeof(int)*len);
 
@@ -1165,6 +1166,7 @@ List PosteriorAnalysis(List L,
   NumericMatrix route_out(NSAMPLES, len);
   NumericMatrix betas_out(NSAMPLES, len);
   NumericMatrix times_out(NSAMPLES, len);
+  NumericMatrix timediffs_out(NSAMPLES, len);
   int sampleindex = 0;
       
   for(count = 0; count < posterior.nrow(); count++)
@@ -1183,7 +1185,7 @@ List PosteriorAnalysis(List L,
 	      for(i = 0; i < len; i++)
 		meanstore[i] = 0;
 	      // simulate behaviour on this posterior and add statistics to counts and histograms
-	      GetRoutes(matrix, len, ntarg, ntrans, rec, meanstore, ctrec, times, betas, route, BINSCALE, model);
+	      GetRoutes(matrix, len, ntarg, ntrans, rec, meanstore, ctrec, times, timediffs, betas, route, BINSCALE, model);
 	      for(i = 0; i < len; i++)
 		fmeanstore[i] += meanstore[i];
 	      ctnorm += NTRAJ;
@@ -1194,6 +1196,7 @@ List PosteriorAnalysis(List L,
 		  route_out(sampleindex, i) = route[i];
 		  betas_out(sampleindex, i) = betas[i];
 		  times_out(sampleindex, i) = times[i];
+		  timediffs_out(sampleindex, i) = timediffs[i];
 		}
 	      sampleindex++;
 	      /*		  if(verbose)
@@ -1340,6 +1343,7 @@ List PosteriorAnalysis(List L,
   OutputL["routes"] = route_out;
   OutputL["betas"] = betas_out;
   OutputL["times"] = times_out;
+  OutputL["timediffs"] = timediffs_out;
 
   return OutputL;
 }

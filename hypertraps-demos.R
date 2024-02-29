@@ -27,7 +27,8 @@ m.2 = matrix(rep(c(1,0,0,0,0,
                0,0,1,1,1,
                0,1,1,1,1,
                1,1,1,1,1),5), byrow=TRUE, ncol=5)
-times = rep(c(0.1, 0.2, 0.3, 0.4, 0.5), 10)
+times.cs = rep(c(0.1, 0.2, 0.3, 0.4, 0.5), 10)
+times = rep(0.1, 50)
 
 ### simple demo
 my.post = HyperTraPS(m.2, initialstates = m.1, 
@@ -41,7 +42,7 @@ plotHypercube.sampledgraph2(my.post, thresh=0.1, use.arc=FALSE, edge.label.size=
   theme(legend.position="none") + expand_limits(x = c(-0.1, 1.1))
 plotHypercube.influences(my.post, cv.thresh = Inf)
 plotHypercube.influencegraph(my.post, cv.thresh = 1)
-plotHypercube.motifseries(my.post, c(0.001, 0.01, 0.5, 1, 5, 10))
+plotHypercube.motifseries(my.post, c(0.001, 0.01, 0.5, 1, 2, 5))
 
 sf = 2
 png("plot-new-fig-3.png", width=600*sf, height=500*sf, res=72*sf)

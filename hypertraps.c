@@ -985,7 +985,7 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
 // times[t] stores the continuous time at which feature t is acquired in the first simulated run
 // betas[t] stores the exit propensity after feature t is acquired in the first simulated run
 // route[t] is the feature changed at step t
-void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double *mean, double *ctrec, double *times, double *betas, int *route, double BINSCALE, int model)
+void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double *mean, double *ctrec, double *times, double *timediffs, double *betas, int *route, double BINSCALE, int model)
 {
   int run, t;
   double time1;
@@ -997,7 +997,7 @@ void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double
   int i;
   int startt;
   int checker[ntarg];
-  double continuoustime;
+  double continuoustime, prevcontinuoustime;
 
   for(i = 0; i < ntarg; i++)
     checker[i] = 0;
@@ -1016,7 +1016,7 @@ void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double
 
       // track the (continuous) time elapsed
       // (but continuous time is not interpretable unless the posteriors have been produced in the continuous time paradigm)
-      continuoustime = 0;
+      prevcontinuoustime = continuoustime = 0;
 
       // loop through feature acquisitions
       for(t = 0; t < len; t++)
@@ -1078,8 +1078,10 @@ void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double
 	  if(run == 0)
 	    {
 	      times[t] = continuoustime;
+	      timediffs[t] = continuoustime-prevcontinuoustime;
 	      betas[t] = totrate;
 	      route[t] = i;
+	      prevcontinuoustime = continuoustime;
 	    }
 
 #ifdef VERBOSE
@@ -1230,7 +1232,7 @@ int main(int argc, char *argv[])
   int count;
   double *meanstore, *fmeanstore;
   double *ctrec, ctnorm;
-  double *times, *betas;
+  double *times, *timediffs, *betas;
   int *route;
   FILE *fp1, *fp2, *fp3;
   char str[200], fstr[200];
@@ -1945,6 +1947,7 @@ int main(int argc, char *argv[])
       matrix = (int*)malloc(sizeof(int)*10000);
       ctrec = (double*)malloc(sizeof(double)*MAXCT*len);
       times = (double*)malloc(sizeof(double)*len);
+      timediffs = (double*)malloc(sizeof(double)*len);
       betas = (double*)malloc(sizeof(double)*len);
       route = (int*)malloc(sizeof(int)*len);
 
@@ -2005,7 +2008,7 @@ int main(int argc, char *argv[])
 		  for(i = 0; i < len; i++)
 		    meanstore[i] = 0;
 		  // simulate behaviour on this posterior and add statistics to counts and histograms
-		  GetRoutes(matrix, len, ntarg, ntrans, rec, meanstore, ctrec, times, betas, route, BINSCALE, model);
+		  GetRoutes(matrix, len, ntarg, ntrans, rec, meanstore, ctrec, times, timediffs, betas, route, BINSCALE, model);
 		  for(i = 0; i < len; i++)
 		    fmeanstore[i] += meanstore[i];
 		  ctnorm += NTRAJ;
