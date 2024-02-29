@@ -225,8 +225,8 @@ plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = c(""),
       labs(x = "log(t+1)", y="Probability")
   } else {
     g.thist = ggplot(thdfp[thdfp$Time < t.thresh,],
-                     aes(x=Time, y=Probability))
-    + labs(x = "t", y="Probability")
+                     aes(x=Time, y=Probability)) +
+      labs(x = "t", y="Probability")
   }
   g.thist = g.thist + 
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
@@ -270,7 +270,7 @@ plotHypercube.motifs = function(my.post, featurenames = c("")) {
            theme_light())
 }
 
-plotHypercube.timeseries = function(my.post, log.axis = TRUE, featurenames=c("")) {
+plotHypercube.timeseries = function(my.post, log.time = TRUE, featurenames=c("")) {
   # time series illustration
   if(length(featurenames) > 1) {
     labels = featurenames
@@ -285,7 +285,7 @@ plotHypercube.timeseries = function(my.post, log.axis = TRUE, featurenames=c("")
       prevtime = my.post$times[i,j]
     }
   }
-  if(log.axis == TRUE) {
+  if(log.time == TRUE) {
     return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
               scale_x_continuous(trans="log10") + scale_color_brewer(palette = "Spectral") +
               labs(x= "t", y="Number of features", color = "Feature") + theme_light())
