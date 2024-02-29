@@ -360,7 +360,7 @@ plotHypercube.influences = function(my.post,
   
   if(upper.right == TRUE) {
     return(ggplot(plot.df, aes(x=xlab,y=factor(ylab, levels=rev(levels(plot.df$ylab))),fill=mean,alpha=cv)) + geom_tile() + 
-             scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
+             scale_fill_gradient2(low = "#FF8888", mid = "white", high = "#338833", midpoint = 0) +
              scale_alpha_continuous(range=c(1,0)) +
              theme_light() + xlab("Acquired trait") + ylab("(Influenced) rate") +
              theme(axis.text.x = element_text(angle=90)) ) #+
@@ -368,7 +368,7 @@ plotHypercube.influences = function(my.post,
     #scale_y_continuous(breaks=1:my.post$L, labels=labels))
   } else {
     return(ggplot(plot.df, aes(x=xlab,y=ylab,fill=mean,alpha=cv)) + geom_tile() + 
-             scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
+             scale_fill_gradient2(low = "#FF8888", mid = "white", high = "#338833", midpoint = 0) +
              scale_alpha_continuous(range=c(1,0)) +
              theme_light() + xlab("Acquired trait") + ylab("(Influenced) rate") +
              theme(axis.text.x = element_text(angle=90)) ) #+
@@ -692,18 +692,16 @@ plotHypercube.influencegraph = function(my.post,
   plot.df = plot.df[plot.df$cv < cv.thresh,]
   to.g.df = plot.df[abs(plot.df$mean)>thresh,1:3]
   colnames(to.g.df) = c("From", "To", "Weight")
-  to.g.df$Direction = as.character(sign(to.g.df$Weight))
+  to.g.df$Direction = factor(as.character(sign(to.g.df$Weight)), levels=c("-1", "1"))
   g = graph_from_data_frame(to.g.df)
-  if(my.post$model == 2) {
-    this.plot = ggraph(g)
-  } else {
-    this.plot = ggraph(g, layout="kk")
-  }
-  return( this.plot + geom_edge_arc(aes(colour=Direction, alpha=abs(Weight), width=abs(Weight)),
-                                    strength=0.1, arrow=arrow(length=unit(0.2, "inches"), type="closed")) +
-            geom_node_label(aes(label=name), size=label.size) + theme_void() +
-            labs(edge_width="Magnitude", edge_alpha="Magnitude", colour="Direction") 
+  this.plot = ggraph(g, layout="kk")
+  return(  this.plot + geom_edge_arc(aes(colour=Direction, alpha=abs(Weight), width=abs(Weight)),
+                                     strength=0.1, arrow=arrow(length=unit(0.2, "inches"), type="closed")) +
+             geom_node_label(aes(label=name), size=label.size) + theme_void() +
+             labs(edge_width="Magnitude", edge_alpha="Magnitude", colour="Direction") +
+             scale_edge_colour_manual(values = setNames(c("#FF8888", "#338833"), factor(c("-1", "1"))))
   )
+
 }
 
 plotHypercube.prediction = function(prediction, max.size = 30) {
