@@ -412,7 +412,11 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
     rL$routes = read.table(mylabel(postlabel, "-routes.txt"), sep=" ")
     rL$betas = read.table(mylabel(postlabel, "-betas.txt"), sep=" ")
     rL$times = read.table(mylabel(postlabel, "-times.txt"), sep=" ") 
-    rL$timediffs = read.table(mylabel(postlabel, "-timediffs.txt"), sep=" ") 
+    # older versions of code didn't output this, so catch no-file errors
+    tryCatch( { rL$timediffs = read.table(mylabel(postlabel, "-timediffs.txt"), sep=" ") }, 
+              error=function(e) {
+                cat("Didn't find time diff data\n")
+              } )
   }
   
   return(rL)
