@@ -231,7 +231,7 @@ prediction.hidden = predictHiddenVals(my.post, c(1,2,2,2,2))
 g.hidden = plotHypercube.prediction(prediction.hidden, max.size = 10)
 g.step = plotHypercube.prediction(prediction.step, max.size=10)
 g.priors = plotHypercube.sampledgraph2(my.post.priors, use.arc = FALSE) + theme(legend.position="none")
-my.post.70 = readHyperinf("../VerifyData/test-bigcross-hard-70", postlabel = "VerifyData/test-bigcross-hard-70")
+my.post.70 = readHyperinf("../VerifyData/test-bigcross-hard-70", postlabel = "../VerifyData/test-bigcross-hard-70")
 g.big.70 = ggplot(my.post.70$bubbles, aes(x=Time, y=OriginalIndex, 
                size=Probability, alpha=Probability)) + 
   labs(x = "Ordering", y = "Feature") +
