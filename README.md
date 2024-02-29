@@ -117,7 +117,7 @@ The named list in R can be passed to plotting and prediction functions for analy
 
 Demonstration
 -----------
-A good place to start is `hypertraps-demos.R`, where the basic form of R commands for HyperTraPS, most of the more interesting arguments that can be provided, and several scientific case studies are demonstrated. The expected behaviour for most of this demonstration is in `docs/hypertraps-demos.html`, compiled in R Markdown format with `hypertraps-demos.Rmd`.
+A good place to start is `hypertraps-demos.Rmd`, where the basic form of R commands for HyperTraPS, most of the more interesting arguments that can be provided, and several scientific case studies are demonstrated. The expected behaviour for most of this demonstration is in `docs/hypertraps-demos.html`.
 
 Arguments to HyperTraPS
 ------
