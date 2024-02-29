@@ -191,10 +191,10 @@ plotHypercube.regularisation(my.post.bigmodel.regularise)
 
 # this example demonstrates different model choices -- the data is generated using a process where pairs of features influence other features
 # the (inappropriate) L^1 and L^2 parameterisations cannot capture this, but the "all edge" (model -1) and L^3 parameterisations can
-logic.mat = readLines("RawData/old-hi-order.txt")
+logic.mat = readLines("../RawData/old-hi-order.txt")
 logic.mat = do.call(rbind, lapply(strsplit(logic.mat, ""), as.numeric))
 logic.mat = rbind(logic.mat, logic.mat)
-logic.mat.i = readLines("RawData/old-hi-order-init.txt")
+logic.mat.i = readLines("../RawData/old-hi-order-init.txt")
 logic.mat.i = do.call(rbind, lapply(strsplit(logic.mat.i, ""), as.numeric))
 logic.mat.i = rbind(logic.mat.i, logic.mat.i)
 logic.starts = logic.mat.i
