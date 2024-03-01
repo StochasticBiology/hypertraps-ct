@@ -60,8 +60,10 @@ plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
   }
 }
 
-plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE,
-                               node.label.size = 2) {
+plotHypercube.graph = function(my.post, thresh = 0.05, 
+                               node.labels = TRUE,
+                               node.label.size = 2,
+                               node.labels.box = FALSE) {
   ### produce hypercube subgraph
   bigL = my.post$L
   trans.p = my.post$dynamics$trans[my.post$dynamics$trans$Flux > thresh,]
@@ -74,8 +76,13 @@ plotHypercube.graph = function(my.post, thresh = 0.05, node.labels = TRUE,
     scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
     theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
-    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),
+    if(node.labels.box == TRUE) {
+    this.plot = this.plot + geom_node_label(aes(label=binname),
                                                                 size = node.label.size) 
+    } else {
+      this.plot = this.plot + geom_node_text(aes(label=binname),
+                                              size = node.label.size) 
+    } 
   }
   return(this.plot)
 }
@@ -197,8 +204,9 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
                                            position = position_nudge(x=times.offset[1], y = times.offset[2])) 
   }
   if(node.labels == TRUE) {
-    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=node.label.size) 
+    this.plot = this.plot + geom_node_text(aes(label=binname),size=node.label.size) 
   }
+  
   return(this.plot)
 }
 
