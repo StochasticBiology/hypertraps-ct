@@ -252,7 +252,7 @@ ggarrange(ggarrange(plotHypercube.graph(logic.post.m1) + expand_limits(x = c(xmi
           ggarrange(plotHypercube.influencegraph(logic.post.3, cv.thresh = 0.4) + theme(legend.position="none"),
                     plotHypercube.regularisation(logic.post.m1r),
                     g.big.70, 
-                    nrow=1, labels=c("iv", "v", "B")),
+                    nrow=1, labels=c("v", "vi", "B")),
           
           ggarrange(plotHypercube.sampledgraph2(my.post.priors, 
                                                 use.arc = FALSE, no.times = TRUE,
