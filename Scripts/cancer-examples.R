@@ -102,12 +102,17 @@ writeHyperinf(cancer.post.3.autoreg, "cancer.post.3.autoreg", postlabel="cancer.
 
 # hypercube without timings
 g.cancer.graph2 = plotHypercube.sampledgraph2(cancer.post.autoreg, use.arc = FALSE, featurenames = AML[[4]], 
-                                              edge.label.size=2, edge.label.angle = "none", node.labels=FALSE,
-                                              no.times=TRUE, small.times=FALSE, thresh=0.004, truncate=6)
+                            edge.label.size=3, edge.label.angle = "along", node.labels=FALSE,
+                            no.times=TRUE, small.times=FALSE, thresh=0.006, truncate=6,
+                            use.timediffs = FALSE, edge.check.overlap = FALSE) +
+  theme(legend.position="none") + coord_flip() + scale_y_reverse()
+
 # hypercube with timings (messier)
 g.cancer.graph2t = plotHypercube.sampledgraph2(cancer.post.autoreg, use.arc = FALSE, featurenames = AML[[4]], 
                                                edge.label.size=3, edge.label.angle = "none", node.labels=FALSE,
-                                               no.times=TRUE, small.times=TRUE, thresh=0.004, truncate=6)
+                                               thresh=0.004, truncate=6,
+                                               use.timediffs = FALSE) + 
+  theme(legend.position="none") + coord_flip() + scale_y_reverse()
 
 # create plots of influences under different regularisation protocols
 plot.base = plotHypercube.influences(cancer.post, featurenames = AML[[4]], 
@@ -135,10 +140,21 @@ print(ggarrange(g.cancer.graph2 + theme(legend.position = "none"),
                 plot.autoreg.pruned, nrow=2, labels=c("A", "B")))
 dev.off()
 
-png("cancer-post-si.png", width=800*sf, height=1200*sf, res=72*sf)
-print(ggarrange( g.cancer.graph2 + theme(legend.position = "none"),
-                 plotHypercube.influencegraph(cancer.post.autoreg, cv.thresh = 2, thresh = 1, featurenames = AML[[4]]), nrow=2)
+png("cancer-post-si.png", width=400*sf, height=400*sf, res=72*sf)
+print(plotHypercube.influencegraph(cancer.post.autoreg, 
+                                   cv.thresh = 2, thresh = 1, featurenames = AML[[4]])
 )
+dev.off()
+
+g.cancer.motif = plotHypercube.motifs(cancer.post.autoreg, 
+                                      label.size = 3,
+                                      featurenames = AML[[4]],
+                                      label.scheme = "sparse") + theme(legend.position="none")
+
+png("cancer-post-v3.png", width=800*sf, height=800*sf, res=72*sf)
+ggarrange(g.cancer.graph2,
+                     ggarrange(plot.autoreg.pruned, g.cancer.motif, nrow=2, labels=c("B", "C")),
+                     labels=c("A", ""), nrow=1, widths=c(1,1.5))
 dev.off()
 
 png("cancer-post-v2.png", width=1200*sf, height=900*sf, res=72*sf)
@@ -147,6 +163,7 @@ print(ggarrange( ggarrange(g.cancer.graph2 + theme(legend.position = "none"),
                  plotHypercube.motifs(cancer.post.autoreg, featurenames = AML[[4]]) + theme(legend.position="none"),
                  labels=c("", "C"), nrow=2))
 dev.off()
+
 
 png("cancer-post-all.png", width=1200*sf, height=800*sf, res=72*sf)
 print(ggarrange(plot.base, plot.autoreg, 
