@@ -128,11 +128,19 @@ ggarrange(plotHypercube.prediction(prediction.step, max.size=15), plotHypercube.
 dev.off()
 
 sf = 2
-png("plot-demos-timings-si.png", width=800*sf, height=600*sf, res=72*sf)
-ggarrange(plotHypercube.timehists(my.post.time.precise, t.thresh=3),
-          plotHypercube.timehists(my.post.time.uncertain, t.thresh=3),
-          plotHypercube.timehists(my.post.time.inf, t.thresh=3),
-nrow=2, ncol=2, labels=c("A","B","C"))
+xmin = -0.1
+xmax = 3
+png("plot-demos-timings-si.png", width=800*sf, height=900*sf, res=72*sf)
+ggarrange(plotHypercube.sampledgraph2(my.post.time.precise, thresh=0.1)+
+            theme(legend.position="none")+expand_limits(x=c(xmin,xmax)),
+          plotHypercube.timehists(my.post.time.precise, t.thresh=5),
+          plotHypercube.sampledgraph2(my.post.time.uncertain, thresh=0.1)+
+            theme(legend.position="none")+expand_limits(x=c(xmin,2*xmax)),
+          plotHypercube.timehists(my.post.time.uncertain, t.thresh=5),
+          plotHypercube.sampledgraph2(my.post.time.inf, thresh=0.1)+
+            theme(legend.position="none")+expand_limits(x=c(xmin,0.5*xmax)),
+          plotHypercube.timehists(my.post.time.inf, t.thresh=5),
+nrow=3, ncol=2, labels=c("A i","A ii", "B i", "B ii", "C i", "C ii"))
 dev.off()
 
 fig.1a = plotHypercube.sampledgraph2(my.post, use.arc = FALSE, edge.label.size = 3) + 
