@@ -11,9 +11,9 @@ For the command-line-only version, you'll just need the ability to compile and r
 
 For the R version without helper and plotting functions, you'll need R and the `Rcpp` library.
 
-For those helper and plotting functions, you'll need R with these libraries for full functionality: `Rcpp`, `ggplot2`, `ggpubr`, `ggraph`, `ggwordcloud`, `igraph`, `stringr`, `stringdist`.
+For those helper and plotting functions, you'll need R with these libraries for full functionality: `Rcpp`, `ggplot2`, `ggpubr`, `ggraph`, `ggwordcloud`, `igraph`, `stringr`, `stringdist`, `phangorn`, `phytools`, `ggtree`.
 
-For the specific scientific case studies involving mitochondrial and tuberculosis evolution, the data wrangling also needs Python with `ETE3`.
+The command-line data curation with tuberculosis evolution needs Python with `ETE3`, though (as described below) this can also be done in R.
 
 Setting up and running
 -----------
@@ -117,7 +117,7 @@ The named list in R can be passed to plotting and prediction functions for analy
 
 Demonstration
 -----------
-A good place to start is `hypertraps-demos.Rmd`, where the basic form of R commands for HyperTraPS, most of the more interesting arguments that can be provided, and several scientific case studies are demonstrated. The expected behaviour for most of this demonstration is in `docs/hypertraps-demos.html`.
+A good place to start is `hypertraps-demos.Rmd`, where the basic form of R commands for HyperTraPS, most of the more interesting arguments that can be provided, and several scientific case studies are demonstrated. The expected behaviour for this demonstration is in `docs/hypertraps-demos.html`. If you don't like R markdown, `Scripts/demo-examples.R` has much of the same content (though one part relies on some pre-executed content).
 
 Arguments to HyperTraPS
 ------
@@ -173,18 +173,20 @@ The various outputs of HyperTraPS can be used in the R plotting functions below,
 | `plotHypercube.bubbles` | "Bubble plot" of probability of acquiring trait *i* at ordinal step *j* | *transpose*=FALSE (horizontal and vertical axis), *reorder*=FALSE (order traits by mean acquisition ordering) |
 | `plotHypercube.motifs` | Motif-style plot of probability of acquiring trait *i* at ordinal step *j* |  |
 | `plotHypercube.motifseries` | Motif-style plot of probability of specific states at a set of given snapshot times | *t.set*=0 (a set of snapshot times); *thresh*=0.05 (minimum probability for a state to be labelled) |
-| `plotHypercube.graph` | Transition graph with edge weights showing probability flux (from full output) | *thresh*=0.05 (minimum threshold of flux for drawing an edge) |
-| `plotHypercube.sampledgraph` | Transition graph with edge weights showing probability flux (from sampled paths) | *thresh*=0.05 (minimum threshold of flux for drawing an edge), max=1000 (maximum number of sampled routes to consider) |
-| `plotHypercube.sampledgraph2` | As above, with mean and s.d. of absolute timings for each step | *thresh*=0.05 (minimum threshold of flux for drawing an edge), *max*=1000 (maximum number of sampled routes to consider), *no.times*=FALSE (avoid annotating edges with time information), *use.arc*=TRUE (arc edge format -- looks messier but less prone to overlapping edge labels), *node.labels*=TRUE (binary labels for nodes), *edge.label.size*=2 (font size for edge labels) |
-| `plotHypercube.timehists` | Histograms of absolute timings for each trait's acquisition | |
+| `plotHypercube.graph` | Transition graph with edge weights showing probability flux (from full output) | *thresh*=0.05 (minimum threshold of flux for drawing an edge), *node.labels*=TRUE (show state labels on nodes), *node.label.size*=2 (size of those labels), *node.labels.box*=FALSE (draw opaque box around labels) |
+| `plotHypercube.sampledgraph2` | Transition graph with edge weights showing probability flux (from sampled paths), with mean and s.d. of absolute timings for each step | *thresh*=0.05 (minimum threshold of flux for drawing an edge), *max.samps*=1000 (maximum number of sampled routes to consider), *no.times*=FALSE (avoid annotating edges with time information), *small.times*=FALSE (include alternative, smaller, offset time labels), *times.offset*=c(0.1,-0.1) (offset for those labels), *use.arc*=TRUE (arc edge format -- looks messier but less prone to overlapping edge labels), *node.labels*=TRUE (binary labels for nodes), *edge.label.size*=2 (font size for edge labels), *edge.label.angle*="across" (angle of edge labels), *edge.label.colour*="#000000# (edge label colour), *edge.check.overlap*=TRUE (avoid label overlaps), *featurenames*=c("") (set of feature names), *truncate*=-1 (truncate graph a given number of steps from root, -1 = don't), *use.timediffs*=TRUE (label with timnes for each transition, not overall time since start) |
+| `plotHypercube.timehists` | Histograms of absolute timings for each trait's acquisition | *t.thresh*=20 (threshold time for x-axis), *featurenames*=c("") (set of feature names), *log.time*=TRUE (logarithmic time axis) |
 | `plotHypercube.regularisation` | Information criterion vs number of nonzero parameters during regularisation | |
-| `plotHypercube.timeseries` | Time series of acquisitions across sampled routes | |
-| `plotHypercube.prediction` | Visualise predictions of unobserved features or future behaviour, given a model fit | *prediction* (required, the output of `predictHiddenVals` or `predictNextStep` (see below) |
+| `plotHypercube.motifs` | Motif plot of feature acquisition probabilities at discrete orderings | *featurenames*=c("") (set of feature names), *label.size*=3 (size of feature labels), *label.scheme*="full" (feature labels every timestep, or more sparsely) |
+| `plotHypercube.timeseries` | Time series of acquisitions across sampled routes | *featurenames*=c("") (set of feature names), *log.time*=TRUE (logarithmic time axis) |
+| `plotHypercube.motifseries` | Motif plot of state probabilities at a set of given times | *t.set*=0 (set of observation times), *thresh*=0.05 (minimum probability to explicitly label state) |
+| `plotHypercube.prediction` | Visualise predictions of unobserved features or future behaviour, given a model fit | *prediction* (required, the output of `predictHiddenVals` or `predictNextStep` (see below)), *max.size*=30 (maximum size for word cloud) |
 | `plotHypercube.influences` | For the L^2 model, visualise how each feature acquisition influences the rate of acquisition of other features as a matrix |  *featurenames*=c("") (set of names for features); *use.regularised*=FALSE (use stepwise-regularised param set); *reorder*=FALSE (order features by base rate); *upper.right*=FALSE (control orientation of diagonal); *cv.thresh*=Inf (threshold posterior coefficient of variation, only plot interactions below this)|
-| `plotHypercube.influencegraph` | For the L^2 or L^3 model, visualise how each feature acquisition influences the rate of acquisition of other features as a network |  as `plotHypercube.influences` |
+| `plotHypercube.influencegraph` | For the L^2 or L^3 model, visualise how each feature acquisition influences the rate of acquisition of other features as a network |  as `plotHypercube.influences`, plus *label.size*=2 (size of node labels) |
+| `plotHypercube.curated.tree` | For phylogenetic data curated with `curate.tree`, visualise tree and barcodes |  object returned by `curate.tree` |
 
-Some useful ones are demonstrated here:
-![image](https://github.com/StochasticBiology/hypertraps-ct/assets/50171196/153ed0d7-88ea-4dc2-a3bc-0c24b25923db)
+Some useful ones are demonstrated by the `plotHypercube.summary` command. This should work for all model structures (it omits influence plots, which are only supported for L^2 and L^3 models):
+![image](https://github.com/StochasticBiology/hypertraps-ct/assets/50171196/c70d69b9-8a79-4aae-ba1b-675c2cd8e0b8)
 
 In addition, we can ask HyperTraPS to make predictions about (a) any unobserved features for a given observation (for example, what value the ?s might take in 01??), and (b) what future evolutionary behaviour is likely given that we are currently in a certain state. These are achieved with functions `predictHiddenVals` and `predictNextStep` respectively. Both of these require a fitted hypercubic model (the output of `HyperTraPS`), which we'll call `fit`.
 
