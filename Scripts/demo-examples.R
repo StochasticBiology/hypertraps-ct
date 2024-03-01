@@ -45,9 +45,9 @@ sf = 2
 png("plot-new-fig-3.png", width=600*sf, height=500*sf, res=72*sf)
 ggarrange(plotHypercube.sampledgraph2(my.post, thresh=0.1, use.arc=FALSE, edge.label.size=3, 
                                       edge.label.angle = "none", node.labels=TRUE,
-                                      no.times=TRUE, small.times=TRUE,
+                                      featurenames=c("1","2","3","4","5"),
                                       times.offset = c(0.1,0.2)) + 
-            theme(legend.position="none") + expand_limits(x = c(-0.05,1.1)) ,
+            theme(legend.position="none") + expand_limits(x = c(-0.1,1.1)) ,
           plotHypercube.influences(my.post, cv.thresh = Inf),
           plotHypercube.influencegraph(my.post, cv.thresh = 1),
           plotHypercube.motifseries(my.post, c(0.001, 0.01, 0.5, 1, 2, 5)),
@@ -238,15 +238,33 @@ g.big.70 = ggplot(my.post.70$bubbles, aes(x=Time, y=OriginalIndex,
   geom_point() + theme_light() + theme(legend.position="none") +
   scale_alpha_continuous(range=c(0,1))
 
-png("plot-demo-features.png", width=800*sf, height=800*sf, res=72*sf)
-ggarrange(g.logic,
-          ggarrange(
-            g.big.70, 
-            g.priors, 
-            ggarrange(g.hidden, g.step, labels=c("D i", "D ii"), nrow=2),
-            widths = c(1,0.5,1), labels=c("B", "C", ""), nrow=1), 
-          labels=c("A", ""), nrow=2, heights=c(1,0.75))
+xmin = -0.1
+xmax = 3.5
+png("plot-demo-features.png", width=800*sf, height=500*sf, res=72*sf)
+ggarrange(ggarrange(plotHypercube.graph(logic.post.m1) + expand_limits(x = c(xmin,xmax)) + theme(legend.position="none"),
+                    #    plotHypercube.graph(logic.post.1) +  theme(legend.position="none"),
+                    plotHypercube.graph(logic.post.2) + expand_limits(x = c(xmin,1.5*xmax)) + theme(legend.position="none"),
+                    plotHypercube.graph(logic.post.3) + expand_limits(x = c(xmin,xmax)) + theme(legend.position="none"),
+                    plotHypercube.graph(logic.post.m1r) + expand_limits(x = c(xmin,xmax)) + theme(legend.position="none"), 
+                    nrow=1,
+                    labels=c("A i, full", "ii, L²", "iii, L³", "iv, full regularised"), hjust=0),
+          
+          ggarrange(plotHypercube.influencegraph(logic.post.3, cv.thresh = 0.4) + theme(legend.position="none"),
+                    plotHypercube.regularisation(logic.post.m1r),
+                    g.big.70, 
+                    nrow=1, labels=c("iv", "v", "B")),
+          
+          ggarrange(plotHypercube.sampledgraph2(my.post.priors, 
+                                                use.arc = FALSE, no.times = TRUE,
+                                                node.label.size = 3) + 
+                      theme(legend.position="none") + expand_limits(x = c(xmin,xmax)) , 
+                   g.hidden, g.step, 
+                              nrow=1, labels=c("C", "D i", "D ii")), nrow=3)
+
+
+
 dev.off()
+
 
 #refs = which(logic.post.m1r$regularisation$best != -20)-1
 #data.frame(state=floor(refs/5), locus=refs%%5)
