@@ -3,6 +3,7 @@
 Hypercubic transition path sampling: Flexible inference of accumulation pathways, in discrete or continuous time, under different model structures, using combinations of longitudinal, cross-sectional, and phylogenetically-linked observations.
 
 ![image](https://github.com/StochasticBiology/hypertraps-ct/assets/50171196/2c0fac84-76bf-41a6-9688-a4e429efed20)
+An example inferred hypercubic transition graph (right) showing probable transitions during the evolution of multidrug resistance in tuberculosis, using phylogenetically-embedded original data (left) (Casali et al. 2014).
 
 General content
 =========
@@ -259,5 +260,22 @@ and after setting up the data with the scripts above
 
   * `plot-verify.R` -- plot verification study (from `infer-verify.sh`)
   * `plot-tests.R` -- plot test studies (from `infer-tests.sh`)
+
+References
+=====
+
+Data sources:
+
+Casali, N., Nikolayevskyy, V., Balabanova, Y., Harris, S.R., Ignatyeva, O., Kontsevaya, I., Corander, J., Bryant, J., Parkhill, J., Nejentsev, S. and Horstmann, R.D., 2014. Evolution and transmission of drug-resistant tuberculosis in a Russian population. Nature genetics, 46(3), pp.279-286.
+
+Johnston, I.G., Hoffmann, T., Greenbury, S.F., Cominetti, O., Jallow, M., Kwiatkowski, D., Barahona, M., Jones, N.S. and Casals-Pascual, C., 2019. Precision identification of high-risk phenotypes and progression pathways in severe malaria without requiring longitudinal data. NPJ digital medicine, 2(1), p.63.
+
+Johnston, I.G. and Røyrvik, E.C., 2020. Data-driven inference reveals distinct and conserved dynamic pathways of tool use emergence across animal taxa. Iscience, 23(6).
+
+Knutsen, T., Gobu, V., Knaus, R., Padilla‐Nash, H., Augustus, M., Strausberg, R.L., Kirsch, I.R., Sirotkin, K. and Ried, T., 2005. The interactive online SKY/M‐FISH & CGH database and the Entrez cancer chromosomes search database: linkage of chromosomal aberrations with the genome sequence. Genes, Chromosomes and Cancer, 44(1), pp.52-64.
+
+Morita, K., Wang, F., Jahn, K., Hu, T., Tanaka, T., Sasaki, Y., Kuipers, J., Loghavi, S., Wang, S.A., Yan, Y. and Furudate, K., 2020. Clonal evolution of acute myeloid leukemia revealed by high-throughput single-cell genomics. Nature communications, 11(1), p.5327.
+
+Williams, B.P., Johnston, I.G., Covshoff, S. and Hibberd, J.M., 2013. Phenotypic landscape inference reveals multiple evolutionary paths to C4 photosynthesis. Elife, 2, p.e00961.
 
 
