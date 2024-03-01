@@ -117,7 +117,7 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
                                        node.labels = TRUE, use.arc = FALSE, no.times = FALSE, 
                                        small.times = FALSE, times.offset = c(0.1,-0.1),
                                        edge.label.size = 2, edge.label.angle = "across",
-                                       edge.label.colour = "#000000",
+                                       edge.label.colour = "#000000", edge.check.overlap = TRUE,
                                        featurenames = c(""), truncate = -1,
                                        node.label.size = 2, use.timediffs = TRUE) {
   edge.from = edge.to = edge.time = edge.change = c()
@@ -179,14 +179,14 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
     this.plot= this.plot +
       geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label, angle=45), 
                     label_size = edge.label.size, label_colour=edge.label.colour, color="#AAAAFF",
-                    label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = TRUE) + 
+                    label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = edge.check.overlap) + 
       scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
       theme_graph(base_family="sans")
   } else {
     this.plot=  this.plot +
       geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=label, angle=45), 
                      label_size = edge.label.size, label_colour=edge.label.colour, color="#AAAAFF",
-                     label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = TRUE) + 
+                     label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = edge.check.overlap) + 
       scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
       theme_graph(base_family="sans")
   }
@@ -247,24 +247,31 @@ plotHypercube.regularisation = function(my.post) {
            labs(x = "Number of non-zero parameters", y="AIC") + theme_light() )
 }
 
-plotHypercube.motifs = function(my.post, featurenames = c("")) {
+plotHypercube.motifs = function(my.post, 
+                                featurenames = c(""), 
+                                label.size=3, 
+                                label.scheme = "full") {
   # motif plot
   if(length(featurenames) > 1) {
     labels = featurenames
   } else {
     labels = 1:my.post$L
   }
+  sample.set = c(2, my.post$L-1, round(my.post$L/2), round(my.post$L/4), round(3*my.post$L/4))
   rdf = data.frame()
   for(j in 1:ncol(my.post$routes)) {
     startprob = 0
     for(i in 0:max(my.post$routes)) {
       thisprob = length(which(my.post$routes[,j]==i))/nrow(my.post$routes)
-      rdf = rbind(rdf, data.frame(Index=i, Label=labels[i+1], Time=j, Start=startprob, End=startprob+thisprob, Probability=thisprob))
+      this.label = labels[i+1]
+      if(label.scheme != "full" & !(j %in% sample.set)) { this.label = "" }
+      rdf = rbind(rdf, data.frame(Index=i, TextLabel=this.label, Label=labels[i+1], Time=j, Start=startprob, End=startprob+thisprob, Probability=thisprob))
+ 
       startprob = startprob+thisprob
     }
   }
   return(ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Label))) +
-           geom_text(aes(x=Time,y=(Start+End)/2,label=Label), color="#FFFFFF") + 
+           geom_text(aes(x=Time,y=(Start+End)/2,label=TextLabel), color="#FFFFFF", size=label.size) + 
            labs(x = "Ordering", y="Probability", fill="Feature") + 
            scale_fill_viridis(discrete = TRUE, option="inferno", begin=0.2, end=0.8) +
            theme_light())
