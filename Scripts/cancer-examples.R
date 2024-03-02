@@ -10,7 +10,7 @@ setwd("Scripts/")
 ### Cancer case study 1
 
 # pull the AML data object from TreeMHN
-load("../RawData/AML_tree_obj.RData")
+load("../Data/AML_tree_obj.RData")
 
 # helper function for shifting bits in a character string
 new.state = function(old.state, locus) {
@@ -59,6 +59,8 @@ parallel.fn = function(fork, srcs, dests) {
   if(fork == 4) { return(HyperTraPS(dests, initialstates = srcs, penalty = 1, seed = 2, samplegap = 10, length = 4, kernel = 3))}
   if(fork == 5) { return(HyperTraPS(dests, initialstates = srcs, penalty = 1, seed = 1, samplegap = 10, model = 3, length = 4, kernel = 3))}
   if(fork == 6) { return(HyperTraPS(dests, initialstates = srcs, penalty = 1, seed = 2, samplegap = 10, model = 3, length = 4, kernel = 3))}
+  if(fork == 7) { return(HyperTraPS(dests, initialstates = srcs, seed = 1, regularise = 1, samplegap = 10, length = 4, kernel = 3))}
+  if(fork == 8) { return(HyperTraPS(dests, initialstates = srcs, seed = 2, regularise = 1, samplegap = 10, length = 4, kernel = 3))}
 }
 
 
@@ -75,14 +77,14 @@ require(parallel)
 # Create the data frame of options, print to check it is what we want
 # and pass to mcmapply
 
-nfork = 6
-expt.names = c("seed 1", "seed 2", "pen seed 1", "pen seed 2", "pen mod 3 seed 1", "pen mod 3 seed 2")
+nfork = 8
+expt.names = c("seed 1", "seed 2", "pen seed 1", "pen seed 2", "pen mod 3 seed 1", "pen mod 3 seed 2", "reg seed 1", "reg seed 2")
 parallelised.runs <- mcmapply(parallel.fn,
                               fork = 1:nfork,
                               MoreArgs = list(srcs=srcs,
                                               dests=dests),
                               SIMPLIFY = FALSE,
-                              mc.cores = min(detectCores(), nrow(aml.opts)))
+                              mc.cores = min(detectCores(), nfork))
 
 cancer.post = parallelised.runs[[1]]
 cancer.post.1 = parallelised.runs[[2]]
@@ -173,47 +175,4 @@ dev.off()
 
 # put parameter loss details in regularisation output; add use.regularised to all plot functions
 # consider clustering for influence maps
-
-### Cancer case study 2
-
-# read a big list of mutations across samples
-big.c.df = as.data.frame(read_excel("../RawData/Supplementary Table 14.Driver.Events.By.Mutation.Type.01052015.v2.xlsx", sheet=4))
-genes = unique(big.c.df$Gene)
-samples = unique(big.c.df$Sample)
-
-# initialise a dataframe to store binary states
-data.df <- data.frame(matrix(0, ncol = length(genes), nrow = length(samples)))
-colnames(data.df) <- genes
-data.df$Sample = samples
-# populate this dataframe when we find a given mutation for a given sample
-for(i in 1:nrow(big.c.df)) {
-  sref = which(samples == big.c.df$Sample[i])
-  gref = which(genes == big.c.df$Gene[i])
-  data.df[sref, gref] = 1
-}
-
-# put into matrix form and run HyperTraPS
-if(run.simulations == TRUE) {
-  big.c.m = as.matrix(data.df[1:(ncol(data.df)-1)])
-  big.c.post = HyperTraPS(big.c.m, penalty = 1, kernel = 3)
-  writeHyperinf(big.c.post, "big-c-post", fulloutput = FALSE, regularised = FALSE)
-}
-big.c.post = readHyperinf("big-c-post", fulloutput = FALSE, regularised = FALSE)
-
-# plot influences between genes
-sf = 3
-png("cancer-big-post-autoreg.png", width=600*sf, height=600*sf, res=72*sf)
-plotHypercube.influences(big.c.post, featurenames = genes, 
-                         upper.right = FALSE, reorder = TRUE)
-dev.off()
-
-# more sampling from posterior
-big.c.more = PosteriorAnalysis(big.c.post, samples_per_row = 100)
-
-# followup plots
-plotHypercube.sampledgraph2(big.c.post, use.arc = FALSE, node.labels = FALSE, featurenames = genes, 
-                            no.times = TRUE, thresh=0.02, truncate = 3)
-
-plotHypercube.sampledgraph2(big.c.more, use.arc = FALSE, node.labels = FALSE, featurenames = genes, 
-                            no.times = TRUE, thresh=0.005, truncate = 3)
 
