@@ -245,7 +245,7 @@ in `Verify` there is some code to generate synthetic datasets
   * `generate-hardcube.c` -- C code to generate a more difficult L=3 case
   * `generate-cross.c` -- C code to generate several L=5 cases supporting competing pathways
 
-in `Process/` there is some code to curate the phylogenetic TB data:
+in `Process/` there is some code to curate the phylogenetic TB data using Python at the command line (although this can also be done in R with `curate.tree`, as in `tb-case-study.R` below):
   * `prune-tree.py` -- Python code to reduce a raw Newick tree to just those nodes contained a barcode datafile
   * `internal-labels.c` -- C code to introduce dummy internal node labels (for use in followup preparation)
   * `parse-new.py` -- Python code to infer internal node barcodes and produce transition datafiles ready for HyperTraPS (and summary graphic for checking)
@@ -253,7 +253,8 @@ in `Process/` there is some code to curate the phylogenetic TB data:
 
 Analysing and plotting data
 ----
-  * `tb-case-study.R` -- curates TB data, runs HyperTraPS, and plots TB case study. 
+  * `tb-case-study.R` -- curates TB data, runs HyperTraPS, and plots TB case study.
+  * `tb-predict.R` -- curates TB data, runs HyperTraPS, and does future and unobserved prediction examples.
   * `cancer-examples.R` -- R script running examples of cancer progression analysis
 
 and after setting up the data with the scripts above
