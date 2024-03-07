@@ -611,7 +611,7 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
 }
 
 # plot genotype probabilities at a given set of times as a "motif" plot
-plotHypercube.motifseries = function(my.post, t.set=0, thresh = 0.05) {
+plotHypercube.motifseries = function(my.post, t.set=0, thresh = 0.05, label.size=3) {
   df = data.frame()
   t.index = 1
   # build up dataframe with rectangle co-ordinates and labels for high-probability states
@@ -634,8 +634,8 @@ plotHypercube.motifseries = function(my.post, t.set=0, thresh = 0.05) {
     t.index = t.index + 1
   }
   return(
-    ggplot(df) + geom_rect(aes(xmin=t.index-0.5,xmax=t.index+0.5,ymin=s1,ymax=s2,fill=factor(State)), color="white") +
-      geom_text(aes(x=t.index,y=(s1+s2)/2,label=label), color="#FFFFFF") + 
+    ggplot(df) + geom_rect(aes(xmin=t.index-0.5,xmax=t.index+0.5,ymin=s1,ymax=s2,fill=factor(State)), color="#FFFFFF22") +
+      geom_text(aes(x=t.index,y=(s1+s2)/2,label=label), color="#FFFFFF", size=label.size) + 
       labs(x = "Time", y="Probability", fill="State") + 
       scale_fill_viridis(discrete = TRUE, option="inferno", begin=0.2, end=0.8) +
       theme_light() + theme(legend.position = "none") +
@@ -753,7 +753,7 @@ prob.by.time = function(my.post, tau) {
   return(df)
 }
 
-curate.tree = function(tree.filename, data.filename) {
+curate.tree = function(tree.filename, data.filename, losses = FALSE) {
   # read in Newick tree and root
   my.tree = read.tree(tree.filename)
   my.rooted.tree = root(my.tree, 1, resolve.root = TRUE)
@@ -791,8 +791,13 @@ curate.tree = function(tree.filename, data.filename) {
           ## ancestral state reconstruction
           # pull the rows in our barcode dataset corresponding to children of this node
           descendant.rows = which(my.data$label %in% tree.labels[descendant.refs])
-          # bitwise AND to construct the ancestral state
-          new.barcode = apply(my.data[descendant.rows,2:ncol(my.data)], 2, prod)
+          if(losses == FALSE) {
+            # bitwise AND to construct the ancestral state
+            new.barcode = apply(my.data[descendant.rows,2:ncol(my.data)], 2, prod)
+          } else {
+            # bitwise OR to construct the ancestral state
+            new.barcode = apply(my.data[descendant.rows,2:ncol(my.data)], 2, max)
+          }
           # add this ancestral state to the barcode dataset
           new.data = new.row
           new.data$label[1] = this.label
