@@ -384,26 +384,23 @@ plotHypercube.influences = function(my.post,
     high.col = "#8888FF"
   }
   if(upper.right == TRUE) {
-    return(ggplot(plot.df, aes(x=xlab,y=factor(ylab, levels=rev(levels(plot.df$ylab))),fill=mean,
-                               alpha=precision)) + geom_tile() + 
+    if(cv.thresh == Inf) {
+      this.plot = ggplot(plot.df, aes(x=xlab,y=factor(ylab, levels=rev(levels(plot.df$ylab))),fill=mean,
+                                      alpha=precision))
+    } else {
+      this.plot = ggplot(plot.df, aes(x=xlab,y=factor(ylab, levels=rev(levels(plot.df$ylab))),fill=mean))
+    } } else {
+      if(cv.thresh == Inf) {
+        this.plot = ggplot(plot.df, aes(x=xlab,y=ylab,fill=mean,alpha=precision)) 
+      } else {
+      this.plot = ggplot(plot.df, aes(x=xlab,y=ylab,fill=mean)) 
+    } }
+   return(this.plot + geom_tile() +
              scale_fill_gradient2(low = low.col, mid = "white", high = high.col, midpoint = 0) +
              scale_alpha_continuous(range=c(0,1)) +
              theme_light() + 
              labs(x="Acquired trait", y="(Influenced) rate", fill="Posterior\nmean", alpha="Posterior\nprecision") +
              theme(axis.text.x = element_text(angle=90)) ) #+
-    #scale_x_continuous(breaks=1:my.post$L, labels=labels) +
-    #scale_y_continuous(breaks=1:my.post$L, labels=labels))
-  } else {
-    return(ggplot(plot.df, aes(x=xlab,y=ylab,fill=mean,alpha=precision)) + geom_tile() + 
-             scale_fill_gradient2(low = low.col, mid = "white", high = high.col, midpoint = 0) +
-             scale_alpha_continuous(range=c(0,1)) +
-             labs(x="Acquired trait", y="(Influenced) rate", fill="Posterior\nmean", alpha="Posterior\nprecision") +
-             theme_light() +
-             theme(axis.text.x = element_text(angle=90)) ) #+
-    # scale_x_continuous(breaks=1:my.post$L, labels=labels) +
-    # scale_y_continuous(breaks=1:my.post$L, labels=labels))
-  }
-  
 }
 
 
