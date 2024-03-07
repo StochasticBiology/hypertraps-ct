@@ -77,14 +77,14 @@ ggarrange(plotlist = lapply(parallelised.runs2, plotHypercube.lik.trace))
 ##########
 
 # main text figure: penalised likelihood, precisely specified timings
-png("plot-tb-main-text.png", width=800*sf, height=600*sf, res=72*sf)
+png("plot-tb-main-text.png", width=800*sf, height=800*sf, res=72*sf)
 ggarrange(
   g.curated.tree,
   plotHypercube.sampledgraph2(parallelised.runs2[[3]], use.arc = FALSE, featurenames = tb.names, 
                               edge.label.size=3, edge.label.angle = "none", node.labels=FALSE,
                               no.times=TRUE, small.times=TRUE) + theme(legend.position="none"),
   plotHypercube.influencegraph(parallelised.runs2[[3]], cv.thresh=0.3, featurenames=tb.names),
-  plotHypercube.motifseries(parallelised.runs2[[4]], t.set=c(1, 5, 10, 15, 20, 50), label.size=2, thresh = 0.02),
+  plotHypercube.motifseries(parallelised.runs2[[4]], t.set=c(1, 5, 10, 15, 20, 50), label.size=2.5, thresh = 0.02),
   widths=c(1,2,1,2),
   labels=c("A", "B", "C", "D")
   
