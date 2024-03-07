@@ -1,7 +1,6 @@
 # load the essentials
 library(ggplot2)
 library(ggpubr)
-library(readxl)
 
 setwd("..")
 source("hypertraps.R")
