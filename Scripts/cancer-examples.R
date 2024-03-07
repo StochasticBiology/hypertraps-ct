@@ -1,6 +1,7 @@
 # load the essentials
 library(ggplot2)
 library(ggpubr)
+library(readxl)
 
 setwd("..")
 source("hypertraps.R")
@@ -52,25 +53,18 @@ srcs = matrix(unlist(lapply(strsplit(trans.df$before, ""), as.numeric)), ncol=AM
 dests = matrix(unlist(lapply(strsplit(trans.df$after, ""), as.numeric)), ncol=AML[[1]], byrow=TRUE)
 
 parallel.fn = function(fork, srcs, dests) {
-  if(fork == 1) { return(HyperTraPS(dests, initialstates = srcs, seed = 1, samplegap = 10, length = 4, kernel = 3))}
-  if(fork == 2) { return(HyperTraPS(dests, initialstates = srcs, seed = 2, samplegap = 10, length = 4, kernel = 3))}
-  if(fork == 3) { return(HyperTraPS(dests, initialstates = srcs, penalty = 1, seed = 1, samplegap = 10, length = 4, kernel = 3))}
-  if(fork == 4) { return(HyperTraPS(dests, initialstates = srcs, penalty = 1, seed = 2, samplegap = 10, length = 4, kernel = 3))}
-  if(fork == 5) { return(HyperTraPS(dests, initialstates = srcs, penalty = 1, seed = 1, samplegap = 10, model = 3, length = 4, kernel = 3))}
-  if(fork == 6) { return(HyperTraPS(dests, initialstates = srcs, penalty = 1, seed = 2, samplegap = 10, model = 3, length = 4, kernel = 3))}
+  if(fork == 1) { return(HyperTraPS(dests, initialstates = srcs, walkers = 20, seed = 1, samplegap = 10, length = 5, kernel = 3))}
+  if(fork == 2) { return(HyperTraPS(dests, initialstates = srcs, walkers = 20, seed = 2, samplegap = 10, length = 5, kernel = 3))}
+  if(fork == 3) { return(HyperTraPS(dests, initialstates = srcs, walkers = 20, penalty = 1, seed = 1, samplegap = 10, length = 5, kernel = 3))}
+  if(fork == 4) { return(HyperTraPS(dests, initialstates = srcs, walkers = 20, penalty = 1, seed = 2, samplegap = 10, length = 5, kernel = 3))}
+  if(fork == 5) { return(HyperTraPS(dests, initialstates = srcs, walkers = 20, penalty = 1, seed = 1, samplegap = 10, model = 3, length = 5, kernel = 3))}
+  if(fork == 6) { return(HyperTraPS(dests, initialstates = srcs, walkers = 20, penalty = 1, seed = 2, samplegap = 10, model = 3, length = 5, kernel = 3))}
   if(fork == 7) { return(HyperTraPS(dests, initialstates = srcs, seed = 1, regularise = 1, samplegap = 10, length = 4, kernel = 3))}
   if(fork == 8) { return(HyperTraPS(dests, initialstates = srcs, seed = 2, regularise = 1, samplegap = 10, length = 4, kernel = 3))}
 }
 
 
 # run HyperTraPS and regularise via penalised likelihood
-
-# FIXME: a general concern about having, by default, seed = 1.
-#  I think this is different from the way most code does this in R,
-#  where the seed is not fixed, so different runs lead to possibly different
-#  results, unless the user explicitly sets the seed.
-#  It might also be worth thinking/illustrating how to do this if running in
-#  parallel (getting an appropriate seed from R)
 
 require(parallel)
 # Create the data frame of options, print to check it is what we want
@@ -85,93 +79,58 @@ parallelised.runs <- mcmapply(parallel.fn,
                               SIMPLIFY = FALSE,
                               mc.cores = min(detectCores(), nfork))
 
-cancer.post = parallelised.runs[[1]]
-cancer.post.1 = parallelised.runs[[2]]
-cancer.post.autoreg = parallelised.runs[[3]]
-cancer.post.autoreg.1 = parallelised.runs[[4]]
-cancer.post.3.autoreg = parallelised.runs[[5]]
-cancer.post.3.autoreg.1 = parallelised.runs[[6]]
+# various checks for consistency across random number seeds
+ggarrange(plotHypercube.influences(parallelised.runs[[3]], cv.thresh = 2, featurenames = AML[[4]], 
+                                   upper.right = TRUE, reorder = TRUE),
+          plotHypercube.influences(parallelised.runs[[4]], cv.thresh = 2, featurenames = AML[[4]], 
+                                   upper.right = TRUE, reorder = TRUE)
+)
 
-writeHyperinf(cancer.post, "cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
-writeHyperinf(cancer.post.autoreg, "cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
-writeHyperinf(cancer.post.3.autoreg, "cancer.post.3.autoreg", postlabel="cancer.post.3.autoreg", fulloutput = FALSE, regularised = FALSE)
+ggarrange(plotHypercube.influences(parallelised.runs[[1]], cv.thresh = 2, featurenames = AML[[4]], 
+                                   upper.right = TRUE, reorder = TRUE),
+          plotHypercube.influences(parallelised.runs[[2]], cv.thresh = 2, featurenames = AML[[4]], 
+                                   upper.right = TRUE, reorder = TRUE)
+)
 
-# uncomment if we're reading previously computed experiments from file
-#  cancer.post = readHyperinf("cancer.post", postlabel="cancer.post", fulloutput = FALSE, regularised = FALSE)
-#  cancer.post.autoreg = readHyperinf("cancer.post.autoreg", postlabel="cancer.post.autoreg", fulloutput = FALSE, regularised = FALSE)
-#  cancer.post.3.autoreg = readHyperinf("cancer.post.3.autoreg", postlabel="cancer.post.3.autoreg", fulloutput = FALSE, regularised = FALSE)
+##### plots for manuscript
 
 # hypercube without timings
-g.cancer.graph2 = plotHypercube.sampledgraph2(cancer.post.autoreg, use.arc = FALSE, featurenames = AML[[4]], 
-                            edge.label.size=3, edge.label.angle = "along", node.labels=FALSE,
-                            no.times=TRUE, small.times=FALSE, thresh=0.006, truncate=6,
-                            use.timediffs = FALSE, edge.check.overlap = FALSE) +
+g.cancer.graph2 = plotHypercube.sampledgraph2(parallelised.runs[[4]], use.arc = FALSE, featurenames = AML[[4]], 
+                                              edge.label.size=3, edge.label.angle = "along", node.labels=FALSE,
+                                              no.times=TRUE, small.times=FALSE, thresh=0.008, truncate=5,
+                                              use.timediffs = FALSE, edge.check.overlap = FALSE) +
   theme(legend.position="none") + coord_flip() + scale_y_reverse()
 
 # hypercube with timings (messier)
-g.cancer.graph2t = plotHypercube.sampledgraph2(cancer.post.autoreg, use.arc = FALSE, featurenames = AML[[4]], 
+g.cancer.graph2t = plotHypercube.sampledgraph2(parallelised.runs[[4]], use.arc = FALSE, featurenames = AML[[4]], 
                                                edge.label.size=3, edge.label.angle = "none", node.labels=FALSE,
+                                               no.times=TRUE, small.times=TRUE,
                                                thresh=0.004, truncate=6,
                                                use.timediffs = FALSE) + 
   theme(legend.position="none") + coord_flip() + scale_y_reverse()
 
-# create plots of influences under different regularisation protocols
-plot.base = plotHypercube.influences(cancer.post, featurenames = AML[[4]], 
-                                     use.final = TRUE, upper.right = TRUE, reorder = TRUE) +
-  guides(alpha=FALSE)
-plot.autoreg = plotHypercube.influences(cancer.post.autoreg, featurenames = AML[[4]], 
-                                        upper.right = TRUE, reorder = TRUE) +
-  guides(alpha = FALSE)
+g.influences = plotHypercube.influences(parallelised.runs[[4]], cv.thresh = 2, featurenames = AML[[4]], 
+                                        upper.right = TRUE, reorder = TRUE)
 
-plot.base.pruned = plotHypercube.influences(cancer.post, featurenames = AML[[4]], 
-                                            upper.right = TRUE, reorder = TRUE, cv.thresh = 0.5) +
-  guides(alpha = FALSE)
+g.influence.graph = plotHypercube.influencegraph(parallelised.runs[[4]], 
+                                                 cv.thresh = 1, thresh = 1, featurenames = AML[[4]])
 
-plot.autoreg.pruned = plotHypercube.influences(cancer.post.autoreg, cv.thresh = 2, featurenames = AML[[4]], 
-                                               upper.right = TRUE, reorder = TRUE) +
-  guides(alpha = FALSE) 
 
-# compare with and without penalised likelihood
-ggarrange(plot.base.pruned, plot.autoreg.pruned)
-
+g.motif = plotHypercube.motifs(parallelised.runs[[4]], 
+                               label.size = 3,
+                               featurenames = AML[[4]],
+                               label.scheme = "sparse") + theme(legend.position="none")
 
 sf = 3
-png("cancer-post-autoreg.png", width=800*sf, height=800*sf, res=72*sf)
-print(ggarrange(g.cancer.graph2 + theme(legend.position = "none"),
-                plot.autoreg.pruned, nrow=2, labels=c("A", "B")))
-dev.off()
 
 png("cancer-post-si.png", width=400*sf, height=400*sf, res=72*sf)
-print(plotHypercube.influencegraph(cancer.post.autoreg, 
-                                   cv.thresh = 2, thresh = 1, featurenames = AML[[4]])
-)
-dev.off()
-
-g.cancer.motif = plotHypercube.motifs(cancer.post.autoreg, 
-                                      label.size = 3,
-                                      featurenames = AML[[4]],
-                                      label.scheme = "sparse") + theme(legend.position="none")
-
-png("cancer-post-v3.png", width=800*sf, height=800*sf, res=72*sf)
-ggarrange(g.cancer.graph2,
-                     ggarrange(plot.autoreg.pruned, g.cancer.motif, nrow=2, labels=c("B", "C")),
-                     labels=c("A", ""), nrow=1, widths=c(1,1.5))
-dev.off()
-
-png("cancer-post-v2.png", width=1200*sf, height=900*sf, res=72*sf)
-print(ggarrange( ggarrange(g.cancer.graph2 + theme(legend.position = "none"),
-                           plot.autoreg.pruned, nrow=1, labels=c("A", "B")),
-                 plotHypercube.motifs(cancer.post.autoreg, featurenames = AML[[4]]) + theme(legend.position="none"),
-                 labels=c("", "C"), nrow=2))
+print(g.influence.graph)
 dev.off()
 
 
-png("cancer-post-all.png", width=1200*sf, height=800*sf, res=72*sf)
-print(ggarrange(plot.base, plot.autoreg, 
-                plot.base.pruned, plot.autoreg.pruned, labels = c("A", "B", "C", "D")))
+png("cancer-post-main-text.png", width=900*sf, height=700*sf, res=72*sf)
+print(ggarrange(g.cancer.graph2,
+                ggarrange(g.influences, g.motif, nrow=2, labels=c("B", "C")),
+                labels=c("A", ""), nrow=1, widths=c(1,1.5)))
 dev.off()
-
-
-# put parameter loss details in regularisation output; add use.regularised to all plot functions
-# consider clustering for influence maps
 
