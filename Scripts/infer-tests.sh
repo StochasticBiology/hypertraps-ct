@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # perform various more technical tests about optimisation and convergence for different sampling and optimisation schemes
 
 # get back to root
