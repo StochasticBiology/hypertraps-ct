@@ -333,7 +333,8 @@ plotHypercube.influences = function(my.post,
                                     use.final = FALSE, 
                                     reorder = FALSE, 
                                     upper.right = FALSE,
-                                    cv.thresh = Inf) {
+                                    cv.thresh = Inf,
+                                    red.green = FALSE) {
   if(my.post$model != 2) {
     stop("Influence plot currently only supported for model type 2 (pairwise influences)")
   }
@@ -360,6 +361,8 @@ plotHypercube.influences = function(my.post,
     }
   }  
   plot.df$cv[is.na(plot.df$cv)] = 0
+  plot.df$precision = 1-plot.df$cv
+  plot.df$precision[plot.df$precision < 0] = 0
   plot.df$xlab = labels[plot.df$x]
   plot.df$ylab = labels[plot.df$y]
   if(reorder == TRUE) {
@@ -373,19 +376,29 @@ plotHypercube.influences = function(my.post,
   }
   plot.df = plot.df[plot.df$cv < cv.thresh | plot.df$x==plot.df$y,]
   
+  if(red.green == TRUE) {
+    low.col = "#FF8888"
+    high.col = "#338833"
+  } else {
+    low.col = "#FF8888"
+    high.col = "#8888FF"
+  }
   if(upper.right == TRUE) {
-    return(ggplot(plot.df, aes(x=xlab,y=factor(ylab, levels=rev(levels(plot.df$ylab))),fill=mean,alpha=cv)) + geom_tile() + 
-             scale_fill_gradient2(low = "#FF8888", mid = "white", high = "#338833", midpoint = 0) +
-             scale_alpha_continuous(range=c(1,0)) +
-             theme_light() + xlab("Acquired trait") + ylab("(Influenced) rate") +
+    return(ggplot(plot.df, aes(x=xlab,y=factor(ylab, levels=rev(levels(plot.df$ylab))),fill=mean,
+                               alpha=precision)) + geom_tile() + 
+             scale_fill_gradient2(low = low.col, mid = "white", high = high.col, midpoint = 0) +
+             scale_alpha_continuous(range=c(0,1)) +
+             theme_light() + 
+             labs(x="Acquired trait", y="(Influenced) rate", fill="Posterior\nmean", alpha="Posterior\nprecision") +
              theme(axis.text.x = element_text(angle=90)) ) #+
     #scale_x_continuous(breaks=1:my.post$L, labels=labels) +
     #scale_y_continuous(breaks=1:my.post$L, labels=labels))
   } else {
-    return(ggplot(plot.df, aes(x=xlab,y=ylab,fill=mean,alpha=cv)) + geom_tile() + 
-             scale_fill_gradient2(low = "#FF8888", mid = "white", high = "#338833", midpoint = 0) +
-             scale_alpha_continuous(range=c(1,0)) +
-             theme_light() + xlab("Acquired trait") + ylab("(Influenced) rate") +
+    return(ggplot(plot.df, aes(x=xlab,y=ylab,fill=mean,alpha=precision)) + geom_tile() + 
+             scale_fill_gradient2(low = low.col, mid = "white", high = high.col, midpoint = 0) +
+             scale_alpha_continuous(range=c(0,1)) +
+             labs(x="Acquired trait", y="(Influenced) rate", fill="Posterior\nmean", alpha="Posterior\nprecision") +
+             theme_light() +
              theme(axis.text.x = element_text(angle=90)) ) #+
     # scale_x_continuous(breaks=1:my.post$L, labels=labels) +
     # scale_y_continuous(breaks=1:my.post$L, labels=labels))
@@ -650,7 +663,8 @@ plotHypercube.influencegraph = function(my.post,
                                         use.final = FALSE,
                                         thresh=0.05,
                                         cv.thresh = Inf,
-                                        label.size = 2) {
+                                        label.size = 2,
+                                        red.green = FALSE) {
   plot.df = data.frame()
   if(length(featurenames) > 1) {
     labels = featurenames
@@ -710,11 +724,18 @@ plotHypercube.influencegraph = function(my.post,
   to.g.df$Direction = factor(as.character(sign(to.g.df$Weight)), levels=c("-1", "1"))
   g = graph_from_data_frame(to.g.df)
   this.plot = ggraph(g, layout="kk")
+  if(red.green == TRUE) {
+    low.col = "#FF8888"
+    high.col = "#338833"
+  } else {
+    low.col = "#FF8888"
+    high.col = "#8888FF"
+  }
   return(  this.plot + geom_edge_arc(aes(colour=Direction, alpha=abs(Weight), width=abs(Weight)),
                                      strength=0.1, arrow=arrow(length=unit(0.2, "inches"), type="closed")) +
              geom_node_label(aes(label=name), size=label.size) + theme_void() +
              labs(edge_width="Magnitude", edge_alpha="Magnitude", colour="Direction") +
-             scale_edge_colour_manual(values = setNames(c("#FF8888", "#338833"), factor(c("-1", "1"))))
+             scale_edge_colour_manual(values = setNames(c(low.col, high.col), factor(c("-1", "1"))))
   )
 
 }
