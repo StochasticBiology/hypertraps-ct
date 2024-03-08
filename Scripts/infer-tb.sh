@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # infer TB evolutionary dynamics
 # ensure prepare-all.sh has been run to wrangle data
 

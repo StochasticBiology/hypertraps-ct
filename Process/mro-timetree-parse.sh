@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # the TimeTree database doesn't hold all our species of interest
 # this code addresses this with two approaches -- first, using close relatives; and second, manually adding species with uncertain divergence times
 

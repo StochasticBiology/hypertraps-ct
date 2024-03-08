@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # needs four arguments: a tree and a set of barcodes, a time scaling factor, and loss/gain (1/0)
 # the tree should be in Newick format
 # the barcodes should be in CSV format with the sample name as the first column, with one header row

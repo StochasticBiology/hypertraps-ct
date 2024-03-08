@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # get back to root
 cd ..
 

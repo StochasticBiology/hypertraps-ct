@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # run HyperTraPS for various existing scientific case studies
 
 # get back to root
