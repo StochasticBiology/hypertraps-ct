@@ -29,12 +29,13 @@ BinToDec <- function(state) {
 
 plotHypercube.lik.trace = function(my.post) {
   ### likelihood traces
-  this.plot = ggplot(my.post$lik.traces) + 
-    geom_line(aes(x=Step, y=LogLikelihood1)) +
-    geom_line(aes(x=Step, y=LogLikelihood2))
+  this.plot = ggplot(my.post$lik.traces)  
   if("CurrentLogLikelihood" %in% colnames(my.post$lik.traces)) {
     this.plot = this.plot + geom_line(aes(x=Step, y=CurrentLogLikelihood), color="#FF0000") 
   }
+  
+  this.plot = this.plot + geom_line(aes(x=Step, y=LogLikelihood1), linetype="dotted") +
+    geom_line(aes(x=Step, y=LogLikelihood2), linetype="dotted")
   return(this.plot + theme_light() )
 }
 
