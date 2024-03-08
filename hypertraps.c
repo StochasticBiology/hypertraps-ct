@@ -1247,7 +1247,7 @@ int main(int argc, char *argv[])
   double penalty;
   int regterm;
   
-  printf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
+  printf("\nHyperTraPS-CT\n    https://github.com/StochasticBiology/HyperTraPS-CT\n\n");
 
   // default values
   spectrumtype = 0;
