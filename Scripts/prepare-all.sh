@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # prepare and wrangle data for TB case study
 
 # get back to root
