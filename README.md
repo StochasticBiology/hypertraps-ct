@@ -14,7 +14,7 @@ For the command-line-only version, you'll just need the ability to compile and r
 
 For the R version without helper and plotting functions, you'll need R and the `Rcpp` library.
 
-For those helper and plotting functions, you'll need R with these libraries for full functionality: `Rcpp`, `ggplot2`, `ggpubr`, `ggraph`, `ggwordcloud`, `igraph`, `stringr`, `stringdist`, `phangorn`, `phytools`, `ggtree`.
+For those helper and plotting functions, you'll need R with these libraries for full functionality: `Rcpp`, `ggplot2`, `ggpubr`, `ggraph`, `ggwordcloud`, `igraph`, `stringr`, `stringdist`, `phangorn`, `phytools`, `ggtree`, `parallel`.
 
 The command-line data curation with tuberculosis evolution needs Python with `ETE3`, though (as described below) this can also be done in R.
 
