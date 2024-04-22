@@ -772,21 +772,36 @@ prob.by.time = function(my.post, tau) {
   return(df)
 }
 
-curate.tree = function(tree.filename, data.filename, losses = FALSE) {
+curate.tree = function(tree.filename, data.filename, losses = FALSE, data.header=TRUE) {
   # read in Newick tree and root
   my.tree = read.tree(tree.filename)
   my.rooted.tree = root(my.tree, 1, resolve.root = TRUE)
   
   # read in barcode data
-  my.data = read.csv(data.filename)
+  my.data = read.csv(data.filename, header=data.header)
   colnames(my.data)[1] = "label"
+  
+  match.set = match(my.data$label, my.rooted.tree$tip.label)
+  if(any(is.na(match.set))) {
+    message("Found observations that didn't correspond to tips of the tree!")
+    my.data = my.data[-which(is.na(match.set)),]
+    match.set = match(my.data$label, my.rooted.tree$tip.label)
+  }
+  
+  if(any(duplicated(my.data$label))) {
+    message("Duplicates in observation set!")
+  }
   
   # prune tree to include only those tips in the barcode dataset
   tree = drop.tip(my.rooted.tree,
-                  my.rooted.tree$tip.label[-match(my.data$label, my.rooted.tree$tip.label)])
+                  my.rooted.tree$tip.label[-match.set])
   
   tree$node.label = as.character(length(tree$tip.label) + 1:tree$Nnode)
   tree.labels = c(tree$tip.label, tree$node.label)
+
+  if(any(duplicated(tree$tip.label))) {
+    message("Duplicates in tree tips!")
+  }
   
   cat("\n------- Painting ancestors...\n  ")
   
