@@ -61,6 +61,37 @@ plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
   }
 }
 
+plotHypercube.bubbles.coarse = function(my.post, reorder=FALSE, transpose=FALSE, bins=5) {
+  nbub = data.frame()
+  toplot = my.post$bubbles
+  tmax = max(toplot$Time)
+  for(this.name in unique(toplot$Name)) {
+    for(j in 1:bins) {
+      prob = sum(toplot$Probability[toplot$Name==this.name & floor(bins*toplot$Time/tmax)+1==j])
+      nbub = rbind(nbub, data.frame(Name=this.name, Time=j, Probability=prob))
+    }
+  }
+  toplot = nbub
+  if(reorder == TRUE) {
+    toplot$Name = factor(toplot$Name, levels=unique(toplot$Name))
+  }
+  if(transpose == TRUE) {
+    toplot$x = toplot$Name
+    toplot$y = toplot$Time
+  } else {
+    toplot$x = toplot$Time
+    toplot$y = toplot$Name
+  }
+  this.plot = ggplot(toplot, aes(x=x, y=y, size=Probability)) + geom_point() +
+    theme_light() 
+  if(transpose == TRUE){
+    return(this.plot + theme(axis.text.x = element_text(angle=90)) +
+             xlab("") + ylab("Ordinal time"))
+  } else {
+    return(this.plot + xlab("Ordinal time") + ylab(""))
+  }
+}
+
 plotHypercube.graph = function(my.post, thresh = 0.05, 
                                node.labels = TRUE,
                                node.label.size = 2,
