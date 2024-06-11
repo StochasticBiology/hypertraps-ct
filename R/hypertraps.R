@@ -578,13 +578,14 @@ plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, contin
 #' Plot pairwise influences between features in the L^2 picture.
 #' 
 #' @param my.post A fitted hypercube returned from HyperTraPS
-#' @param featurenames A character vector
-#' @param use.regularised
-#' @param use.final 
-#' @param reorder 
-#' @param upper.right 
-#' @param cv.thresh 
-#' @param red.green 
+#' @param featurenames A character vector.
+#' @param use.regularised Logical. Defaults to FALSE.
+#' @param use.final Logical. Defaults to FALSE.
+#' @param reorder Logical. Defaults to FALSE.
+#' @param upper.right Logical. Defaults to FALSE.
+#' @param cv.thresh Numeric. Upper threshold. Defaults to Inf.
+#' @param red.green Logical. Adjust colors for red-green color-blindness. 
+#'      Defaults to FALSE.
 #' @return a ggplot
 #' @export
 #' @examples
@@ -1154,7 +1155,7 @@ plotHypercube.influencegraph = function(my.post,
 
 #' Visualize predicted hidden values
 #' 
-#' predictHiddenVals = function(my.post, state, level.weight=1) {
+#' `plotHypercube.prediction` visualizes output from `predictHiddenVals`
 #' 
 #' @param prediction Created with `predictHiddenVals`
 #' @param max.size Defaults to 30. Size of largest points
