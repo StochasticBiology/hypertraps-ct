@@ -27,6 +27,20 @@ BinToDec <- function(state) {
   return(this.ref)
 }
 
+#' Likelihood trace
+#' 
+#' Creates a plot
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.lik.trace(fitted.cube)
 plotHypercube.lik.trace = function(my.post) {
   ### likelihood traces
   this.plot = ggplot(my.post$lik.traces)  
@@ -39,6 +53,20 @@ plotHypercube.lik.trace = function(my.post) {
   return(this.plot + theme_light() )
 }
 
+#' Acquisition ordering
+#' 
+#' Creates a plot
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.bubbles(fitted.cube)
 plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
   toplot = my.post$bubbles
   if(reorder == TRUE) {
@@ -61,6 +89,23 @@ plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
   }
 }
 
+#' Binned acquisition ordering
+#' 
+#' Creates a plot
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS
+#' @param reorder Logical. Defaults to FALSE.
+#' @param transpose Logical. Defaults to FALSE.
+#' @param bins Numeric. Defaults to 5.
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.bubbles.coarse(fitted.cube)
 plotHypercube.bubbles.coarse = function(my.post, reorder=FALSE, transpose=FALSE, bins=5) {
   nbub = data.frame()
   toplot = my.post$bubbles
@@ -92,6 +137,24 @@ plotHypercube.bubbles.coarse = function(my.post, reorder=FALSE, transpose=FALSE,
   }
 }
 
+#' Plot transition graph
+#' 
+#' Creates a plot
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS
+#' @param thresh A numeric from 0 to 1. Lower flux threshold to display. Defaults to 0.05.
+#' @param node.labels Logical. Defaults to TUE
+#' @param node.label.size A numeric. Defaults to 2
+#' @param node.label.box A logical. Defaults to FALSE.
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.graph(fitted.cube)
 plotHypercube.graph = function(my.post, thresh = 0.05, 
                                node.labels = TRUE,
                                node.label.size = 2,
@@ -119,6 +182,24 @@ plotHypercube.graph = function(my.post, thresh = 0.05,
   return(this.plot)
 }
 
+#' Transition graph plot
+#' 
+#' Creates a plot
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS
+#' @param max.samps A numeric. Number of trajectories to plot. Defaults to 1000.
+#' @param thresh A numeric from 0 to 1. Lower flux threshold to display. Defaults to 0.05.
+#' @param node.labels Logical. Whether to display node labels. Defaults to TRUE.
+#' @param node.label.size A numeric. Defaults to 2
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.sampledgraph(fitted.cube)
 plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, node.labels = TRUE, node.label.size = 2) {
   edge.from = edge.to = c()
   bigL = my.post$L
@@ -152,6 +233,38 @@ plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, 
   return(this.plot)
 }
 
+#' Transition graph plot
+#' 
+#' Creates a plot
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS
+#' @param max.samps A numeric. Number of trajectories to plot. Defaults to 1000.
+#' @param thresh A numeric from 0 to 1. Lower flux threshold to display. Defaults to 0.05.
+#' @param node.labels Logical. Whether to display node labels. Defaults to TRUE.
+#' @param use.arc Logical. Whether to use curved edges. Defaults to FALSE.
+#' @param no.times Logical. Whether to display timing on edges. Defaults to FALSE.
+#' @param small.times Logical. Whether to make the timing information tiny.
+#' @param times.offset A numeric vector with relative x and y coordinates. 
+#'      Defaults to c(0.1, -0.1).
+#' @param edge.label.size A numeric. Defaults to 2.
+#' @param edge.label.angle A string. Unused
+#' @param edge.label.colour A hex color code. Defaults to "#000000".
+#' @param edge.check.overlap A logical. Passed to [ggraph::geom_edge_link()]. 
+#'      If TRUE, text that overlaps previous text in the same layer will not be plotted. 
+#'      Defaults to TRUE.
+#' @param featurenames A character vector
+#' @param truncate An optional integer. Limits the number of features plotted.
+#' @param node.label.size A numeric. Defaults to 2
+#' @param use.timediffs Logical. Defaults to TRUE.
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.sampledgraph2(fitted.cube, no.times = TRUE, use.timediffs = FALSE)
 plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05, 
                                        node.labels = TRUE, use.arc = FALSE, no.times = FALSE, 
                                        small.times = FALSE, times.offset = c(0.1,-0.1),
@@ -248,6 +361,23 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
 }
 
 
+#' Timing histograms
+#' 
+#' Creates a plot
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS
+#' @param t.thresh Upper threshold of time to display. Defaults to 20.
+#' @param featurenames A logical. Whether or not to use featurenames. Defaults to TRUE
+#' @param log.time Whether or not to log-transform time. Defaults to TRUE.
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.timehists(fitted.cube)
 plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = TRUE, log.time = TRUE) {
   thdfp = data.frame()
   if(featurenames == TRUE) {
@@ -291,12 +421,44 @@ plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = TRUE, 
   return(ggarrange(g.thist, g.thist2))
 }
 
+#' Regularisation info and AIC
+#' 
+#' Creates a plot
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.regularisation(fitted.cube)
 plotHypercube.regularisation = function(my.post) {
   return(ggplot(my.post$regularisation$reg.process, 
                 aes(x=nparam, y=AIC)) + geom_point() + 
            labs(x = "Number of non-zero parameters", y="AIC") + theme_light() )
 }
 
+#' Motifs
+#' 
+#' Summarize the inferred acquisition order. Analogous to [plotHypercube.bubbles()]
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS
+#' @param featurenames Optional character vector
+#' @param label.size Numeric. Defaults to 3.
+#' @param label.scheme String. Defaults to "full". Will remove the labels if any
+#'  other value is passed.
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.motifs(fitted.cube)
 plotHypercube.motifs = function(my.post, 
                                 featurenames = TRUE, 
                                 label.size=3, 
@@ -332,6 +494,22 @@ plotHypercube.motifs = function(my.post,
            theme_light())
 }
 
+#' Time series plot
+#' 
+#' Visualize the acquisition of features in continuous time.
+#'
+#' @param my.post A fitted hypercube returned from HyperTraPS.
+#' @param log.time Whether or not to log-transform timings. Defaults to TRUE
+#' @param featurenames A logical. Whether or not to use feature names. Defaults to TRUE
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.timeseries(fitted.cube)
 plotHypercube.timeseries = function(my.post, log.time = TRUE, featurenames=TRUE) {
   # time series illustration
   if(featurenames == TRUE) {
@@ -363,6 +541,23 @@ plotHypercube.timeseries = function(my.post, log.time = TRUE, featurenames=TRUE)
   }
 }
 
+#' Rapidly visualize key metrics from a HyperTraPS run
+#' 
+#' Creates a combined likelihood trace, bubble plot and sampledgraph.
+#' 
+#' @param my.post A fitted hypercube returned from [HyperTraPS()]
+#' @param f.thresh Lower threshold passed to [plotHypercube.sampledgraph2()]
+#' @param t.thresh A upper threshold for time passed to [plotHypercube.timehists()]
+#' @param continuous.time Whether or not to include [plotHypercube.timehists()]
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.summary(fitted.cube, continuous.time = FALSE)
 plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, continuous.time = TRUE) {
   if(continuous.time == TRUE) {
     return (ggarrange(plotHypercube.lik.trace(my.post),
@@ -378,7 +573,27 @@ plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, contin
   }
 }
 
-# plot pairwise influences between features in the L^2 picture
+#' Visualize pairwise influences
+#' 
+#' Plot pairwise influences between features in the L^2 picture.
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS
+#' @param featurenames A character vector
+#' @param use.regularised
+#' @param use.final 
+#' @param reorder 
+#' @param upper.right 
+#' @param cv.thresh 
+#' @param red.green 
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.bubbles(fitted.cube)
 plotHypercube.influences = function(my.post, 
                                     featurenames=TRUE, 
                                     use.regularised = FALSE, 
@@ -465,6 +680,26 @@ mylabel = function(label, suffix) {
   return(paste(c(label, suffix), collapse=""))
 }
 
+#' Read data written to file
+#' 
+#' `readHyperinf` reads csv-files created by [writeHyperinf()].
+#' 
+#' @param label A string that describes the path and prefix that will be used.
+#' @param postlabel A string that describes the path and prefix that will be 
+#'      used to save posterior analysis information to file.
+#' @param fulloutput whether states and transitions should be read.
+#'      Defaults to FALSE.
+#' @param regularised Whether regularisation data should be read.
+#'      Defaults to FALSE.
+#' @return A list of loaded data.
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.bubbles(fitted.cube)
 readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = FALSE) {
   rL = list()
   rL$label = label
@@ -504,6 +739,26 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
   return(rL)
 }
 
+#' Save a fitted hypercube
+#' 
+#' `writeHyperinf` saves output from [HyperTraPS()] to file.
+#' 
+#' @param wL A fitted hypercube returned from [HyperTraPS()]
+#' @param label A string that describes the path and prefix that will be used.
+#' @param postlabel A string that describes the path and prefix that will be 
+#'      used to save posterior analysis information to file.
+#' @param fulloutput whether states and transitions should be written as
+#'      csv-files. Defaults to FALSE.
+#' @param regularised Whether regularisation data should be written to file.
+#'      Defaults to FALSE.
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' writeHyperInf(fitted.cube, "my_cube")
 writeHyperinf = function(wL, label, postlabel = "", fulloutput=FALSE, regularised=FALSE) {
   write.table(t(wL$best), mylabel(label, "-best.txt"), row.names=FALSE, col.names=FALSE)
   write.table(wL$posterior.samples, mylabel(label, "-posterior.txt"), row.names=FALSE, col.names=FALSE)
@@ -534,7 +789,26 @@ pullFeatureLabels = function(my.post) {
   return(as.vector(sub$Name[order(sub$OriginalIndex)]))
 }
 
-# construct the (probability-weighted) q-gram distance
+#' Calculate q-gram distance
+#' 
+#' Construct the (probability-weighted) q-gram distance between two hypercubes.
+#' 
+#' @param my.post.1 A fitted hypercube returned from [HyperTraPS()].
+#' @param my.post.2 A fitted hypercube returned from [HyperTraPS()].
+#' @return a list containing the distance between the two cubes.
+#' @export
+#' @examples
+#' observations.1 <- matrix(c(0,0,0,
+#'                            0,0,1,
+#'                            0,1,1,
+#'                            1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube.1 <- HyperTraPS(observations)
+#' observations.2 <- matrix(c(0,0,0,
+#'                            1,0,0,
+#'                            1,1,0,
+#'                            1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube.2 <- HyperTraPS(observations)
+#' plotHypercube.bubbles(fitted.cube.1, fitted.cube.2)
 qgramdist = function(my.post.1, my.post.2) {
   # pull routes and probabilities for first cube
   routes = table(apply(my.post.1$routes, 1, paste, collapse=""))
@@ -586,8 +860,22 @@ qgramdist = function(my.post.1, my.post.2) {
   return(returnlist)
 }
 
-# predict the next evolutionary step from a given state
-# only works so far if the posterior structure has transition dynamics information
+#' Predict the next likely step
+#' 
+#' predict the next evolutionary step from a given state
+#' only works so far if the posterior structure has transition dynamics information
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS
+#' @param state A numeric vector of 1s and 0s. 
+#' @return A data frame of states and probabilities for the next step
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' predictNextStep(fitted.cube, c(0,0,1))
 predictNextStep = function(my.post, state) {
   # get this state reference and look up exit routes
   this.ref = BinToDec(state)
@@ -598,7 +886,19 @@ predictNextStep = function(my.post, state) {
   return(predictions)
 }
 
-# get the representation of different hypercube levels in a dataset
+#' Levels of a dataset
+#' 
+#' get the representation of different hypercube levels in a dataset
+#' 
+#' @param data.mat A numeric matrix
+#' @return A data frame containing counts for each level of the hypercube
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' dataLevels(observations)
 dataLevels = function(data.mat) {
   data.mat[data.mat==2] = 0
   counts = rowSums(data.mat)
@@ -606,8 +906,23 @@ dataLevels = function(data.mat) {
   return(data.frame(level=1:length(counts), prop=counts))
 }
 
-# predict unobserved values in a given observation
-# only works so far if the posterior structure has transition dynamics information
+#' Impute data
+#' 
+#' predict unobserved values in a given observation
+#' only works so far if the posterior structure has transition dynamics information
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS
+#' @param state An integer vector detailing the state to impute. Hidden values 
+#'      are denoted with 2.
+#' @return A list containing two data frames: state.probs and locus.probs.
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' predictHiddenVals(fitted.cube, c(0,1,2))
 predictHiddenVals = function(my.post, state, level.weight=1) {
   # assign uniform weights to levels on the hypercube if not specified
   if(length(level.weight)==1) {
@@ -677,7 +992,25 @@ predictHiddenVals = function(my.post, state, level.weight=1) {
   return(output.list)
 }
 
-# plot genotype probabilities at a given set of times as a "motif" plot
+#' Visualize probabilities at a given set of times
+#' 
+#' Creates a plot
+#' plot genotype probabilities at a given set of times as a "motif" plot
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS.
+#' @param t.set A numeric vector of times to visualize.
+#' @param thresh A numeric of the lower bound threshold for probabilities 
+#'      to display. Defaults to 0.05.
+#' @param label.size Defaults to 3.
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.motifseries(fitted.cube)
 plotHypercube.motifseries = function(my.post, t.set=0, thresh = 0.05, label.size=3) {
   df = data.frame()
   t.index = 1
@@ -710,7 +1043,27 @@ plotHypercube.motifseries = function(my.post, t.set=0, thresh = 0.05, label.size
   )
 }
 
-# plot pairwise influences between features in the L^2 or L^3 picture
+#' Visualize pairwise influences
+#' 
+#' plot pairwise influences between features in the L^2 or L^3 picture
+#' 
+#' @param my.post A fitted hypercube returned from HyperTraPS.
+#' @param featurenames A character vector of length L. Optional 
+#' @param use.regularised A logical. Defaults to FALSE
+#' @param use.final A logical. Defaults to FALSE.
+#' @param thresh A numeric describing the threshold. Defaults to 0.05
+#' @param cv.thresh A numeric describing the upper bound. Defaults to Inf
+#' @param label.size A numeric describing label size in mm. Defaults to 2
+#' @param red.green A logical.
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' plotHypercube.influencegraph(fitted.cube)
 plotHypercube.influencegraph = function(my.post, 
                                         featurenames=TRUE, 
                                         use.regularised = FALSE, 
@@ -799,6 +1152,22 @@ plotHypercube.influencegraph = function(my.post,
 
 }
 
+#' Visualize predicted hidden values
+#' 
+#' predictHiddenVals = function(my.post, state, level.weight=1) {
+#' 
+#' @param prediction Created with `predictHiddenVals`
+#' @param max.size Defaults to 30. Size of largest points
+#' @return a ggplot
+#' @export
+#' @examples
+#' observations <- matrix(c(0,0,0,
+#'                          0,0,1,
+#'                          0,1,1,
+#'                          1,1,1), byrow=TRUE, ncol=3)
+#' fitted.cube <- HyperTraPS(observations)
+#' prediction <- predictHiddenVals(fitted.cube, c(0,2,1))
+#' plotHypercube.predicton(prediction)
 plotHypercube.prediction = function(prediction, max.size = 30) {
   if(length(prediction$states) > 0) {
     g.1 = ggplot(prediction, aes(label=states, size=probs), angle=0) + 
@@ -833,6 +1202,20 @@ prob.by.time = function(my.post, tau) {
   return(df)
 }
 
+#' Reconstruct ancestral states and create an annotated tree
+#' 
+#' `curate.tree` reads a phylogeny from file in newick tree format and a 
+#' csv-file containing tip-labels and features. 
+#' 
+#' @param tree.filename a file containing a phylogeny in newick-tree format
+#' @param data.filename a file with tip-labels in the first column and features
+#'  in the remaining ones.
+#' @param losses defaults to FALSE. Determines whether irreversible gains or 
+#'  losses of features are considered.
+#' @param data.header defaults to TRUE. Determines Whether data.filename is
+#'  read with a header or not.
+#' @return a list containing tree, data, transitions, srcs, dests and times
+#' @export
 curate.tree = function(tree.filename, data.filename, losses = FALSE, data.header=TRUE) {
   # read in Newick tree and root
   my.tree = read.tree(tree.filename)
@@ -931,6 +1314,13 @@ curate.tree = function(tree.filename, data.filename, losses = FALSE, data.header
   return(rL)
 }
 
+#' Visualize phylogenetic tree with features
+#' 
+#' Creates a plot
+#' 
+#' @param curated.tree combined phylogeny and feature data created with [curate.tree()]
+#' @return a ggplot
+#' @export
 plotHypercube.curated.tree = function(tree.set) {
   data.m = tree.set$data[,2:ncol(tree.set$data)]
   rownames(data.m) = tree.set$data[,1]
