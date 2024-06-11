@@ -2,3 +2,6 @@ Package: hypertraps-ct
 Type: Package
 Title: Hypercubic inference in continuous time
 Version: 0.0.1.0
+LazyData: true
+Encoding: UTF-8
+RoxygenNote: 7.3.1
