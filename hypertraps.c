@@ -11,8 +11,12 @@
 
 #define RND drand48()
 
-// maximum number of datapoints (just for memory allocation)
-#define _MAXN 20000
+// lazy constants (just for memory allocation) -- consider increasing if memory errors are coming up
+#define _MAXN 20000      // maximum number of datapoints
+#define _MAXF 1000       // maximum filename length
+#define _MAXS 1000       // maximum string length for various labels
+#define _MAXFEATS 1000   // maximum number of features
+#define _MAXDATA 1e7     // maximum number of bits in the dataset
 
 // maximum continuous-time value above which results are truncated
 #define MAXCT 1000
@@ -818,7 +822,7 @@ double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double t
 }
 
 // get total likelihood for a set of changes
-double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, int PLI)
+double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *ntrans, double *tau1s, double *tau2s, int model, int PLI)
 {
   double loglik, tloglik, tlik;
   int i, j;
@@ -872,22 +876,22 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
   return loglik;
 }
 
-void GetGradients(int *matrix, int len, int ntarg, double *trans, int *parents, double *tau1s, double *tau2s, double *gradients, double scale, int model, int PLI)
+void GetGradients(int *matrix, int len, int ntarg, double *trans, double *tau1s, double *tau2s, double *gradients, double scale, int model, int PLI)
 {
   double lik, newlik;
   int i;
   
-  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, model, PLI);
   for(i = 0; i < nparams(model, len); i++)
     {
       trans[i] += scale;
-      newlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
+      newlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, model, PLI);
       gradients[i] = (newlik-lik)/scale;
       trans[i] -= scale;
     }
 }
 
-void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, char *labelstr, int PLI, int outputtransitions)
+void Regularise(int *matrix, int len, int ntarg, double *ntrans, double *tau1s, double *tau2s, int model, char *labelstr, int PLI, int outputtransitions)
 {
   int i, j;
   int NVAL;
@@ -908,7 +912,7 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
   NVAL = nparams(model, len);
   best = (double*)malloc(sizeof(double)*NVAL);
   
-  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI);
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, tau1s, tau2s, model, PLI);
 
   AIC = 2*NVAL-2*lik;
   BIC = log(ntarg)*NVAL-2*lik;
@@ -932,7 +936,7 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
 	{
 	  oldval = ntrans[i];
 	  ntrans[i] = normedval;
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, tau1s, tau2s, model, PLI);
 	  ntrans[i] = oldval;
 	  if((biggest == 0 || nlik > biggest) && ntrans[i] != normedval)
 	    {
@@ -967,7 +971,7 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, int *parents, d
 
   sprintf(fstr, "%s-regularised-lik.csv", labelstr);
   fp = fopen(fstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); 
-  fprintf(fp, "0,%e,%e\n", GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI), GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI));
+  fprintf(fp, "0,%e,%e\n", GetLikelihoodCoalescentChange(matrix, len, ntarg, best, tau1s, tau2s, model, PLI), GetLikelihoodCoalescentChange(matrix, len, ntarg, best, tau1s, tau2s, model, PLI));
   fclose(fp);
 
   if(outputtransitions) {
@@ -1169,7 +1173,6 @@ void helpandquit(int debug)
 // main function processes command-line arguments and run the inference loop
 int main(int argc, char *argv[])
 {
-  int parents[_MAXN];
   FILE *fp;
   int *matrix;
   int len, ntarg;
@@ -1180,7 +1183,7 @@ int main(int argc, char *argv[])
   double lik, nlik;
   int maxt;
   int seed;
-  char shotstr[200], bestshotstr[200], beststatesstr[200];
+  char shotstr[_MAXS], bestshotstr[_MAXS], beststatesstr[_MAXS];
   double DELTA, MU;
   int NVAL;
   int expt;
@@ -1188,7 +1191,7 @@ int main(int argc, char *argv[])
   double *tmpmat;
   double r;
   time_t timer;
-  char buffer[25];
+  char buffer[_MAXS];
   struct tm* tm_info;
   double tau1s[_MAXN], tau2s[_MAXN];
   int ntau;
@@ -1201,16 +1204,16 @@ int main(int argc, char *argv[])
   int apm_seed, old_apm_seed;
   int apm_type;
   int csv;
-  char likstr[100];
+  char likstr[_MAXS];
   double testval;
   char header[10000];
-  char obsfile[1000], initialsfile[1000], timefile[1000], endtimefile[1000], paramfile[1000], priorfile[1000];
+  char obsfile[_MAXF], initialsfile[_MAXF], timefile[_MAXF], endtimefile[_MAXF], paramfile[_MAXF], priorfile[_MAXF];
   int initials;
   int searchmethod;
   int filelabel;
-  char labelstr[1000];
+  char labelstr[_MAXS];
   int crosssectional;
-  int tmprow[1000];
+  int tmprow[_MAXS];
   time_t start_t, end_t;
   double diff_t;
   struct timeval t_stop, t_start;
@@ -1228,19 +1231,19 @@ int main(int argc, char *argv[])
   double *drec, *sortdrec, *mean;
   double tmp;
   int change;
-  char names[200*FLEN];
+  char names[_MAXFEATS*FLEN];
   int count;
   double *meanstore, *fmeanstore;
   double *ctrec, ctnorm;
   double *times, *timediffs, *betas;
   int *route;
   FILE *fp1, *fp2, *fp3;
-  char str[200], fstr[200];
+  char str[_MAXS], fstr[_MAXS];
   int tlen;
   double BINSCALE;
-  char postfile[1000];
+  char postfile[_MAXF];
   int burnin, sampleperiod;
-  char labelfile[1000];
+  char labelfile[_MAXF];
   int inference;
   double *priormin, *priormax;
   int priors;
@@ -1369,7 +1372,7 @@ int main(int argc, char *argv[])
 	SAMPLE = 1;
 
       srand48(seed);
-      matrix = (int*)malloc(sizeof(int)*10000000);
+      matrix = (int*)malloc(sizeof(int)*_MAXDATA);
 
       // choose parameterisation based on command line
       expt = kernelindex;
@@ -1629,13 +1632,13 @@ int main(int argc, char *argv[])
 	{
 	  regterm += (trans[i] != 0);
 	}
-      lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI) - regterm*penalty;
+      lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, model, PLI) - regterm*penalty;
       time(&end_t);
       gettimeofday(&t_stop, NULL);
       diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
       //  diff_t = difftime(end_t, start_t);
       printf("One likelihood estimation took %e seconds.\nInitial likelihood is %e\n", diff_t, lik);
-      lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI) - regterm*penalty;
+      lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, model, PLI) - regterm*penalty;
       printf("Second guess is %e\n", lik);
       // MCMC or simulated annealing
       if(searchmethod == 0 || searchmethod == 2)
@@ -1656,7 +1659,7 @@ int main(int argc, char *argv[])
 	      {
 		regterm += (trans[i] != 0);
 	      }
-	    lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI) - regterm*penalty;
+	    lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, model, PLI) - regterm*penalty;
 	  }while(isinf(lik) && i < 100);
 	   if(i >= 100) {
 	printf("I didn't find a sensible start within 100 steps. I suspect something's wrong numerically.\n");
@@ -1723,9 +1726,9 @@ int main(int argc, char *argv[])
 	      fprintf(fp, "\n");
 	      fclose(fp);
 	      fp = fopen(likstr, "a");
-	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI) - regterm*penalty;
+	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, model, PLI) - regterm*penalty;
 	      fprintf(fp, "%i,%i,%i,%i,%f,", t, len, model, regterm, nlik);
-	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI) - regterm*penalty;
+	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, model, PLI) - regterm*penalty;
 	      fprintf(fp, "%f\n", nlik);
 	      fclose(fp);
 	    }
@@ -1782,7 +1785,7 @@ int main(int argc, char *argv[])
 		      printf("r seeded with %i, first call is %f\n", apm_seed, RND);
 		    }
 		}
-	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI) - regterm*penalty;
+	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, tau1s, tau2s, model, PLI) - regterm*penalty;
 
 	      if(APM_VERBOSE)
 		{
@@ -1840,7 +1843,7 @@ int main(int argc, char *argv[])
 	    {
 	      time(&start_t);
 	      gettimeofday(&t_start, NULL);
-	      GetGradients(matrix, len, ntarg, trans, parents, tau1s, tau2s, gradients, sgdscale, model, PLI);
+	      GetGradients(matrix, len, ntarg, trans, tau1s, tau2s, gradients, sgdscale, model, PLI);
 	      time(&end_t);
 	      gettimeofday(&t_stop, NULL);
 	      diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
@@ -1854,7 +1857,7 @@ int main(int argc, char *argv[])
 		  if(trans[i] > priormax[i]) trans[i] = priormax[i];
 		}
 	  
-	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, model, PLI);
+	      nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, model, PLI);
 	      printf("Iteration %i likelihood %f previous-likelihood %f\n", t, nlik, lik);
 	      lik = nlik;
 	    }
@@ -1869,7 +1872,7 @@ int main(int argc, char *argv[])
     }
   if(regularise)
     {
-      Regularise(matrix, len, ntarg, besttrans, parents, tau1s, tau2s, model, labelstr, PLI, outputtransitions);
+      Regularise(matrix, len, ntarg, besttrans, tau1s, tau2s, model, labelstr, PLI, outputtransitions);
     }
   if(posterior_analysis)
     {
