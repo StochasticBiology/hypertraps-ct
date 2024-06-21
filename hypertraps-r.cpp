@@ -9,7 +9,7 @@ List PosteriorAnalysis(List L,
 		       int limited_output,
 		       int samples_per_row);
 List RegulariseR(int *matrix,
-		 int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, int PLI,
+		 int len, int ntarg, double *ntrans, double *tau1s, double *tau2s, int model, int PLI,
 		 int limited_output);
 List OutputStatesR(double *ntrans, int LEN, int model);
 List HyperTraPS(NumericMatrix obs,
@@ -161,7 +161,7 @@ List OutputStatesR(double *ntrans, int LEN, int model)
   return Lout;
 }
 
-List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, double *tau1s, double *tau2s, int model, int PLI, int limited_output)
+List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, double *tau1s, double *tau2s, int model, int PLI, int limited_output)
 {
   int i, j;
   int NVAL;
@@ -180,7 +180,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
   NVAL = nparams(model, len);
   best = (double*)malloc(sizeof(double)*NVAL);
   
-  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI);
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, tau1s, tau2s, model, PLI);
 
   AIC = 2*NVAL-2*lik;
   BIC = log(ntarg)*NVAL-2*lik;
@@ -216,7 +216,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
 	    {
 	  oldval = ntrans[i];
 	  ntrans[i] = normedval;
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, model, PLI);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, tau1s, tau2s, model, PLI);
 	  ntrans[i] = oldval;
 	  if((biggest == 0 || nlik > biggest))
 	    {
@@ -273,8 +273,8 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, int *parents, 
     }
 
   List Lout = List::create(Named("best") = best_v,
-			   Named("lik.1") = GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI),
-			   Named("lik.2") = GetLikelihoodCoalescentChange(matrix, len, ntarg, best, parents, tau1s, tau2s, model, PLI),
+			   Named("lik.1") = GetLikelihoodCoalescentChange(matrix, len, ntarg, best, tau1s, tau2s, model, PLI),
+			   Named("lik.2") = GetLikelihoodCoalescentChange(matrix, len, ntarg, best, tau1s, tau2s, model, PLI),
 			   Named("reg.process") = Ldyndf);
 			   
   //  sprintf(fstr, "%s-regularised-lik.txt", labelstr);
@@ -337,7 +337,6 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		NumericVector samples_per_row = 10,
 		Nullable<CharacterVector> featurenames = R_NilValue)
 {
-  int parents[_MAXN];
   int *matrix;
   int len, ntarg;
   double *trans, *ntrans, *besttrans, *gradients;
@@ -675,13 +674,13 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
       lassoterm += fabs(trans[i]);
     }
   
-  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
   time(&end_t);
   gettimeofday(&t_stop, NULL);
   diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
   //  diff_t = difftime(end_t, start_t);
   Rprintf("One likelihood estimation took %e seconds.\nInitial likelihood is %e\n", diff_t, lik);
-  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
   Rprintf("Second guess is %e\n", lik);
  
   // MCMC or simulated annealing
@@ -706,7 +705,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	    lassoterm += fabs(trans[j]);
 	  }
  
-	lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
+	lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
       }while(isinf(lik) && i < 100);
       if(i >= 100) {
 	Rprintf("I didn't find a sensible start within 100 steps. I suspect something's wrong numerically.\n");
@@ -773,9 +772,9 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	    sampleref++;
 
 	  lik0_output.push_back(lik);
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
 	  lik1_output.push_back(nlik);
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
 	  lik2_output.push_back(nlik);
 	  L_output.push_back(len);
 	  model_output.push_back(_model);
@@ -834,7 +833,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 		  Rprintf("r seeded with %i, first call is %f\n", apm_seed, RND);
 		}
 	    }
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, parents, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
 
 	  if(APM_VERBOSE)
 	    {
@@ -892,7 +891,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	{
 	  time(&start_t);
 	  gettimeofday(&t_start, NULL);
-	  GetGradients(matrix, len, ntarg, trans, parents, tau1s, tau2s, gradients, _sgdscale, _model, _PLI);
+	  GetGradients(matrix, len, ntarg, trans, tau1s, tau2s, gradients, _sgdscale, _model, _PLI);
 	  time(&end_t);
 	  gettimeofday(&t_stop, NULL);
 	  diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
@@ -906,7 +905,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	      if(trans[i] > _priors(i,1)) trans[i] = _priors(i,1);
 	    }
 	  
-	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, parents, tau1s, tau2s, _model, _PLI);
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, _model, _PLI);
 	  if(!_limited_output)
 	    Rprintf("Iteration %i likelihood %f previous-likelihood %f\n", t, nlik, lik);
 	  lik = nlik;
@@ -940,7 +939,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 
   if(_regularise)
     {
-      List regL = RegulariseR(matrix, len, ntarg, besttrans, parents, tau1s, tau2s, _model, _PLI, _limited_output);
+      List regL = RegulariseR(matrix, len, ntarg, besttrans, tau1s, tau2s, _model, _PLI, _limited_output);
       L["regularisation"] = regL;
       if(_outputtransitions)
 	{ 
