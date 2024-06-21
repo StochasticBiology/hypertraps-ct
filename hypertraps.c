@@ -1113,7 +1113,7 @@ void Label(char *names, int len, char *fname)
       printf("Didn't find feature label file %s, using default labels\n", fname);
       for(i = 0; i < len; i++)
 	{
-	  sprintf(&names[i*FLEN], "feature_%i", i);
+	  sprintf(&names[i*FLEN], "f%i", i);
 	}
     }
   else

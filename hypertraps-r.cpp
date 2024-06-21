@@ -1316,7 +1316,10 @@ List PosteriorAnalysis(List L,
   List THistL = List::create(Named("OriginalIndex") = i_col_ct,
 			     Named("Time") = t_col_ct,
 			     Named("Probability") = prob_col_ct);
-			      
+
+  CharacterVector fns(len);
+  for(i = 0; i < len; i++)
+    fns(i) = &names[FLEN*i];
 
   /*  sprintf(str, "%s-timehists.csv", labelstr);
       fp = fopen(str, "w");
@@ -1344,6 +1347,7 @@ List PosteriorAnalysis(List L,
   OutputL["betas"] = betas_out;
   OutputL["times"] = times_out;
   OutputL["timediffs"] = timediffs_out;
+  OutputL["featurenames"] = fns;
 
   return OutputL;
 }

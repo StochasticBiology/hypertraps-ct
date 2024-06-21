@@ -157,8 +157,13 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
                                        small.times = FALSE, times.offset = c(0.1,-0.1),
                                        edge.label.size = 2, edge.label.angle = "across",
                                        edge.label.colour = "#000000", edge.check.overlap = TRUE,
-                                       featurenames = c(""), truncate = -1,
+                                       featurenames = TRUE, truncate = -1,
                                        node.label.size = 2, use.timediffs = TRUE) {
+  if(featurenames == TRUE) {
+    featurenames = my.post$featurenames
+  } else {
+    featurenames = c("")
+  }
   edge.from = edge.to = edge.time = edge.change = c()
   bigL = my.post$L
   if(truncate == -1 | truncate > bigL) { truncate = bigL }
@@ -243,8 +248,13 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
 }
 
 
-plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = c(""), log.time = TRUE) {
+plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = TRUE, log.time = TRUE) {
   thdfp = data.frame()
+  if(featurenames == TRUE) {
+    featurenames = my.post$featurenames
+  } else {
+    featurenames = c("")
+  }
   if(length(featurenames) > 1) {
     my.post$timehists$feature.label = featurenames[my.post$timehists$OriginalIndex+1]
   } else {
@@ -288,10 +298,15 @@ plotHypercube.regularisation = function(my.post) {
 }
 
 plotHypercube.motifs = function(my.post, 
-                                featurenames = c(""), 
+                                featurenames = TRUE, 
                                 label.size=3, 
                                 label.scheme = "full") {
   # motif plot
+  if(featurenames == TRUE) {
+    featurenames = my.post$featurenames
+  } else {
+    featurenames = c("")
+  }
   if(length(featurenames) > 1) {
     labels = featurenames
   } else {
@@ -317,8 +332,13 @@ plotHypercube.motifs = function(my.post,
            theme_light())
 }
 
-plotHypercube.timeseries = function(my.post, log.time = TRUE, featurenames=c("")) {
+plotHypercube.timeseries = function(my.post, log.time = TRUE, featurenames=TRUE) {
   # time series illustration
+  if(featurenames == TRUE) {
+    featurenames = my.post$featurenames
+  } else {
+    featurenames = c("")
+  }
   if(length(featurenames) > 1) {
     labels = featurenames
   } else {
@@ -360,7 +380,7 @@ plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, contin
 
 # plot pairwise influences between features in the L^2 picture
 plotHypercube.influences = function(my.post, 
-                                    featurenames=c(""), 
+                                    featurenames=TRUE, 
                                     use.regularised = FALSE, 
                                     use.final = FALSE, 
                                     reorder = FALSE, 
@@ -369,6 +389,11 @@ plotHypercube.influences = function(my.post,
                                     red.green = FALSE) {
   if(my.post$model != 2) {
     stop("Influence plot currently only supported for model type 2 (pairwise influences)")
+  }
+  if(featurenames == TRUE) {
+    featurenames = my.post$featurenames
+  } else {
+    featurenames = c("")
   }
   plot.df = data.frame()
   if(length(featurenames) > 1) {
@@ -687,7 +712,7 @@ plotHypercube.motifseries = function(my.post, t.set=0, thresh = 0.05, label.size
 
 # plot pairwise influences between features in the L^2 or L^3 picture
 plotHypercube.influencegraph = function(my.post, 
-                                        featurenames=c(""), 
+                                        featurenames=TRUE, 
                                         use.regularised = FALSE, 
                                         use.final = FALSE,
                                         thresh=0.05,
@@ -695,6 +720,11 @@ plotHypercube.influencegraph = function(my.post,
                                         label.size = 2,
                                         red.green = FALSE) {
   plot.df = data.frame()
+  if(featurenames == TRUE) {
+    featurenames = my.post$featurenames
+  } else {
+    featurenames = c("")
+  }
   if(length(featurenames) > 1) {
     labels = featurenames
   } else {
