@@ -1,3 +1,12 @@
+#' Hypercubic inference in continuous time
+#'
+#' @docType package
+#' @name hypertrapsct
+#' @useDynLib hypertrapsct
+#' @importFrom Rcpp evalCpp sourceCpp
+NULL
+#> NULL
+
 require(Rcpp)
 require(ggplot2)
 require(ggpubr)
