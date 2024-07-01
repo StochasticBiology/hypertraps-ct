@@ -6,7 +6,7 @@
 \usage{
 plotHypercube.influences(
   my.post,
-  featurenames = c(""),
+  featurenames = TRUE,
   use.regularised = FALSE,
   use.final = FALSE,
   reorder = FALSE,

@@ -6,7 +6,7 @@
 \usage{
 plotHypercube.influencegraph(
   my.post,
-  featurenames = c(""),
+  featurenames = TRUE,
   use.regularised = FALSE,
   use.final = FALSE,
   thresh = 0.05,

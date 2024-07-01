@@ -17,7 +17,7 @@ plotHypercube.sampledgraph2(
   edge.label.angle = "across",
   edge.label.colour = "#000000",
   edge.check.overlap = TRUE,
-  featurenames = c(""),
+  featurenames = TRUE,
   truncate = -1,
   node.label.size = 2,
   use.timediffs = TRUE

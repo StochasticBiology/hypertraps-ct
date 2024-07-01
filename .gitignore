@@ -5,6 +5,7 @@
 *.rproj.user
 *.rhistory
 *.rapp.history
+.Rhistory
 
 # Other file-types not allowed in Bioconductor packages
 *.o

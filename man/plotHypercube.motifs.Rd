@@ -6,7 +6,7 @@
 \usage{
 plotHypercube.motifs(
   my.post,
-  featurenames = c(""),
+  featurenames = TRUE,
   label.size = 3,
   label.scheme = "full"
 )

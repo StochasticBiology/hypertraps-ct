@@ -7,7 +7,7 @@
 plotHypercube.timehists(
   my.post,
   t.thresh = 20,
-  featurenames = c(""),
+  featurenames = TRUE,
   log.time = TRUE
 )
 }

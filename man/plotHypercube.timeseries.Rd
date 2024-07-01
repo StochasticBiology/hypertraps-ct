@@ -4,14 +4,14 @@
 \alias{plotHypercube.timeseries}
 \title{Time series plot}
 \usage{
-plotHypercube.timeseries(my.post, log.time = TRUE, featurenames = c(""))
+plotHypercube.timeseries(my.post, log.time = TRUE, featurenames = TRUE)
 }
 \arguments{
 \item{my.post}{A fitted hypercube returned from HyperTraPS.}
 
-\item{log.time}{Whether or not to log-transform timings. Defaults to false.}
+\item{log.time}{Whether or not to log-transform timings. Defaults to TRUE}
 
-\item{featurenames}{Optional character vecotor of featurenames}
+\item{featurenames}{A logical. Whether or not to use feature names. Defaults to TRUE}
 }
 \value{
 a ggplot
