@@ -368,6 +368,7 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
 #' @param my.post A fitted hypercube returned from HyperTraPS
 #' @param t.thresh Upper threshold of time to display. Defaults to 20.
 #' @param featurenames A logical. Whether or not to use featurenames. Defaults to TRUE
+#' @param featurenames A character vector.
 #' @param log.time Whether or not to log-transform time. Defaults to TRUE.
 #' @return a ggplot
 #' @export
