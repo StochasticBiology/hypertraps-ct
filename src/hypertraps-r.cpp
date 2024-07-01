@@ -1470,6 +1470,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, double *tau1s,
 //' @param model Model structure
 //' @param pli Phenotype landscape inference
 //' @return A named list of objects from the inference process, containing parameter samples from the inference process, the maximum likelihood parameterisation, likelihood samples, and the sampling times.
+//' @export
 // [[Rcpp::export]]
 List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_arg,
 		Nullable<NumericMatrix> initialstates = R_NilValue,
@@ -2121,6 +2122,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 //'
 //' @param L List output from HyperTraPS, containing posterior samples
 //' @return Named list containing summary data for feature acquisition ordering ("bubbles"), time histograms, sampled accumulation routes, and timings of these sampled routes.
+//' @export
 // [[Rcpp::export]]
 List PosteriorAnalysis(List L,
 		       Nullable<CharacterVector> featurenames = R_NilValue,
