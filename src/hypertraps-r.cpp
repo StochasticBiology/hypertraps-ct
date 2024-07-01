@@ -1,7 +1,6 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 #define _USE_CODE_FOR_R 1
-#include "hypertraps.c"
 
 List PosteriorAnalysis(List L,
 		       Nullable<CharacterVector> featurenames_arg,
@@ -36,7 +35,1169 @@ List HyperTraPS(NumericMatrix obs,
 		NumericVector output_transitions,
 		Nullable<CharacterVector> featurenames);
 
+// this is the workhorse code for the HyperTraPS-CT algorithm
+// it takes command line arguments that dictate the data file(s), the structure of the inference run, and various parameters
+// the output file is a set of samples from the posterior distribution inferred over hypercube parameters
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <time.h>
+#include <sys/time.h>
+
+#define RND drand48()
+
+// lazy constants (just for memory allocation) -- consider increasing if memory errors are coming up
+#define _MAXN 20000      // maximum number of datapoints
+#define _MAXF 1000       // maximum filename length
+#define _MAXS 1000       // maximum string length for various labels
+#define _MAXFEATS 1000   // maximum number of features
+#define _MAXDATA 1e7     // maximum number of bits in the dataset
+
+// maximum continuous-time value above which results are truncated
+#define MAXCT 1000
+
+// just used in assigning ordinal labels to different features
+#define FLEN 100
+
+// number of trajectories N_h, and frequencies of sampling for posteriors and for output
+int BANK = 200;
+int NTRAJ = 100;
+int NSAMP = 10;
+int TMODULE = 100;
+
+int _EVERYITERATION = 0;
+
+double lscale = 1;
+
+double num_error = 0;
+
+// control output
+int VERBOSE = 0;
+int SPECTRUM_VERBOSE = 0;
+int SUPERVERBOSE = 0;
+int APM_VERBOSE = 0;
+int POST_VERBOSE = 1;
+
+void myexit(int code)
+{
+#ifndef _USE_CODE_FOR_R
+  exit(0);
+#else
+  Rcpp::stop("exiting");
+#endif
+}
+
+// impose limits on integer val to be between lo and hi
+void limiti(int *val, int lo, int hi)
+{
+  if(*val < lo) *val = lo;
+  if(*val > hi) *val = hi;
+} 
+
+// impose limits on double val to be between lo and hi
+void limitf(double *val, int lo, int hi)
+{
+  if(*val < lo) *val = lo;
+  if(*val > hi) *val = hi;
+}
+
+// produce gaussian random number
+double gsl_ran_gaussian(const double sigma)
+{
+  double x, y, r2;
+
+  do
+    {
+      /* choose x,y in uniform square (-1,-1) to (+1,+1) */
+
+      x = -1 + 2 * RND;
+      y = -1 + 2 * RND;
+
+      /* see if it is in the unit circle */
+      r2 = x * x + y * y;
+    }
+  while (r2 > 1.0 || r2 == 0);
+
+  /* Box-Muller transform */
+  return sigma * y * sqrt (-2.0 * log (r2) / r2);
+}
+
+int mypow2(int r)
+{
+  int s = 1;
+  int i;
+  for(i = 1; i <= r; i++)
+    s *= 2;
+  return s;
+}
+
+int BinToDec(int *state, int LEN)
+{
+  int v = 1;
+  int i;
+  int val = 0;
+  
+  for(i = LEN-1; i >= 0; i--)
+    {
+      val += state[i]*v;
+      v *= 2;
+    }
+  return val;
+}
+
+int nparams(int model, int LEN)
+{
+  switch(model)
+    {
+    case 0: return 0;
+    case 1: return LEN;
+    case 2: return LEN*LEN;
+    case 3: return LEN*LEN*LEN;
+    case 4: return LEN*LEN*LEN*LEN;
+    case -1: return mypow2(LEN)*LEN;
+    default: return 0;
+    }
+}
+
+double RetrieveEdge(int *state, int locus, double *ntrans, int LEN, int model)
+{
+  double rate;
+  int i, j, k;
+  
+  if(model == 0)
+    rate = 0;
+  if(model == 1) // pi[locus] = rate of locus
+    rate = ntrans[locus];
+  if(model == 2) // pi[i*LEN + locus] = influence of i on locus
+    {
+      rate = ntrans[locus*LEN+locus];
+      for(i = 0; i < LEN; i++)
+	rate += state[i]*ntrans[i*LEN+locus];
+    }
+  if(model == 3) // pi[j*LEN*LEN + i*LEN + locus] = influence of ij on locus, j>=i (j==i is influence of i on locus)
+    {
+      rate = ntrans[locus*LEN*LEN+locus*LEN+locus];
+      for(i = 0; i < LEN; i++)
+	{
+	  for(j = i; j < LEN; j++)
+	    {
+	      rate += state[i]*state[j]*ntrans[j*LEN*LEN+i*LEN+locus];
+	    }
+	}
+    }
+  if(model == 4) // pi[k*LEN*LEN*LEN + j*LEN*LEN + i*LEN + i] = influence of ijk on i, k>=j>=i (j==i is influence of ik, k==j==i is influence of i); what does k==j,i mean
+    {
+      rate = ntrans[locus*LEN*LEN*LEN+locus*LEN*LEN+locus*LEN+locus];
+      for(i = 0; i < LEN; i++)
+	{
+	  for(j = i; j < LEN; j++)
+	    {
+	      for(k = j; k < LEN; k++)
+		{
+		  rate += state[i]*state[j]*state[k]*ntrans[k*LEN*LEN*LEN+j*LEN*LEN+i*LEN+locus];
+		}
+	    }
+	}
+    }
+  if(model == -1)
+    {
+      rate = ntrans[BinToDec(state, LEN)*LEN+locus];
+    }
+  return exp(rate);
+}
+
+// redundancy in these params for model 4:
+// 111, 112, 113, 121, 122, 123, 131, 132, 133, 211, 212, 213, 221, 222, 223, 231, 232, 233, 311, 312, 313, 321, 322, 323, 331, 332, 333
+// 111, 112, 113,      122, 123,           133,                     222, 223,           233,                                         333
+// 1     12   13        12  123            13                        2   23              23                                           3
+
+void InitialMatrix(double *trans, int len, int model, int userandom)
+{
+  int NVAL;
+  int i;
+  
+  NVAL = nparams(model, len);
+  
+  for(i = 0; i < NVAL; i++)
+    trans[i] = (userandom ? RND : 0);
+  for(i = 0; i < len; i++)
+    {
+      switch(model)
+	{
+	case 1: trans[i] = 1; break;
+	case 2: trans[i*len+i] = 1; break;
+	case 3: trans[i*len*len + i*len + i] = 1; break;
+	case 4: trans[i*len*len*len + i*len*len + i*len + i] = 1; break;
+	}
+    }
+}
+
+
+void ReadMatrix(double *trans, int len, int model, char *fname)
+{
+  int NVAL;
+  int i;
+  FILE *fp;
+  int tmp;
+  
+  fp = fopen(fname, "r");
+  if(fp == NULL)
+    {
+      printf("Couldn't find parameter file %s\n", fname);
+      myexit(0);
+    }
+  
+  NVAL = nparams(model, len);
+  
+  for(i = 0; i < NVAL; i++)
+    {
+      if(feof(fp))
+	{
+	  printf("Couldn't find sufficient parameters in file %s\n", fname);
+	  myexit(0);
+	}
+      tmp = fscanf(fp, "%lf", &(trans[i]));
+    }
+  fclose(fp);
+}
+
+
+
+void OutputStatesTrans(char *label, double *ntrans, int LEN, int model)
+{
+  int i, j, k, a;
+  int statedec;
+  int src, dest;
+  int state[LEN];
+  double rate, totrate;
+  int *active, *newactive;
+  double *probs;
+  int nactive, newnactive;
+  int level;
+  int found;
+  char statefile[300], transfile[300];
+  FILE *fp;
+  
+  sprintf(transfile, "%s-trans.csv", label);
+  sprintf(statefile, "%s-states.csv", label);
+  
+  fp = fopen(transfile, "w");
+  fprintf(fp, "From,To,Probability,Flux\n");
+ 
+  probs = (double*)malloc(sizeof(double)*mypow2(LEN));
+  active = (int*)malloc(sizeof(int)*mypow2(LEN));
+  newactive = (int*)malloc(sizeof(int)*mypow2(LEN));
+
+  for(i = 0; i < mypow2(LEN); i++)
+    probs[i] = 0;
+  level = 0;
+  
+  probs[0] = 1;
+  
+  active[0] = 0;
+  nactive = 1;
+  
+  while(nactive > 0)
+    {
+      newnactive = 0;
+      /*      printf("%i active\n", nactive);
+	      for(a = 0; a < nactive; a++)
+	      printf("%i ", active[a]);
+	      printf("\n\n"); */
+	    
+      for(a = 0; a < nactive; a++)
+	{
+	  src = active[a];
+	  statedec = src;
+	  for(j = LEN-1; j >= 0; j--)
+	    {
+	      if(statedec >= mypow2(j))
+		{
+		  state[LEN-1-j] = 1;
+		  statedec -= mypow2(j);
+		}
+	      else
+		state[LEN-1-j] = 0;
+	    }
+
+	  totrate = 0;
+	  for(j = 0; j < LEN; j++)
+	    {
+	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+	      if(state[j] == 0)
+		{
+		  rate = RetrieveEdge(state, j, ntrans, LEN, model);
+		  totrate += rate;
+		}
+	    }
+
+	  for(j = 0; j < LEN; j++)
+	    {
+	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+	      if(state[j] == 0)
+		{
+		  dest = src+mypow2(LEN-1-j);
+		  rate = RetrieveEdge(state, j, ntrans, LEN, model);
+		  probs[dest] += probs[src] * rate/totrate;
+
+		  fprintf(fp, "%i,%i,%e,%e\n", src, dest, rate/totrate, probs[src]*rate/totrate);
+		
+		  found = 0;
+		  for(k = 0; k < newnactive; k++)
+		    {
+		      if(newactive[k] == dest) { found = 1; break; }
+		    }
+		  if(found == 0)
+		    newactive[newnactive++] = dest;
+		}
+	    }
+	}
+      for(a = 0; a < newnactive; a++)
+	active[a] = newactive[a];
+      nactive = newnactive;
+      level++;
+    }
+  fclose(fp);
+
+  fp = fopen(statefile, "w");
+  fprintf(fp, "State,Probability\n");
+  
+  for(dest = 0; dest < mypow2(LEN); dest++)
+    {
+      fprintf(fp, "%i,%e\n", dest, probs[dest]);
+    }
+  fclose(fp);
+
+  free(active);
+  free(newactive);
+  free(probs);
+
+}
+
+
+
+// pick a new locus to change in state "state"; return it in "locus" and keep track of the on-course probability in "prob". "ntrans" is the transition matrix
+void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, double *beta, int LEN, int model)
+{
+  int i;
+  double rate[LEN];
+  double totrate, nobiastotrate;
+  double cumsum[LEN];
+  double r;
+
+  nobiastotrate = 0;
+
+  /* compute the rate of loss of gene i given the current genome -- without bias */
+  for(i = 0; i < LEN; i++)
+    {
+      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+      if(state[i] == 0)
+	{
+	  rate[i] = RetrieveEdge(state, i, ntrans, LEN, model);
+	}
+      else /* we've already lost this gene */
+	rate[i] = 0;
+
+      /* roulette wheel calculations as normal */
+      cumsum[i] = (i == 0 ? 0 : rate[i-1]+cumsum[i-1]);
+      nobiastotrate += rate[i];
+    }
+
+  totrate = 0;
+
+  /* compute the rate of loss of gene i given the current genome -- with bias */
+  for(i = 0; i < LEN; i++)
+    {
+      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+      if(state[i] == 0 && targ[i] != 0)
+	{
+	  rate[i] = RetrieveEdge(state, i, ntrans, LEN, model);
+	}
+      else /* we've already lost this gene OR WE DON'T WANT IT*/
+	rate[i] = 0;
+
+      /* roulette wheel calculations as normal */
+      cumsum[i] = (i == 0 ? 0 : rate[i-1]+cumsum[i-1]);
+      totrate += rate[i];
+    }
+
+  /* normalised, additive rates -- is this sensible? */
+  for(i = 0; i < LEN; i++)
+    cumsum[i] /= totrate;
+
+  r = RND;
+  for(i = 0; i < LEN-1; i++)
+    {
+      if(cumsum[i] < r && cumsum[i+1] > r) { break; }
+    }
+
+  *locus = i;
+
+  *prob = totrate/nobiastotrate;
+  *beta = nobiastotrate;
+}
+
+// compute PLI probability of a transition from "startpos" to "targ" given transition matrix "P"
+double LikelihoodMultiplePLI(int *targ, double *P, int LEN, int *startpos, double tau1, double tau2, int model)
+{
+  int *bank;
+  int n0, n1;
+  double *reject;
+  int i, j, r;
+  int locus;
+  int attempt[LEN];
+  double mean;
+  double *prodreject;
+  int fail;
+  int *hitss, *hitsd, *mins, *mind;
+  double totalsum;
+  int endtarg[LEN];
+  double lik;
+  
+  // new variables
+  double *recbeta;
+  // nobiastotrate is retain to match role in PickLocus but basically corresponds to -u
+  
+  // allocate memory for BANK (N_h) trajectories
+  bank = (int*)malloc(sizeof(int)*LEN*BANK);
+  reject = (double*)malloc(sizeof(double)*BANK);
+  hitss = (int*)malloc(sizeof(int)*BANK);
+  hitsd = (int*)malloc(sizeof(int)*BANK);
+  mins = (int*)malloc(sizeof(int)*BANK);
+  mind = (int*)malloc(sizeof(int)*BANK);
+  prodreject = (double*)malloc(sizeof(double)*BANK);
+  recbeta = (double*)malloc(sizeof(double)*LEN*BANK);
+
+  // initialise each trajectory at 0^L
+  for(i = 0; i < LEN*BANK; i++)
+    bank[i] = 0;
+  n0 = 0;
+
+  for(i = 0; i < LEN; i++)
+    endtarg[i] = 1; 
+  n1 = LEN;
+  
+  mean = 1;
+  totalsum = 0;
+
+  for(i = 0; i < BANK; i++)
+    {
+      hitss[i] = hitsd[i] = 0;
+      mins[i] = mind[i] = LEN*LEN;
+    }
+
+  if(VERBOSE) {
+    printf("Source ");
+    for(i = 0; i < LEN; i++)
+      printf("%i", startpos[i]);
+    printf(" dest ");
+    for(i = 0; i < LEN; i++)
+      printf("%i", targ[i]);
+  }
+
+  // loop through each trajectory
+  for(i = 0; i < BANK; i++)
+    {
+
+      fail = 0;
+      // count whether we're there or not
+      for(j = 0; j < LEN; j++)
+	{
+	  if(bank[LEN*i+j] != startpos[j] && startpos[j] != 2) fail++;
+	}
+      hitss[i] += (fail == 0);
+      if(fail < mins[i]) mins[i] = fail;
+      //   if(VERBOSE && fail == 0) printf("Walker %i hit source (%i)\n", i, hitss[i]);
+
+      fail = 0;
+      // count whether we're there or not
+      for(j = 0; j < LEN; j++)
+	{
+	  if(bank[LEN*i+j] != targ[j] && targ[j] != 2) fail++;
+	}
+      hitsd[i] += (fail == 0);
+      if(fail < mind[i]) mind[i] = fail;
+      //   if(VERBOSE && fail == 0) printf("Walker %i hit dest (%i)\n", i, hitsd[i]);
+
+    }
+	  
+  // loop through the number of evolutionary steps we need to make
+  for(r = 0; r < LEN; r++)
+    {
+
+      // loop through each trajectory
+      for(i = 0; i < BANK; i++)
+	{
+	  for(j = 0; j < LEN; j++)
+	    attempt[j] = bank[LEN*i+j];
+	  // pick the locus to change at this step, and record the probability that we stay on track to the target
+	  PickLocus(&bank[LEN*i], P, endtarg, &locus, &reject[i], &recbeta[LEN*i + (r-n0)], LEN, model);
+	  bank[LEN*i+locus] = 1;
+	  /*	  if(VERBOSE)
+		  { printf("Walker %i at ", i);
+		  for(j = 0; j < LEN; j++)
+		  printf("%i", bank[LEN*i+j]);
+		  printf("\n");
+		  }*/
+	  
+	  fail = 0;
+	  // count whether we're there or not
+	  for(j = 0; j < LEN; j++)
+	    {
+	      if(bank[LEN*i+j] != startpos[j] && startpos[j] != 2) fail++;
+	    }
+	  hitss[i] += (fail == 0);
+	  if(fail < mins[i]) mins[i] = fail;
+	  //	  if(VERBOSE && fail == 0) printf("Walker %i hit source (%i)\n", i, hitss[i]);
+		  
+	  fail = 0;
+	  // count whether we're there or not
+	  for(j = 0; j < LEN; j++)
+	    {
+	      if(bank[LEN*i+j] != targ[j] && targ[j] != 2) fail++;
+	    }
+	  hitsd[i] += (fail == 0);
+	  if(fail < mind[i]) mind[i] = fail;
+	  //if(VERBOSE && fail == 0) printf("Walker %i hit dest (%i)\n", i, hitsd[i]);
+	}
+    }
+
+  lik = 0;
+  for(i = 0; i < BANK; i++)
+    {
+      lik += ((double)hitss[i]/LEN)*((double)hitsd[i]/LEN);
+    }
+  if(VERBOSE){
+    if(lik > 0) 
+      printf("\nHit this record at least once\n");
+    else printf("\n*** didn't hit this record!\n");
+  }
+          
+  free(bank);
+  free(reject);
+  free(hitss);
+  free(hitsd);
+  free(mins);
+  free(mind);
+  free(prodreject);
+  free(recbeta);
+  //  myexit(0);
+  return lik/BANK;
+
+}
+
+
+// compute HyperTraPS probability of a transition from "startpos" to "targ" given transition matrix "P"
+double LikelihoodMultiple(int *targ, double *P, int LEN, int *startpos, double tau1, double tau2, int model)
+{
+  int *bank;
+  int n0, n1;
+  double *reject;
+  int i, j, r;
+  int locus;
+  int attempt[LEN];
+  double mean;
+  double *prodreject;
+  double summand[LEN];
+  int fail;
+  int *hits, *totalhits;
+  double totalsum;
+  int emission_count;
+
+  // new variables
+  double u, prob_path, vi, betaci, nobiastotrate;
+  double analyticI1, analyticI2;
+  double sumI1, sumI2;
+  int n;
+  double tmprate;
+  double *recbeta;
+  // nobiastotrate is retain to match role in PickLocus but basically corresponds to -u
+  int myexitcount = 0;
+  
+  // allocate memory for BANK (N_h) trajectories
+  bank = (int*)malloc(sizeof(int)*LEN*BANK);
+  reject = (double*)malloc(sizeof(double)*BANK);
+  hits = (int*)malloc(sizeof(int)*BANK);
+  totalhits = (int*)malloc(sizeof(int)*BANK);
+  prodreject = (double*)malloc(sizeof(double)*BANK);
+  recbeta = (double*)malloc(sizeof(double)*LEN*BANK);
+
+  // initialise each trajectory at the start state; count 0s and 1s
+  for(i = 0; i < LEN*BANK; i++)
+    bank[i] = startpos[i%LEN]; 
+  n0 = 0;
+  for(i = 0; i < LEN; i++)
+    n0 += startpos[i];
+
+  // the final "layer" of the hypercube we're interested in is that of the target when we've set all ambiguous loci to 1
+  n1 = 0;
+  for(i = 0; i < LEN; i++)
+    {
+      n1 += (targ[i] == 1 || targ[i] == 2);
+      if(targ[i] == 2 && !(tau1 == 0 && tau2 == INFINITY)) {
+	printf("Uncertain observations not currently supported for the continuous time picture! Please re-run with the discrete time picture.\n");
+	myexit(0);
+      }
+      if(targ[i] == 0 && startpos[i] == 1) {
+	printf("Wrong ordering, or some other problem with input file. Data file rows should be ordered ancestor then descendant! Problem transition was:\n");
+	for(j = 0; j < LEN; j++) printf("%i", startpos[j]);
+	printf(" -> ");
+	for(j = 0; j < LEN; j++) printf("%i", targ[j]);
+	myexit(0);
+      }
+      
+    }
+
+  if(n0 > n1)
+    {
+      // the target comes before the source
+      printf("Wrong ordering, or some other problem with input file. Data file rows should be ordered ancestor then descendant! Problem transition was:\n");
+      for(j = 0; j < LEN; j++) printf("%i", startpos[j]);
+      printf(" -> ");
+      for(j = 0; j < LEN; j++) printf("%i", targ[j]);
+      myexit(0);
+    }
+
+  mean = 1;
+  totalsum = 0;
+  emission_count = (n1-n0);
+  
+  // check we're not already there
+  fail = 0;
+  for(i = 0; i < LEN; i++)
+    fail += (targ[i] != startpos[i]);
+  if(fail == 0) totalsum = 1;
+
+  for(i = 0; i < BANK; i++)
+    prodreject[i] = 1;
+
+  for(i = 0; i < BANK; i++)
+    totalhits[i] = 0;
+
+  // loop through the number of evolutionary steps we need to make
+  for(r = n0; r < n1; r++)
+    {
+      for(i = 0; i < BANK; i++)
+	hits[i] = 0;
+
+      // loop through each trajectory
+      for(i = 0; i < BANK; i++)
+	{
+	  for(j = 0; j < LEN; j++)
+	    attempt[j] = bank[LEN*i+j];
+	  // pick the locus to change at this step, and record the probability that we stay on track to the target
+	  PickLocus(&bank[LEN*i], P, targ, &locus, &reject[i], &recbeta[LEN*i + (r-n0)], LEN, model);
+	  bank[LEN*i+locus] = 1;
+
+	  if(SUPERVERBOSE)
+	    {
+	      printf("Now at ");
+	      for(j = 0; j < LEN; j++)
+		printf("%i", bank[LEN*i+j]);
+	      printf("\n");
+	    }
+	  
+	  fail = 0;
+	  // count whether we're there or not
+	  for(j = 0; j < LEN; j++)
+	    {
+	      if(bank[LEN*i+j] != targ[j] && targ[j] != 2) fail = 1;
+	      if(!fail && SUPERVERBOSE)
+		printf("Hit target!\n");
+	    }
+	  hits[i] += (1-fail);
+	  totalhits[i] += (1-fail);
+	}
+      
+      // keep track of total probability so far, and record if we're there
+      summand[r] = 0;
+      for(i = 0; i < BANK; i++)
+	{
+	  prodreject[i] *= reject[i];
+	  summand[r] += prodreject[i]*hits[i];
+	}
+      summand[r] /= BANK;
+      if(SUPERVERBOSE)
+	{
+	  printf("At step %i averaged summand is %e\n", i, summand[r]);
+	}
+
+
+      totalsum += summand[r];
+    }
+
+  if(SUPERVERBOSE)
+    {
+      printf("Total sum %e\n", totalsum);
+    }
+     
+  // if we're not using continuous time, avoid this calculation and just return average path probability
+  if(tau1 == 0 && tau2 == INFINITY)
+    {
+      if(n0 == n1) {
+	prob_path = 1;
+	emission_count = 1;
+      }
+      else
+	{
+	  prob_path = 0;
+	  for(n = 0; n < BANK; n++)
+	    {
+	      // for non-missing data, the comparison of total hits to emission count (ie opportunities for emission) factors out of the likelihood. but for missing data, different paths may have different numbers of opportunities to emit an observation-compatible signal, which we need to account for
+	      prob_path += (prodreject[n]*((double)(totalhits[n])/emission_count))/BANK;
+	    }
+	}
+          
+      free(bank);
+      free(reject);
+      free(hits);
+      free(totalhits);
+      free(prodreject);
+      free(recbeta);
+
+      return prob_path;
+    }
+
+  // we're using continuous time
+  // now, compute loss intensity from this state
+  nobiastotrate = 0;
+  for(i = 0; i < LEN; i++)
+    {
+      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+      if(targ[i] == 0)
+	{
+	  tmprate = RetrieveEdge(targ, i, P, LEN, model);
+	}
+      else /* we've already lost this gene */
+	tmprate = 0;
+
+      nobiastotrate += tmprate;
+    }
+  u = -nobiastotrate;
+
+  // now go through the recorded paths and compute vi, betaci
+  analyticI1 = analyticI2 = 0;
+  if(n0 != n1)
+    {
+      for(n = 0; n < BANK; n++)
+	{
+	  prob_path = prodreject[n]*1./BANK;
+          sumI1 = sumI2 = 0;
+	  for(i = 0; i < n1-n0; i++)
+	    {
+	      vi = 1;
+	      for(j = 0; j < n1-n0; j++)
+		{
+		  vi *= recbeta[LEN*n+j];
+		  if(j != i)
+		    vi *= 1./(recbeta[LEN*n+j]-recbeta[LEN*n+i]);
+		  if(SPECTRUM_VERBOSE)
+		    printf("step %i looking at step %i recbeta %.4f vi %.4f\n", i, j, recbeta[LEN*n+j], vi);
+		}
+	      betaci = recbeta[LEN*n+i];
+
+	      sumI1 += vi*(exp(tau1*u)-exp(-tau1*(betaci)))/(betaci + u);
+	      sumI2 += vi/betaci*(exp(-betaci*tau1) - exp(-betaci*tau2));
+
+	      if(SPECTRUM_VERBOSE)
+		printf("walker %i: stepx %i vi %.4f betaci %.4f u %.4f | sumI1 %.4f sumI2 %.4f\n (tau1 %f tau2 %f)\n", n, i, vi, betaci, u, sumI1, sumI2, tau1, tau2);
+	    }
+
+	  if(sumI1 < 0 || sumI2 < 0)
+	    {
+	      if(num_error == 0) {
+		printf("I got a negative value for I1 (%e) or I2 (%e), which shouldn't happen and suggests a lack of numerical convergence. This can happen with large numbers of features. I'm setting to zero but this may be worth examining.\n", sumI1, sumI2);
+	      }
+	      if(sumI1 < 0) {
+		if(-sumI1 > num_error) {
+		  num_error = -sumI1;
+		  printf("New scale of numerical error %e\n", num_error);
+		}
+		sumI1 = 0;
+	      }
+	      if(sumI2 < 0) {
+		if(-sumI2 > num_error) {
+		  num_error = -sumI2;
+		  printf("New scale of numerical error %e\n", num_error);
+		}
+		sumI2 = 0;
+	      }
+	    }
+	  
+	  // debugging example, run --obs VerifyData/synth-bigcross-90-hard-samples.txt --times VerifyData/synth-bigcross-90-hard-times.txt --length 4 --outputtransitions 0 --kernel 3 --label VerifyData/test-bigcross-hard-ct-90-db --spectrumverbose
+	  
+	  analyticI1 += (prob_path*sumI1);
+	  analyticI2 += (prob_path*sumI2);
+	  if(SPECTRUM_VERBOSE)
+	    printf("prob_path %.4f sumI1 %.4f sumI2 %.4f | analyticI1 %.4f analyticI2 %.4f\n", prob_path, sumI1, sumI2, analyticI1, analyticI2);
+	  myexitcount++;
+	  //	  if(myexitcount == 3)
+	  //myexit(0);
+	}
+    }
+  else
+    {
+      analyticI1 += exp(u*tau1); // just probability of dwelling at start
+    }
+
+  free(bank);
+  free(reject);
+  free(hits);
+  free(totalhits);
+  free(prodreject);
+  free(recbeta);
+
+  /*  if(analyticI1+analyticI2 > 100)
+      {
+      printf("Myexiting at line 283\n");
+      myexit(0);
+      }*/
+  
+  return analyticI1+analyticI2;
+}
+
+// get total likelihood for a set of changes
+double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *ntrans, double *tau1s, double *tau2s, int model, int PLI)
+{
+  double loglik, tloglik, tlik;
+  int i, j;
+  int startpos[len];
+
+  // initialise and start at one corner of the hypercube
+  loglik = 0;
+  for(i = 0; i < len; i++)
+    startpos[i] = 0;
+
+  // loop through each ancestor/descendant pair
+  for(i = 0; i < ntarg/2; i++)
+    {
+      // output if desired
+      if(VERBOSE)
+	{
+	  printf("Target %i: ", i);
+	  for(j = 0; j < len; j++) printf("%i", matrix[2*i*len+len+j]);
+	  printf(" parent is: " );
+	  for(j = 0; j < len; j++) {  startpos[j] = matrix[2*i*len+j]; printf("%i", startpos[j]); }
+	  printf("\n");
+	}
+      // initialise start position
+      for(j = 0; j < len; j++)
+	startpos[j] = (matrix[2*i*len+j]);
+      // get log-likelihood contribution from this pair (transition) using HyperTraPS
+      if(PLI)
+	tlik = lscale*LikelihoodMultiplePLI(&(matrix[2*i*len+len]), ntrans, len, startpos, tau1s[i], tau2s[i], model);
+      else 
+	tlik = lscale*LikelihoodMultiple(&(matrix[2*i*len+len]), ntrans, len, startpos, tau1s[i], tau2s[i], model);
+      tloglik = log(tlik);
+      if(tlik <= 0)
+	{
+	  printf("Somehow I have a negative or zero likelihood, suggesting a lack of numerical convergence. Terminating to avoid unreliable posteriors.\n");
+	  printf("This was at observation %i, which is\n", i);
+	  for(j = 0; j < len; j++) printf("%i", matrix[2*i*len+len+j]);
+	  printf(" parent is: " );
+	  for(j = 0; j < len; j++) {  startpos[j] = matrix[2*i*len+j]; printf("%i", startpos[j]); }
+	  printf("\n");
+
+	  //myexit(0);
+	}
+
+      // output if required
+      if(VERBOSE)
+	printf("--- %i %f %f\n", i, exp(tloglik), tloglik);
+      loglik += tloglik;
+    }
+
+  // return total log likelihood
+  return loglik;
+}
+
+void GetGradients(int *matrix, int len, int ntarg, double *trans, double *tau1s, double *tau2s, double *gradients, double scale, int model, int PLI)
+{
+  double lik, newlik;
+  int i;
+  
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, model, PLI);
+  for(i = 0; i < nparams(model, len); i++)
+    {
+      trans[i] += scale;
+      newlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, model, PLI);
+      gradients[i] = (newlik-lik)/scale;
+      trans[i] -= scale;
+    }
+}
+
+void Regularise(int *matrix, int len, int ntarg, double *ntrans, double *tau1s, double *tau2s, int model, char *labelstr, int PLI, int outputtransitions)
+{
+  int i, j;
+  int NVAL;
+  double lik, nlik;
+  double oldval;
+  int biggestindex;
+  double biggest;
+  int pcount;
+  FILE *fp;
+  char fstr[200];
+  double AIC, BIC, bestIC;
+  double *best;
+  double normedval;
+
+  if(model == -1) normedval = -20;
+  else normedval = 0;
+  
+  NVAL = nparams(model, len);
+  best = (double*)malloc(sizeof(double)*NVAL);
+  
+  lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, tau1s, tau2s, model, PLI);
+
+  AIC = 2*NVAL-2*lik;
+  BIC = log(ntarg)*NVAL-2*lik;
+  bestIC = AIC;
+  for(i = 0; i < NVAL; i++)
+    best[i] = ntrans[i];
+
+  sprintf(fstr, "%s-regularising.csv", labelstr);
+  fp = fopen(fstr, "w");
+  fprintf(fp, "nparam,removed,log.lik,AIC,BIC\n");
+  fprintf(fp, "%i,%i,%e,%e,%e\n", NVAL, -1, lik, AIC, BIC);
+
+  printf("Regularising...\npruning ");
+  // remove parameters stepwise
+  for(j = 0; j < NVAL; j++)
+    {
+      printf("%i of %i\n", j+1, NVAL); 
+      // find parameter that retains highest likelihood when removed
+      biggest = 0;
+      for(i = 0; i < NVAL; i++)
+	{
+	  oldval = ntrans[i];
+	  ntrans[i] = normedval;
+	  nlik = GetLikelihoodCoalescentChange(matrix, len, ntarg, ntrans, tau1s, tau2s, model, PLI);
+	  ntrans[i] = oldval;
+	  if((biggest == 0 || nlik > biggest) && ntrans[i] != normedval)
+	    {
+	      biggest = nlik;
+	      biggestindex = i;
+	    }
+	}
+      // set this param to zero and count new param set
+      ntrans[biggestindex] = normedval;
+      pcount = 0;
+      for(i = 0; i < NVAL; i++)
+	{
+	  if(ntrans[i] != normedval) pcount++;
+	}
+      // output
+      AIC = 2*pcount-2*biggest;
+      BIC = log(ntarg)*pcount-2*biggest;
+      fprintf(fp, "%i,%i,%e,%e,%e\n", pcount, biggestindex, biggest, AIC, BIC);
+      if(AIC < bestIC)
+	{
+	  bestIC = AIC;
+	  for(i = 0; i < NVAL; i++)
+	    best[i] = ntrans[i];
+	}
+    }
+  sprintf(fstr, "%s-regularised.txt", labelstr);
+  fp = fopen(fstr, "w");
+  for(i = 0; i < NVAL; i++)
+    fprintf(fp, "%e ", best[i]);
+  fprintf(fp, "\n");
+  fclose(fp);
+
+  sprintf(fstr, "%s-regularised-lik.csv", labelstr);
+  fp = fopen(fstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); 
+  fprintf(fp, "0,%e,%e\n", GetLikelihoodCoalescentChange(matrix, len, ntarg, best, tau1s, tau2s, model, PLI), GetLikelihoodCoalescentChange(matrix, len, ntarg, best, tau1s, tau2s, model, PLI));
+  fclose(fp);
+
+  if(outputtransitions) {
+  sprintf(fstr, "%s-regularised", labelstr);
+  OutputStatesTrans(fstr, best, len, model);
+  }
+  
+  free(best);
+
+}
+
+// simulate trajectories on a given hypercube parameterisation, and store a bunch of summary data about those trajectories
+// mean[i] stores the mean acquisition ordering for feature i
+// ctrec[MAXCT*i + ref] stores a histogram of acquisitions of feature i at continuous time reference ref
+// times[t] stores the continuous time at which feature t is acquired in the first simulated run
+// betas[t] stores the exit propensity after feature t is acquired in the first simulated run
+// route[t] is the feature changed at step t
+void GetRoutes(int *matrix, int len, int ntarg, double *ntrans, int *rec, double *mean, double *ctrec, double *times, double *timediffs, double *betas, int *route, double BINSCALE, int model)
+{
+  int run, t;
+  double time1;
+  int state[len];
+  double totrate;
+  double rate[len];
+  double cumsum[len];
+  double r;
+  int i;
+  int startt;
+  int checker[ntarg];
+  double continuoustime, prevcontinuoustime;
+
+  for(i = 0; i < ntarg; i++)
+    checker[i] = 0;
+
+  for(i = 0; i < len; i++)
+    mean[i] = 0;
+  
+  /* loop through NTRAJ simulated trajectories */
+  for(run = 0; run < NTRAJ; run++)
+    {
+      startt = 0; time1 = 0;
+
+      // start at initial state
+      for(i = 0; i < len; i++)
+	state[i] = 0;
+
+      // track the (continuous) time elapsed
+      // (but continuous time is not interpretable unless the posteriors have been produced in the continuous time paradigm)
+      prevcontinuoustime = continuoustime = 0;
+
+      // loop through feature acquisitions
+      for(t = 0; t < len; t++)
+	{
+	  totrate = 0;
+	  // compute the rate for feature i given the current set of features
+	  for(i = 0; i < len; i++)
+	    {
+	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
+	      if(state[i] == 0)
+		{
+		  rate[i] = RetrieveEdge(state, i, ntrans, len, model);
+		}
+	      else // we've already lost this gene
+		rate[i] = 0;
+
+	      // roulette wheel calculations as normal
+	      cumsum[i] = (i == 0 ? 0 : rate[i-1]+cumsum[i-1]);
+	      totrate += rate[i];
+	    }
+
+	  // choose a step
+	  for(i = 0; i < len; i++)
+	    cumsum[i] /= totrate;
+	  r = RND;
+	  continuoustime += (1./totrate)*log(1./r);
+
+#ifdef VERBOSE
+	  for(i = 0; i < len; i++)
+	    printf("%.2f ", cumsum[i]);
+	  printf("\n");
+#endif
+
+	  r = RND;
+	  for(i = 0; i < len-1; i++)
+	    {
+	      if(cumsum[i] < r && cumsum[i+1] > r) { break; }
+	    }
+
+#ifdef VERBOSE
+	  printf("Rolled %f, chose %i\n", r, i);
+#endif
+
+	  // we've chosen feature i, at ordering t, and a timescale continuoustime
+	  state[i] = 1;
+	  mean[i] += t;
+
+	  // rec[t*len + i] increments if we acquire feature i at ordering t
+	  // ctrec[MAXCT*i + ref] increments if we acquire feature i at ct-reference ref
+	  // pay attention here! we scale continuous times by BINSCALE (e.g. x100) to produce a reference that allows sensible storage in an integer-referenced histogram, bounded by 0 and MAXCT (element MAXCT-1 stores the number of cases that exceed this)
+
+  	  rec[t*len+i]++;
+	  if(continuoustime*BINSCALE < MAXCT)
+	    ctrec[MAXCT*i+((int)(BINSCALE*continuoustime))]++;
+	  else
+	    ctrec[MAXCT*i + MAXCT-1]++;
+
+	  // sample the statistics of the first simulated run. 
+	  if(run == 0)
+	    {
+	      times[t] = continuoustime;
+	      timediffs[t] = continuoustime-prevcontinuoustime;
+	      betas[t] = totrate;
+	      route[t] = i;
+	      prevcontinuoustime = continuoustime;
+	    }
+
+#ifdef VERBOSE
+	  for(i = 0; i < len; i++)
+	    printf("%i", state[i]);
+	  printf(" (%i)\n", t);
+#endif
+
+	}
+    }
+
+  for(i = 0; i < len; i++)
+    mean[i] /= NTRAJ;
+
+}
+
+// construct labels for different features
+// for different specific studies this can be adapted to help output
+void Label(char *names, int len, char *fname)
+{
+  int i, j;
+  FILE *fp;
+  char *tmp;
+
+  tmp = (char*)malloc(sizeof(char)*1000);
+  fp = fopen(fname, "r");
+  if(fp == NULL)
+    {
+      printf("Didn't find feature label file %s, using default labels\n", fname);
+      for(i = 0; i < len; i++)
+	{
+	  sprintf(&names[i*FLEN], "f%i", i);
+	}
+    }
+  else
+    {
+      i = 0;
+      do{
+	tmp = fgets(&names[i*FLEN], FLEN, fp);
+	for(j = 0; j < FLEN; j++)
+	  {
+	    if(names[i*FLEN+j] == '\n')
+	      names[i*FLEN+j] = '\0';
+	  }
+	i++;
+      }while(!feof(fp));
+      fclose(fp);
+    }
+  free(tmp);
+}
+
+void ReadPriors(char *priorfile, int NVAL, double *priormin, double *priormax)
+{
+  int i;
+  FILE *fp;
+  double tmp;
+  int itmp;
+  
+  fp = fopen(priorfile, "r");
+  if(fp == NULL) {
+    printf("Couldn't find priors file %s\n", priorfile);
+    myexit(0);
+  }
+  for(i = 0; i < NVAL*2; i++)
+    {
+      itmp = fscanf(fp, "%lf", &tmp);
+      if(feof(fp)) break;
+      if(i % 2 == 0) priormin[(int)(i/2)] = tmp;
+      else priormax[(int)(i/2)] = tmp;
+    }
+  if(i != NVAL*2) {
+    printf("Found wrong number of entries in prior file. Should be number of params * 2\n");
+    myexit(0);
+  }
+}
 
 List OutputStatesR(double *ntrans, int LEN, int model)
 {
