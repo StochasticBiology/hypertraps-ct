@@ -77,6 +77,7 @@ plotHypercube.lik.trace = function(my.post) {
 #' fitted.cube <- HyperTraPS(observations)
 #' plotHypercube.bubbles(fitted.cube)
 plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
+  require(ggplot2)
   toplot = my.post$bubbles
   if(reorder == TRUE) {
     toplot$Name = factor(toplot$Name, levels=unique(toplot$Name))
@@ -1342,6 +1343,3 @@ plotHypercube.curated.tree = function(tree.set) {
     theme(legend.position="none")
   return(this.plot)
 }
-
-sourceCpp("hypertraps-r.cpp")
-
