@@ -1,6 +1,6 @@
 #' Hypercubic inference in continuous time
 #'
-#' @docType package
+#' @docType _PACKAGE
 #' @name hypertrapsct
 #' @useDynLib hypertrapsct
 #' @importFrom Rcpp evalCpp sourceCpp
@@ -52,14 +52,14 @@ BinToDec <- function(state) {
 #' plotHypercube.lik.trace(fitted.cube)
 plotHypercube.lik.trace = function(my.post) {
   ### likelihood traces
-  this.plot = ggplot(my.post$lik.traces)  
+  this.plot = ggplot2::ggplot(my.post$lik.traces)  
   if("CurrentLogLikelihood" %in% colnames(my.post$lik.traces)) {
-    this.plot = this.plot + geom_line(aes(x=Step, y=CurrentLogLikelihood), color="#FF0000") 
+    this.plot = this.plot + ggplot2::geom_line(ggplot2::aes(x=Step, y=CurrentLogLikelihood), color="#FF0000") 
   }
   
-  this.plot = this.plot + geom_line(aes(x=Step, y=LogLikelihood1), linetype="dotted") +
-    geom_line(aes(x=Step, y=LogLikelihood2), linetype="dotted")
-  return(this.plot + theme_light() )
+  this.plot = this.plot + ggplot2::geom_line(ggplot2::aes(x=Step, y=LogLikelihood1), linetype="dotted") +
+    ggplot2::geom_line(ggplot2::aes(x=Step, y=LogLikelihood2), linetype="dotted")
+  return(this.plot + ggplot2::theme_light() )
 }
 
 #' Acquisition ordering
@@ -77,7 +77,6 @@ plotHypercube.lik.trace = function(my.post) {
 #' fitted.cube <- HyperTraPS(observations)
 #' plotHypercube.bubbles(fitted.cube)
 plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
-  require(ggplot2)
   toplot = my.post$bubbles
   if(reorder == TRUE) {
     toplot$Name = factor(toplot$Name, levels=unique(toplot$Name))
@@ -89,13 +88,13 @@ plotHypercube.bubbles = function(my.post, reorder=FALSE, transpose=FALSE) {
     toplot$x = toplot$Time
     toplot$y = toplot$Name
   }
-  this.plot = ggplot(toplot, aes(x=x, y=y, size=Probability)) + geom_point() +
-    theme_light() 
+  this.plot = ggplot2::ggplot(toplot, ggplot2::aes(x=toplot$x, y=toplot$y, size=toplot$Probability)) + ggplot2::geom_point() +
+    ggplot2::theme_light() 
   if(transpose == TRUE){
-    return(this.plot + theme(axis.text.x = element_text(angle=90)) +
-             xlab("") + ylab("Ordinal time"))
+    return(this.plot + ggplot2::theme(axis.text.x = ggplot2::element_text(angle=90)) +
+             ggplot2::xlab("") + ggplot2::ylab("Ordinal time"))
   } else {
-    return(this.plot + xlab("Ordinal time") + ylab(""))
+    return(this.plot + ggplot2::xlab("Ordinal time") + ggplot2::ylab(""))
   }
 }
 
@@ -137,13 +136,13 @@ plotHypercube.bubbles.coarse = function(my.post, reorder=FALSE, transpose=FALSE,
     toplot$x = toplot$Time
     toplot$y = toplot$Name
   }
-  this.plot = ggplot(toplot, aes(x=x, y=y, size=Probability)) + geom_point() +
-    theme_light() 
+  this.plot = ggplot2::ggplot(toplot, ggplot2::aes(x=toplot$x, y=toplot$y, size=toplot$Probability)) + ggplot2::geom_point() +
+    ggplot2::theme_light() 
   if(transpose == TRUE){
-    return(this.plot + theme(axis.text.x = element_text(angle=90)) +
-             xlab("") + ylab("Ordinal time"))
+    return(this.plot + ggplot2::theme(axis.text.x = ggplot2::element_text(angle=90)) +
+             ggplot2::xlab("") + ggplot2::ylab("Ordinal time"))
   } else {
-    return(this.plot + xlab("Ordinal time") + ylab(""))
+    return(this.plot + ggplot2::xlab("Ordinal time") + ggplot2::ylab(""))
   }
 }
 
@@ -172,21 +171,21 @@ plotHypercube.graph = function(my.post, thresh = 0.05,
   ### produce hypercube subgraph
   bigL = my.post$L
   trans.p = my.post$dynamics$trans[my.post$dynamics$trans$Flux > thresh,]
-  trans.g = graph_from_data_frame(trans.p)
-  bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
-  V(trans.g)$binname = bs
-  layers = str_count(bs, "1")
-  this.plot =  ggraph(trans.g, layout="sugiyama", layers=layers) + 
-    geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux), color="#AAAAFF") + 
-    scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
-    theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
+  trans.g = igraph::graph_from_data_frame(trans.p)
+  bs = unlist(lapply(as.numeric(igraph::V(trans.g)$name), DecToBin, len=bigL))
+  igraph::V(trans.g)$binname = bs
+  layers = stringr::str_count(bs, "1")
+  this.plot =  ggraph::ggraph(trans.g, layout="sugiyama", layers=layers) + 
+    ggraph::geom_edge_link(ggplot2::aes(edge_width=trans.g$Flux, edge_alpha=trans.g$Flux), color="#AAAAFF") + 
+    ggraph::scale_edge_width(limits=c(0,NA)) + ggraph::scale_edge_alpha(limits=c(0,NA)) +
+    ggraph::theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
     if(node.labels.box == TRUE) {
-      this.plot = this.plot + geom_node_label(aes(label=binname),
-                                              size = node.label.size) 
+      this.plot = this.plot + ggraph::geom_node_label(ggplot2::aes(label=trans.g$binname),
+                                                                size = node.label.size) 
     } else {
-      this.plot = this.plot + geom_node_text(aes(label=binname),
-                                             size = node.label.size) 
+      this.plot = this.plot + ggraph::geom_node_text(ggplot2::aes(label=trans.g$binname),
+                                              size = node.label.size) 
     } 
   }
   return(this.plot)
@@ -229,16 +228,16 @@ plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, 
     dfu$Flux[i] = length(which(df$From==dfu$From[i] & df$To==dfu$To[i]))
   }
   dfu = dfu[dfu$Flux > thresh*nsamps,]
-  trans.g = graph_from_data_frame(dfu)
-  bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
+  trans.g = igraph::graph_from_data_frame(dfu)
+  bs = unlist(lapply(as.numeric(igraph::V(trans.g)$name), DecToBin, len=bigL))
   #bs = unlist(lapply(as.numeric(as.vector(V(trans.g))), DecToBin, len=bigL))
-  V(trans.g)$binname = bs
-  layers = str_count(bs, "1")
-  this.plot = ggraph(trans.g, layout="sugiyama", layers=layers) + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux)) + 
-    scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
-    theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
+  igraph::V(trans.g)$binname = bs
+  layers = stringr::str_count(bs, "1")
+  this.plot = ggraph::ggraph(trans.g, layout="sugiyama", layers=layers) + ggraph::geom_edge_link(ggplot2::aes(edge_width=Flux, edge_alpha=Flux)) + 
+    ggraph::scale_edge_width(limits=c(0,NA)) + ggraph::scale_edge_alpha(limits=c(0,NA)) +
+    ggraph::theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
-    this.plot = this.plot + geom_node_point() + geom_node_label(aes(label=binname),size=node.label.size) 
+    this.plot = this.plot + ggraph::geom_node_point() + ggraph::geom_node_label(ggplot2::aes(label=trans.g$binname),size=node.label.size) 
   }
   return(this.plot)
 }
@@ -330,41 +329,41 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
   }
   dfu$Flux = dfu$Flux / nsamps
   dfu = dfu[dfu$Flux > thresh,]
-  trans.g = graph_from_data_frame(dfu)
+  trans.g = igraph::graph_from_data_frame(dfu)
   #bs = unlist(lapply(as.numeric(V(trans.g)$name), DecToBin, len=bigL))
   #bs = unlist(lapply(as.numeric(as.vector(V(trans.g))), DecToBin, len=bigL))
-  bs = V(trans.g)$name
-  V(trans.g)$binname = bs
-  layers = str_count(bs, "1")
+  bs = igraph::V(trans.g)$name
+  igraph::V(trans.g)$binname = bs
+  layers = stringr::str_count(bs, "1")
   
   if(truncate > bigL/2) { 
-    this.plot=  ggraph(trans.g, layout="sugiyama", layers=layers) 
+    this.plot=  ggraph::ggraph(trans.g, layout="sugiyama", layers=layers) 
   } else {
-    this.plot=  ggraph(trans.g, layout="tree")
+    this.plot=  ggraph::ggraph(trans.g, layout="tree")
   }
   if(use.arc == TRUE) {
     this.plot= this.plot +
-      geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label, angle=45), 
+      ggraph::geom_edge_arc(aes(edge_width=Flux, edge_alpha=Flux, label=label, angle=45), 
                     label_size = edge.label.size, label_colour=edge.label.colour, color="#AAAAFF",
                     label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = edge.check.overlap) + 
-      scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
-      theme_graph(base_family="sans")
+      ggraph::scale_edge_width(limits=c(0,NA)) + ggraph::scale_edge_alpha(limits=c(0,NA)) +
+      ggraph::theme_graph(base_family="sans")
   } else {
     this.plot=  this.plot +
-      geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=label, angle=45), 
+      ggraph::geom_edge_link(ggplot2::aes(edge_width=Flux, edge_alpha=Flux, label=label, angle=45), 
                      label_size = edge.label.size, label_colour=edge.label.colour, color="#AAAAFF",
                      label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = edge.check.overlap) + 
-      scale_edge_width(limits=c(0,NA)) + scale_edge_alpha(limits=c(0,NA)) +
-      theme_graph(base_family="sans")
+      ggraph::scale_edge_width(limits=c(0,NA)) + ggraph::scale_edge_alpha(limits=c(0,NA)) +
+      ggraph::theme_graph(base_family="sans")
   }
   if(small.times == TRUE) {
-    this.plot = this.plot + geom_edge_link(aes(edge_width=Flux, edge_alpha=Flux, label=tlabel, angle=45), 
+    this.plot = this.plot + ggraph::geom_edge_link(ggplot2::aes(edge_width=Flux, edge_alpha=Flux, label=tlabel, angle=45), 
                                            label_size = edge.label.size-1, label_colour=edge.label.colour, alpha = 0, color="#AAAAFF",
                                            label_parse = TRUE, angle_calc = edge.label.angle, check_overlap = TRUE,
-                                           position = position_nudge(x=times.offset[1], y = times.offset[2])) 
+                                           position = ggplot2::position_nudge(x=times.offset[1], y = times.offset[2])) 
   }
   if(node.labels == TRUE) {
-    this.plot = this.plot + geom_node_text(aes(label=binname),size=node.label.size) 
+    this.plot = this.plot + ggraph::geom_node_text(ggplot2::aes(label=trans.g$binname),size=node.label.size) 
   }
   
   return(this.plot)
@@ -411,25 +410,25 @@ plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = TRUE, 
   }
   
   if (log.time) {
-    g.thist = ggplot(thdfp[thdfp$Time < t.thresh,],
-                     aes(x=log(Time+1), y=Probability)) +
-      labs(x = "log(t+1)", y="Probability")
+    g.thist = ggplot2::ggplot(thdfp[thdfp$Time < t.thresh,],
+                     ggplot2::aes(x=log(Time+1), y=Probability)) +
+      ggplot2::labs(x = "log(t+1)", y="Probability")
   } else {
-    g.thist = ggplot(thdfp[thdfp$Time < t.thresh,],
-                     aes(x=Time, y=Probability)) +
-      labs(x = "t", y="Probability")
+    g.thist = ggplot2::ggplot(thdfp[thdfp$Time < t.thresh,],
+                     ggplot2::aes(x=Time, y=Probability)) +
+      ggplot2::labs(x = "t", y="Probability")
   }
   g.thist = g.thist + 
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
-    geom_line() + xlim(-0.1,log(t.thresh+1)) + facet_wrap(~feature.label, nrow=2) +
-    theme_light() #+ scale_x_continuous(trans="log10")
+    ggplot2::geom_line() + ggplot2::xlim(-0.1,log(t.thresh+1)) + ggplot2::facet_wrap(~feature.label, nrow=2) +
+    ggplot2::theme_light() #+ scale_x_continuous(trans="log10")
   
-  g.thist2 = ggplot(thdfp[thdfp$Time == t.thresh,], aes(x=feature.label, y=Probability)) + 
+  g.thist2 = ggplot2::ggplot(thdfp[thdfp$Time == t.thresh,], ggplot2::aes(x=feature.label, y=Probability)) + 
     #geom_col(position="dodge") + xlim(-0.1,thresh+0.5) + facet_wrap(~OriginalIndex, ncol=2, scales="free") +
-    geom_col(position="dodge") + 
-    theme_light() + labs(x = "Feature", y="Probability") #+ scale_x_continuous(trans="log10")
+    ggplot2::geom_col(position="dodge") + 
+    ggplot2::theme_light() + ggplot2::labs(x = "Feature", y="Probability") #+ scale_x_continuous(trans="log10")
   
-  return(ggarrange(g.thist, g.thist2))
+  return(ggpubr::ggarrange(g.thist, g.thist2))
 }
 
 #' Regularisation info and AIC
@@ -447,9 +446,9 @@ plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = TRUE, 
 #' fitted.cube <- HyperTraPS(observations)
 #' plotHypercube.regularisation(fitted.cube)
 plotHypercube.regularisation = function(my.post) {
-  return(ggplot(my.post$regularisation$reg.process, 
-                aes(x=nparam, y=AIC)) + geom_point() + 
-           labs(x = "Number of non-zero parameters", y="AIC") + theme_light() )
+  return(ggplot2::ggplot(my.post$regularisation$reg.process, 
+                ggplot2::aes(x=nparam, y=AIC)) + ggplot2::geom_point() + 
+           ggplot2::labs(x = "Number of non-zero parameters", y="AIC") + ggplot2::theme_light() )
 }
 
 #' Motifs
@@ -498,11 +497,11 @@ plotHypercube.motifs = function(my.post,
       startprob = startprob+thisprob
     }
   }
-  return(ggplot(rdf) + geom_rect(aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Label))) +
-           geom_text(aes(x=Time,y=(Start+End)/2,label=TextLabel), color="#FFFFFF", size=label.size) + 
-           labs(x = "Ordering", y="Probability", fill="Feature") + 
-           scale_fill_viridis(discrete = TRUE, option="inferno", begin=0.2, end=0.8) +
-           theme_light())
+  return(ggplot2::ggplot(rdf) + ggplot2::geom_rect(ggplot2::aes(xmin=Time-0.5,xmax=Time+0.5,ymin=Start,ymax=End,fill=factor(Label))) +
+           ggplot2::geom_text(ggplot2::aes(x=Time,y=(Start+End)/2,label=TextLabel), color="#FFFFFF", size=label.size) + 
+           ggplot2::labs(x = "Ordering", y="Probability", fill="Feature") + 
+           viridis::scale_fill_viridis(discrete = TRUE, option="inferno", begin=0.2, end=0.8) +
+           ggplot2::theme_light())
 }
 
 #' Time series plot
@@ -542,13 +541,13 @@ plotHypercube.timeseries = function(my.post, log.time = TRUE, featurenames=TRUE)
     }
   }
   if(log.time == TRUE) {
-    return( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
-              scale_x_continuous(trans="log10") + scale_color_brewer(palette = "Spectral") +
-              labs(x= "t", y="Number of features", color = "Feature") + theme_light())
+    return( ggplot2::ggplot(rtdf) + ggplot2::geom_segment(ggplot2::aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
+              ggplot2::scale_x_continuous(trans="log10") + ggplot2::scale_color_brewer(palette = "Spectral") +
+              ggplot2::labs(x= "t", y="Number of features", color = "Feature") + ggplot2::theme_light())
   } else {
-    return ( ggplot(rtdf) + geom_segment(aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
-               scale_color_brewer(palette = "Spectral")+ 
-               labs(x= "t", y="Number of features", color = "Feature") + theme_light() )
+    return ( ggplot2::ggplot(rtdf) + ggplot2::geom_segment(ggplot2::aes(x=PrevTime,xend=Time,y=Step-1,yend=Step,color=factor(Label, levels=labels)), alpha=0.5) +
+               ggplot2::scale_color_brewer(palette = "Spectral")+ 
+               ggplot2::labs(x= "t", y="Number of features", color = "Feature") + ggplot2::theme_light() )
   }
 }
 
@@ -571,16 +570,16 @@ plotHypercube.timeseries = function(my.post, log.time = TRUE, featurenames=TRUE)
 #' plotHypercube.summary(fitted.cube, continuous.time = FALSE)
 plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, continuous.time = TRUE) {
   if(continuous.time == TRUE) {
-    return (ggarrange(plotHypercube.lik.trace(my.post),
+    return (ggpubr::ggarrange(plotHypercube.lik.trace(my.post),
                       plotHypercube.bubbles(my.post),
                       plotHypercube.sampledgraph2(my.post, thresh = f.thresh, use.arc=FALSE, edge.label.size=3) + 
-                        theme(legend.position="none") + expand_limits(x = c(-1, 4)),
+                        ggplot2::theme(legend.position="none") + ggplot2::expand_limits(x = c(-1, 4)),
                       plotHypercube.timehists(my.post, t.thresh), nrow=2, ncol=2) )
   } else {
-    return (ggarrange(plotHypercube.lik.trace(my.post),
+    return (ggpubr::ggarrange(plotHypercube.lik.trace(my.post),
                       plotHypercube.bubbles(my.post),
                       plotHypercube.sampledgraph2(my.post, thresh = f.thresh, use.arc=FALSE, edge.label.size=3, no.times = TRUE) + 
-                        theme(legend.position="none") + expand_limits(x = c(-1, 4)) ) )
+                        ggplot2::theme(legend.position="none") + ggplot2::expand_limits(x = c(-1, 4)) ) )
   }
 }
 
@@ -669,22 +668,23 @@ plotHypercube.influences = function(my.post,
   }
   if(upper.right == TRUE) {
     if(cv.thresh == Inf) {
-      this.plot = ggplot(plot.df, aes(x=xlab,y=factor(ylab, levels=rev(levels(plot.df$ylab))),fill=mean,
+      this.plot = ggplot2::ggplot(plot.df, ggplot2::aes(x=plot.df$xlab,y=factor(plot.df$ylab, levels=rev(levels(plot.df$ylab))),fill=mean,
                                       alpha=precision))
     } else {
-      this.plot = ggplot(plot.df, aes(x=xlab,y=factor(ylab, levels=rev(levels(plot.df$ylab))),fill=mean))
+      this.plot = ggplot2::ggplot(plot.df, ggplot2::aes(x=plot.df$xlab,y=factor(plot.df$ylab, levels=rev(levels(plot.df$ylab))),fill=mean))
     } } else {
       if(cv.thresh == Inf) {
-        this.plot = ggplot(plot.df, aes(x=xlab,y=ylab,fill=mean,alpha=precision)) 
+        this.plot = ggplot2::ggplot(plot.df, ggplot2::aes(x=plot.df$xlab,y=plot.df$ylab,fill=plot.df$mean,alpha=plot.df$precision)) 
       } else {
-        this.plot = ggplot(plot.df, aes(x=xlab,y=ylab,fill=mean)) 
-      } }
-  return(this.plot + geom_tile() +
-           scale_fill_gradient2(low = low.col, mid = "white", high = high.col, midpoint = 0) +
-           scale_alpha_continuous(range=c(0,1)) +
-           theme_light() + 
-           labs(x="Acquired trait", y="(Influenced) rate", fill="Posterior\nmean", alpha="Posterior\nprecision") +
-           theme(axis.text.x = element_text(angle=90)) ) #+
+      this.plot = ggplot2::ggplot(plot.df, ggplot2::aes(x=plot.df$xlab,y=plot.df$ylab,fill=plot.df$mean)) 
+    } }
+
+   return(this.plot + ggplot2::geom_tile() +
+             ggplot2::scale_fill_gradient2(low = low.col, mid = "white", high = high.col, midpoint = 0) +
+             ggplot2::scale_alpha_continuous(range=c(0,1)) +
+             ggplot2::theme_light() + 
+             ggplot2::labs(x="Acquired trait", y="(Influenced) rate", fill="Posterior\nmean", alpha="Posterior\nprecision") +
+             ggplot2::theme(axis.text.x = ggplot2::element_text(angle=90)) ) #+
 }
 
 
@@ -715,34 +715,34 @@ mylabel = function(label, suffix) {
 readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = FALSE) {
   rL = list()
   rL$label = label
-  rL$lik.traces = read.csv(mylabel(label, "-lik.csv"))
+  rL$lik.traces = utils::read.csv(mylabel(label, "-lik.csv"))
   rL$L = rL$lik.traces$L[1]
   rL$model = rL$lik.traces$model[1]
-  rL$best = read.table(mylabel(label, "-best.txt"))
-  rL$posterior.samples = read.table(mylabel(label, "-posterior.txt"))
+  rL$best = utils::read.table(mylabel(label, "-best.txt"))
+  rL$posterior.samples = utils::read.table(mylabel(label, "-posterior.txt"))
   
   if(fulloutput == TRUE) {
     tmpL = list()
-    tmpL$states = read.csv(mylabel(label, "-states.csv"))
-    tmpL$trans = read.csv(mylabel(label, "-trans.csv"))
+    tmpL$states = utils::read.csv(mylabel(label, "-states.csv"))
+    tmpL$trans = utils::read.csv(mylabel(label, "-trans.csv"))
     rL$dynamics = tmpL
   }
   
   if(regularised == TRUE) {
     tmpL = list()
-    tmpL$best = read.table(mylabel(label, "-regularised.txt"))
-    tmpL$reg.process = read.csv(mylabel(label, "-regularising.csv"))
+    tmpL$best = utils::read.table(mylabel(label, "-regularised.txt"))
+    tmpL$reg.process = utils::read.csv(mylabel(label, "-regularising.csv"))
     rL$regularisation = tmpL
   }
   
   if(postlabel != "") {
-    rL$bubbles = read.csv(mylabel(postlabel, "-bubbles.csv"))
-    rL$timehists = read.csv(mylabel(postlabel, "-timehists.csv"))
-    rL$routes = read.table(mylabel(postlabel, "-routes.txt"), sep=" ")
-    rL$betas = read.table(mylabel(postlabel, "-betas.txt"), sep=" ")
-    rL$times = read.table(mylabel(postlabel, "-times.txt"), sep=" ") 
+    rL$bubbles = utils::read.csv(mylabel(postlabel, "-bubbles.csv"))
+    rL$timehists = utils::read.csv(mylabel(postlabel, "-timehists.csv"))
+    rL$routes = utils::read.table(mylabel(postlabel, "-routes.txt"), sep=" ")
+    rL$betas = utils::read.table(mylabel(postlabel, "-betas.txt"), sep=" ")
+    rL$times = utils::read.table(mylabel(postlabel, "-times.txt"), sep=" ") 
     # older versions of code didn't output this, so catch no-file errors
-    tryCatch( { rL$timediffs = read.table(mylabel(postlabel, "-timediffs.txt"), sep=" ") }, 
+    tryCatch( { rL$timediffs = utils::read.table(mylabel(postlabel, "-timediffs.txt"), sep=" ") }, 
               error=function(e) {
                 cat("Didn't find time diff data\n")
               } )
@@ -772,27 +772,27 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
 #' fitted.cube <- HyperTraPS(observations)
 #' writeHyperInf(fitted.cube, "my_cube")
 writeHyperinf = function(wL, label, postlabel = "", fulloutput=FALSE, regularised=FALSE) {
-  write.table(t(wL$best), mylabel(label, "-best.txt"), row.names=FALSE, col.names=FALSE)
-  write.table(wL$posterior.samples, mylabel(label, "-posterior.txt"), row.names=FALSE, col.names=FALSE)
-  write.table(wL$lik.traces, mylabel(label, "-lik.csv"), row.names=FALSE, sep=",", quote=FALSE)
+    utils::write.table(t(wL$best), mylabel(label, "-best.txt"), row.names=FALSE, col.names=FALSE)
+  utils::write.table(wL$posterior.samples, mylabel(label, "-posterior.txt"), row.names=FALSE, col.names=FALSE)
+  utils::write.table(wL$lik.traces, mylabel(label, "-lik.csv"), row.names=FALSE, sep=",", quote=FALSE)
   
   if(fulloutput == TRUE) {
-    write.table(wL$dynamics$states, mylabel(label, "-states.csv"), row.names=FALSE, sep=",", quote=FALSE)
-    write.table(wL$dynamics$trans, mylabel(label, "-trans.csv"), row.names=FALSE, sep=",", quote=FALSE)
+      utils::write.table(wL$dynamics$states, mylabel(label, "-states.csv"), row.names=FALSE, sep=",", quote=FALSE)
+    utils::write.table(wL$dynamics$trans, mylabel(label, "-trans.csv"), row.names=FALSE, sep=",", quote=FALSE)
   }
   
   if(regularised == TRUE) {
-    write.table(t(wL$regularisation$best), mylabel(label, "-regularised.txt"), row.names=FALSE, col.names=FALSE)
-    write.table(wL$regularisation$reg.process, mylabel(label, "-regularising.csv"), row.names=FALSE, sep=",", quote=FALSE)
+      utils::write.table(t(wL$regularisation$best), mylabel(label, "-regularised.txt"), row.names=FALSE, col.names=FALSE)
+    utils::write.table(wL$regularisation$reg.process, mylabel(label, "-regularising.csv"), row.names=FALSE, sep=",", quote=FALSE)
   }
   
   if(postlabel != "") {
-    write.table(wL$bubbles, mylabel(postlabel, "-bubbles.csv"), row.names=FALSE, sep=",", quote=FALSE)
-    write.table(wL$timehists, mylabel(postlabel, "-timehists.csv"), row.names=FALSE, sep=",", quote=FALSE)
-    write.table(wL$routes, mylabel(postlabel, "-routes.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
-    write.table(wL$betas, mylabel(postlabel, "-betas.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
-    write.table(wL$times, mylabel(postlabel, "-times.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
-    write.table(wL$timediffs, mylabel(postlabel, "-timediffs.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
+      utils::write.table(wL$bubbles, mylabel(postlabel, "-bubbles.csv"), row.names=FALSE, sep=",", quote=FALSE)
+    utils::write.table(wL$timehists, mylabel(postlabel, "-timehists.csv"), row.names=FALSE, sep=",", quote=FALSE)
+    utils::write.table(wL$routes, mylabel(postlabel, "-routes.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
+    utils::write.table(wL$betas, mylabel(postlabel, "-betas.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
+    utils::write.table(wL$times, mylabel(postlabel, "-times.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
+    utils::write.table(wL$timediffs, mylabel(postlabel, "-timediffs.txt"), row.names=FALSE, col.names = FALSE, sep=" ", quote=FALSE)
   }
 }
 
@@ -853,7 +853,7 @@ qgramdist = function(my.post.1, my.post.2) {
   # same loop as above
   for(i in 2:L) {
     for(j in 1:length(route.set)) {
-      qgramset = qgrams(route.set[j], q=i)
+      qgramset = stringdist::qgrams(route.set[j], q=i)
       for(k in 1:ncol(qgramset)) {
         ref = which(df.1$gram == colnames(qgramset)[k])
         if(length(ref) == 0) {
@@ -1046,12 +1046,12 @@ plotHypercube.motifseries = function(my.post, t.set=0, thresh = 0.05, label.size
     t.index = t.index + 1
   }
   return(
-    ggplot(df) + geom_rect(aes(xmin=t.index-0.5,xmax=t.index+0.5,ymin=s1,ymax=s2,fill=factor(State)), color="#FFFFFF22") +
-      geom_text(aes(x=t.index,y=(s1+s2)/2,label=label), color="#FFFFFF", size=label.size) + 
-      labs(x = "Time", y="Probability", fill="State") + 
-      scale_fill_viridis(discrete = TRUE, option="inferno", begin=0.2, end=0.8) +
-      theme_light() + theme(legend.position = "none") +
-      scale_x_continuous(breaks = 1:length(t.set), labels=as.character(t.set))
+    ggplot2::ggplot(df) + ggplot2::geom_rect(ggplot2::aes(xmin=t.index-0.5,xmax=t.index+0.5,ymin=s1,ymax=s2,fill=factor(State)), color="#FFFFFF22") +
+      ggplot2::geom_text(ggplot2::aes(x=t.index,y=(s1+s2)/2,label=label), color="#FFFFFF", size=label.size) + 
+      ggplot2::labs(x = "Time", y="Probability", fill="State") + 
+      viridis::scale_fill_viridis(discrete = TRUE, option="inferno", begin=0.2, end=0.8) +
+      ggplot2::theme_light() + ggplot2::theme(legend.position = "none") +
+      ggplot2::scale_x_continuous(breaks = 1:length(t.set), labels=as.character(t.set))
   )
 }
 
@@ -1146,8 +1146,8 @@ plotHypercube.influencegraph = function(my.post,
   to.g.df = plot.df[abs(plot.df$mean)>thresh,1:3]
   colnames(to.g.df) = c("From", "To", "Weight")
   to.g.df$Direction = factor(as.character(sign(to.g.df$Weight)), levels=c("-1", "1"))
-  g = graph_from_data_frame(to.g.df)
-  this.plot = ggraph(g, layout="kk")
+  g = igraph::graph_from_data_frame(to.g.df)
+  this.plot = ggraph::ggraph(g, layout="kk")
   if(red.green == TRUE) {
     low.col = "#FF8888"
     high.col = "#338833"
@@ -1155,11 +1155,11 @@ plotHypercube.influencegraph = function(my.post,
     low.col = "#FF8888"
     high.col = "#8888FF"
   }
-  return(  this.plot + geom_edge_arc(aes(colour=Direction, alpha=abs(Weight), width=abs(Weight)),
+  return(  this.plot + ggraph::geom_edge_arc(ggplot2::aes(colour=Direction, alpha=abs(to.g.df$Weight), width=abs(to.g.df$Weight)),
                                      strength=0.1, arrow=arrow(length=unit(0.2, "inches"), type="closed")) +
-             geom_node_label(aes(label=name), size=label.size) + theme_void() +
-             labs(edge_width="Magnitude", edge_alpha="Magnitude", colour="Direction") +
-             scale_edge_colour_manual(values = setNames(c(low.col, high.col), factor(c("-1", "1"))))
+             ggraph::geom_node_label(ggplot2::aes(label=name), size=label.size) + ggplot2::theme_void() +
+             ggplot2::labs(edge_width="Magnitude", edge_alpha="Magnitude", colour="Direction") +
+             ggraph::scale_edge_colour_manual(values = setNames(c(low.col, high.col), factor(c("-1", "1"))))
   )
   
 }
@@ -1182,21 +1182,21 @@ plotHypercube.influencegraph = function(my.post,
 #' plotHypercube.predicton(prediction)
 plotHypercube.prediction = function(prediction, max.size = 30) {
   if(length(prediction$states) > 0) {
-    g.1 = ggplot(prediction, aes(label=states, size=probs), angle=0) + 
-      geom_text_wordcloud() + scale_size_area(max_size = max.size) +
-      theme_minimal()
-    g.2 = ggplot(prediction, aes(x=states, y=probs)) +
-      labs(x = "State", y = "Probability") +
-      geom_col() + theme_light()  
+    g.1 = ggplot2::ggplot(prediction, ggplot2::aes(label=states, size=probs), angle=0) + 
+      ggwordcloud::geom_text_wordcloud() + ggplot2::scale_size_area(max_size = max.size) +
+      ggplot2::theme_minimal()
+    g.2 = ggplot2::ggplot(prediction, ggplot2::aes(x=states, y=probs)) +
+      ggplot2::labs(x = "State", y = "Probability") +
+      ggplot2::geom_col() + ggplot2::theme_light()  
   } else {
-    g.1 = ggplot(prediction$state.probs, aes(label=state, size=prob), angle=0) + 
-      geom_text_wordcloud() + scale_size_area(max_size = max.size) +
-      theme_minimal()
-    g.2 = ggplot(prediction$locus.probs, aes(x=factor(locus), y=prob)) + 
-      labs(x = "State", y = "Probability") +
-      geom_col() + theme_light() + labs(x="Feature",y="Probability feature is a 1")
+    g.1 = ggplot2::ggplot(prediction$state.probs, ggplot2::aes(label=state, size=prob), angle=0) + 
+      ggwordcloud::geom_text_wordcloud() + ggplot2::scale_size_area(max_size = max.size) +
+      ggplot2::theme_minimal()
+    g.2 = ggplot2::ggplot(prediction$locus.probs, ggplot2::aes(x=factor(locus), y=prob)) + 
+      ggplot2::labs(x = "State", y = "Probability") +
+      ggplot2::geom_col() + ggplot2::theme_light() + ggplot2::labs(x="Feature",y="Probability feature is a 1")
   }
-  return(ggarrange(g.1, g.2))
+  return(ggpubr::ggarrange(g.1, g.2))
 }
 
 # return sampled state probabilities at a given time tau (only well-posed for the continuous time case)
@@ -1231,20 +1231,20 @@ prob.by.time = function(my.post, tau) {
 curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
   if(is.character(tree.src)) {
     # read in Newick tree and root
-    my.tree = read.tree(tree.src)
-    my.rooted.tree = root(my.tree, 1, resolve.root = TRUE)
+    my.tree = ape::read.tree(tree.src)
+    my.rooted.tree = ape::root(my.tree, 1, resolve.root = TRUE)
   } else {
     my.rooted.tree = tree.src
   }
  
   if(is.character(data.src)) {
     # read in barcode data
-    my.data = read.csv(data.src, header=data.header)
+    my.data = utils::read.csv(data.src, header=data.header)
     colnames(my.data)[1] = "label"
   } else {
     my.data = data.src
   }
-  
+ 
   match.set = match(my.data$label, my.rooted.tree$tip.label)
   if(any(is.na(match.set))) {
     message("Found observations that didn't correspond to tips of the tree!")
@@ -1257,7 +1257,7 @@ curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
   }
   
   # prune tree to include only those tips in the barcode dataset
-  tree = drop.tip(my.rooted.tree,
+  tree = ape::drop.tip(my.rooted.tree,
                   my.rooted.tree$tip.label[-match.set])
   
   tree$node.label = as.character(length(tree$tip.label) + 1:tree$Nnode)
@@ -1283,7 +1283,7 @@ curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
       # see if this node exists in our barcode dataset
       if(!(this.label %in% my.data$label)) {
         # if not, check to see if its children are all characterised
-        descendant.refs = Children(tree, tree.ref)
+        descendant.refs = phangorn::Children(tree, tree.ref)
         if(all(tree.labels[descendant.refs] %in% my.data$label)) {
           
           ## ancestral state reconstruction
@@ -1346,8 +1346,8 @@ plotHypercube.curated.tree = function(tree.set, scale.fn = geom_treescale(y=20, 
   rownames(data.m) = tree.set$data[,1]
   data.m = tree.set$data[1:length(tree.set$tree$tip.label), 2:ncol(tree.set$data)]
   rownames(data.m) = tree.set$data$label[1:length(tree.set$tree$tip.label)]
-  this.plot = gheatmap(ggtree(tree.set$tree) + scale.fn, data.m, low="white", high="#AAAAAA",
-                       colnames_angle=90, hjust=0) +
-    theme(legend.position="none")
+  this.plot = ggtree::gheatmap(ggtree::ggtree(tree.set$tree) + scale.fn, data.m, low="white", high="#AAAAAA",
+                               colnames_angle=90, hjust=0) +
+    ggplot2::theme(legend.position="none")
   return(this.plot)
 }
