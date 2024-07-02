@@ -7,18 +7,6 @@
 NULL
 #> NULL
 
-require(Rcpp)
-require(ggplot2)
-require(ggpubr)
-require(ggraph)
-require(ggwordcloud)
-require(igraph)
-require(stringr)
-require(stringdist)
-require(phangorn)
-require(phytools)
-require(ggtree)
-
 DecToBin <- function(x, len) {
   s = c()
   for(j in (len-1):0)
@@ -163,7 +151,7 @@ plotHypercube.bubbles.coarse = function(my.post, reorder=FALSE, transpose=FALSE,
 #'                          0,1,1,
 #'                          1,1,1), byrow=TRUE, ncol=3)
 #' fitted.cube <- HyperTraPS(observations)
-#' plotHypercube.graph(fitted.cube)
+#' plotHypercube.graph(fitted.cube, node.labels = FALSE)
 plotHypercube.graph = function(my.post, thresh = 0.05, 
                                node.labels = TRUE,
                                node.label.size = 2,
@@ -208,7 +196,7 @@ plotHypercube.graph = function(my.post, thresh = 0.05,
 #'                          0,1,1,
 #'                          1,1,1), byrow=TRUE, ncol=3)
 #' fitted.cube <- HyperTraPS(observations)
-#' plotHypercube.sampledgraph(fitted.cube)
+#' plotHypercube.sampledgraph(fitted.cube, node.labels = FALSE)
 plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, node.labels = TRUE, node.label.size = 2) {
   edge.from = edge.to = c()
   bigL = my.post$L
@@ -273,7 +261,10 @@ plotHypercube.sampledgraph = function(my.post, max.samps = 1000, thresh = 0.05, 
 #'                          0,1,1,
 #'                          1,1,1), byrow=TRUE, ncol=3)
 #' fitted.cube <- HyperTraPS(observations)
-#' plotHypercube.sampledgraph2(fitted.cube, no.times = TRUE, use.timediffs = FALSE)
+#' plotHypercube.sampledgraph2(fitted.cube, 
+#'                             no.times = TRUE, 
+#'                             use.timediffs = FALSE, 
+#'                             node.labels = FALSE)
 plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05, 
                                        node.labels = TRUE, use.arc = FALSE, no.times = FALSE, 
                                        small.times = FALSE, times.offset = c(0.1,-0.1),
@@ -363,7 +354,7 @@ plotHypercube.sampledgraph2 = function(my.post, max.samps = 1000, thresh = 0.05,
                                            position = ggplot2::position_nudge(x=times.offset[1], y = times.offset[2])) 
   }
   if(node.labels == TRUE) {
-    this.plot = this.plot + ggraph::geom_node_text(ggplot2::aes(label=trans.g$binname),size=node.label.size) 
+    this.plot = this.plot + ggraph::geom_node_text(ggplot2::aes(label=igraph::V(trans.g)$binname),size=node.label.size) 
   }
   
   return(this.plot)
@@ -443,7 +434,7 @@ plotHypercube.timehists = function(my.post, t.thresh = 20, featurenames = TRUE, 
 #'                          0,0,1,
 #'                          0,1,1,
 #'                          1,1,1), byrow=TRUE, ncol=3)
-#' fitted.cube <- HyperTraPS(observations)
+#' fitted.cube <- HyperTraPS(observations, regularise = TRUE)
 #' plotHypercube.regularisation(fitted.cube)
 plotHypercube.regularisation = function(my.post) {
   return(ggplot2::ggplot(my.post$regularisation$reg.process, 
@@ -562,12 +553,20 @@ plotHypercube.timeseries = function(my.post, log.time = TRUE, featurenames=TRUE)
 #' @return a ggplot
 #' @export
 #' @examples
-#' observations <- matrix(c(0,0,0,
-#'                          0,0,1,
-#'                          0,1,1,
-#'                          1,1,1), byrow=TRUE, ncol=3)
-#' fitted.cube <- HyperTraPS(observations)
-#' plotHypercube.summary(fitted.cube, continuous.time = FALSE)
+#' ancestors   <- matrix(c(0,0,0,
+#'                         0,0,1), ncol=3)
+#' descendants <- matrix(c(0,1,1,
+#'                         1,1,1), ncol=3)
+#' start       <- c(0,1)
+#' end         <- c(2,5)
+#' featurenames = c("A", "B", "C")
+#'
+#' fitted.cube <- HyperTraPS(descendants, 
+#'                           initialstates = ancestors,
+#'                           starttimes = start,
+#'                           endtimes = end,
+#'                           featurenames = featurenames)
+#' plotHypercube.summary(fitted.cube)
 plotHypercube.summary = function(my.post, f.thresh = 0.05, t.thresh = 20, continuous.time = TRUE) {
   if(continuous.time == TRUE) {
     return (ggpubr::ggarrange(plotHypercube.lik.trace(my.post),
@@ -770,7 +769,7 @@ readHyperinf = function(label, postlabel = "", fulloutput=FALSE, regularised = F
 #'                          0,1,1,
 #'                          1,1,1), byrow=TRUE, ncol=3)
 #' fitted.cube <- HyperTraPS(observations)
-#' writeHyperInf(fitted.cube, "my_cube")
+#' writeHyperinf(fitted.cube, "my_cube")
 writeHyperinf = function(wL, label, postlabel = "", fulloutput=FALSE, regularised=FALSE) {
     utils::write.table(t(wL$best), mylabel(label, "-best.txt"), row.names=FALSE, col.names=FALSE)
   utils::write.table(wL$posterior.samples, mylabel(label, "-posterior.txt"), row.names=FALSE, col.names=FALSE)
@@ -814,13 +813,13 @@ pullFeatureLabels = function(my.post) {
 #'                            0,0,1,
 #'                            0,1,1,
 #'                            1,1,1), byrow=TRUE, ncol=3)
-#' fitted.cube.1 <- HyperTraPS(observations)
+#' fitted.cube.1 <- HyperTraPS(observations.1)
 #' observations.2 <- matrix(c(0,0,0,
 #'                            1,0,0,
 #'                            1,1,0,
 #'                            1,1,1), byrow=TRUE, ncol=3)
-#' fitted.cube.2 <- HyperTraPS(observations)
-#' plotHypercube.bubbles(fitted.cube.1, fitted.cube.2)
+#' fitted.cube.2 <- HyperTraPS(observations.2)
+#' qgramdist(fitted.cube.1, fitted.cube.2)
 qgramdist = function(my.post.1, my.post.2) {
   # pull routes and probabilities for first cube
   routes = table(apply(my.post.1$routes, 1, paste, collapse=""))
@@ -833,7 +832,7 @@ qgramdist = function(my.post.1, my.post.2) {
     # loop through routes found on the cube
     for(j in 1:length(route.set)) {
       # get q-grams from this route
-      qgramset = qgrams(route.set[j], q=i)
+      qgramset = stringdist::qgrams(route.set[j], q=i)
       # sloppy. if this q-gram exists in our set, increase its score, otherwise add it
       for(k in 1:ncol(qgramset)) {
         ref = which(df.1$gram == colnames(qgramset)[k])
@@ -1075,7 +1074,7 @@ plotHypercube.motifseries = function(my.post, t.set=0, thresh = 0.05, label.size
 #'                          0,1,1,
 #'                          1,1,1), byrow=TRUE, ncol=3)
 #' fitted.cube <- HyperTraPS(observations)
-#' plotHypercube.influencegraph(fitted.cube)
+#' plotHypercube.influencegraph(fitted.cube, featurenames=FALSE)
 plotHypercube.influencegraph = function(my.post, 
                                         featurenames=TRUE, 
                                         use.regularised = FALSE, 
@@ -1156,7 +1155,7 @@ plotHypercube.influencegraph = function(my.post,
     high.col = "#8888FF"
   }
   return(  this.plot + ggraph::geom_edge_arc(ggplot2::aes(colour=Direction, alpha=abs(to.g.df$Weight), width=abs(to.g.df$Weight)),
-                                     strength=0.1, arrow=arrow(length=unit(0.2, "inches"), type="closed")) +
+                                     strength=0.1, arrow=grid::arrow(length=grid::unit(0.2, "inches"), type="closed")) +
              ggraph::geom_node_label(ggplot2::aes(label=name), size=label.size) + ggplot2::theme_void() +
              ggplot2::labs(edge_width="Magnitude", edge_alpha="Magnitude", colour="Direction") +
              ggraph::scale_edge_colour_manual(values = setNames(c(low.col, high.col), factor(c("-1", "1"))))
@@ -1179,7 +1178,7 @@ plotHypercube.influencegraph = function(my.post,
 #'                          1,1,1), byrow=TRUE, ncol=3)
 #' fitted.cube <- HyperTraPS(observations)
 #' prediction <- predictHiddenVals(fitted.cube, c(0,2,1))
-#' plotHypercube.predicton(prediction)
+#' plotHypercube.prediction(prediction)
 plotHypercube.prediction = function(prediction, max.size = 30) {
   if(length(prediction$states) > 0) {
     g.1 = ggplot2::ggplot(prediction, ggplot2::aes(label=states, size=probs), angle=0) + 
