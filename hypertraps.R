@@ -109,11 +109,11 @@ plotHypercube.graph = function(my.post, thresh = 0.05,
     theme_graph(base_family="sans") #aes(label=bs)) + theme_graph() 
   if(node.labels == TRUE) {
     if(node.labels.box == TRUE) {
-    this.plot = this.plot + geom_node_label(aes(label=binname),
-                                                                size = node.label.size) 
+      this.plot = this.plot + geom_node_label(aes(label=binname),
+                                              size = node.label.size) 
     } else {
       this.plot = this.plot + geom_node_text(aes(label=binname),
-                                              size = node.label.size) 
+                                             size = node.label.size) 
     } 
   }
   return(this.plot)
@@ -321,7 +321,7 @@ plotHypercube.motifs = function(my.post,
       this.label = labels[i+1]
       if(label.scheme != "full" & !(j %in% sample.set)) { this.label = "" }
       rdf = rbind(rdf, data.frame(Index=i, TextLabel=this.label, Label=labels[i+1], Time=j, Start=startprob, End=startprob+thisprob, Probability=thisprob))
- 
+      
       startprob = startprob+thisprob
     }
   }
@@ -450,14 +450,14 @@ plotHypercube.influences = function(my.post,
       if(cv.thresh == Inf) {
         this.plot = ggplot(plot.df, aes(x=xlab,y=ylab,fill=mean,alpha=precision)) 
       } else {
-      this.plot = ggplot(plot.df, aes(x=xlab,y=ylab,fill=mean)) 
-    } }
-   return(this.plot + geom_tile() +
-             scale_fill_gradient2(low = low.col, mid = "white", high = high.col, midpoint = 0) +
-             scale_alpha_continuous(range=c(0,1)) +
-             theme_light() + 
-             labs(x="Acquired trait", y="(Influenced) rate", fill="Posterior\nmean", alpha="Posterior\nprecision") +
-             theme(axis.text.x = element_text(angle=90)) ) #+
+        this.plot = ggplot(plot.df, aes(x=xlab,y=ylab,fill=mean)) 
+      } }
+  return(this.plot + geom_tile() +
+           scale_fill_gradient2(low = low.col, mid = "white", high = high.col, midpoint = 0) +
+           scale_alpha_continuous(range=c(0,1)) +
+           theme_light() + 
+           labs(x="Acquired trait", y="(Influenced) rate", fill="Posterior\nmean", alpha="Posterior\nprecision") +
+           theme(axis.text.x = element_text(angle=90)) ) #+
 }
 
 
@@ -796,7 +796,7 @@ plotHypercube.influencegraph = function(my.post,
              labs(edge_width="Magnitude", edge_alpha="Magnitude", colour="Direction") +
              scale_edge_colour_manual(values = setNames(c(low.col, high.col), factor(c("-1", "1"))))
   )
-
+  
 }
 
 plotHypercube.prediction = function(prediction, max.size = 30) {
@@ -833,14 +833,22 @@ prob.by.time = function(my.post, tau) {
   return(df)
 }
 
-curate.tree = function(tree.filename, data.filename, losses = FALSE, data.header=TRUE) {
-  # read in Newick tree and root
-  my.tree = read.tree(tree.filename)
-  my.rooted.tree = root(my.tree, 1, resolve.root = TRUE)
+curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
+  if(is.character(tree.src)) {
+    # read in Newick tree and root
+    my.tree = read.tree(tree.src)
+    my.rooted.tree = root(my.tree, 1, resolve.root = TRUE)
+  } else {
+    my.rooted.tree = tree.src
+  }
   
-  # read in barcode data
-  my.data = read.csv(data.filename, header=data.header)
-  colnames(my.data)[1] = "label"
+  if(is.character(data.src)) {
+    # read in barcode data
+    my.data = read.csv(data.src, header=data.header)
+    colnames(my.data)[1] = "label"
+  } else {
+    my.data = data.src
+  }
   
   match.set = match(my.data$label, my.rooted.tree$tip.label)
   if(any(is.na(match.set))) {
@@ -859,7 +867,7 @@ curate.tree = function(tree.filename, data.filename, losses = FALSE, data.header
   
   tree$node.label = as.character(length(tree$tip.label) + 1:tree$Nnode)
   tree.labels = c(tree$tip.label, tree$node.label)
-
+  
   if(any(duplicated(tree$tip.label))) {
     message("Duplicates in tree tips!")
   }
@@ -931,12 +939,12 @@ curate.tree = function(tree.filename, data.filename, losses = FALSE, data.header
   return(rL)
 }
 
-plotHypercube.curated.tree = function(tree.set) {
+plotHypercube.curated.tree = function(tree.set, scale.fn = geom_treescale(y=20, linesize=3, width =0.01)) {
   data.m = tree.set$data[,2:ncol(tree.set$data)]
   rownames(data.m) = tree.set$data[,1]
   data.m = tree.set$data[1:length(tree.set$tree$tip.label), 2:ncol(tree.set$data)]
   rownames(data.m) = tree.set$data$label[1:length(tree.set$tree$tip.label)]
-  this.plot = gheatmap(ggtree(tree.set$tree), data.m, low="white", high="#AAAAAA",
+  this.plot = gheatmap(ggtree(tree.set$tree) + scale.fn, data.m, low="white", high="#AAAAAA",
                        colnames_angle=90, hjust=0) +
     theme(legend.position="none")
   return(this.plot)
