@@ -848,6 +848,7 @@ curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
     colnames(my.data)[1] = "label"
   } else {
     my.data = data.src
+    colnames(my.data)[1] = "label"
   }
   
   match.set = match(my.data$label, my.rooted.tree$tip.label)
