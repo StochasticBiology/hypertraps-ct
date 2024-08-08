@@ -940,12 +940,20 @@ curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
   return(rL)
 }
 
-plotHypercube.curated.tree = function(tree.set, scale.fn = geom_treescale(y=20, linesize=3, width =0.01)) {
+plotHypercube.curated.tree = function(tree.set, 
+                                      scale.fn = geom_treescale(y=20, linesize=3, width =0.01),
+                                      names = FALSE) {
   data.m = tree.set$data[,2:ncol(tree.set$data)]
   rownames(data.m) = tree.set$data[,1]
   data.m = tree.set$data[1:length(tree.set$tree$tip.label), 2:ncol(tree.set$data)]
   rownames(data.m) = tree.set$data$label[1:length(tree.set$tree$tip.label)]
-  this.plot = gheatmap(ggtree(tree.set$tree) + scale.fn, data.m, low="white", high="#AAAAAA",
+  g.core = ggtree(tree.set$tree) + scale.fn
+  if(names == TRUE) {
+    g.core = ggtree(tree.set$tree) + scale.fn + geom_tiplab(size=3, alpha=0.8, nudge_y=0.4, hjust=1)
+  } else {
+    ggtree(tree.set$tree) + scale.fn
+  }
+  this.plot = gheatmap(g.core, data.m, low="white", high="#AAAAAA",
                        colnames_angle=90, hjust=0) +
     theme(legend.position="none")
   return(this.plot)
