@@ -920,7 +920,8 @@ curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
                                        to=paste0(my.data[d.row,2:ncol(new.data)], collapse=""),
                                        time=tree$edge.length[e.ref],
                                        from.node=this.label,
-                                       to.node=tree.labels[d.ref]))
+                                       to.node=tree.labels[d.ref],
+                                       stringsAsFactors = FALSE))
           }
           # we made a change, so keep the loop going
           change = T
