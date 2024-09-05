@@ -547,7 +547,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
     {
     case 0: DELTA = 0; break;
     case 1: DELTA = 0.005; MU = 0.1; break;
-    case 2: DELTA = 0.05; MU = 1.; break;
+    case 2: DELTA = 0.01; MU = 1.; break;
     case 3: DELTA = 0.05; MU = 1.; break;
     case 4: DELTA = 0.1; MU = 1.; break;
     case 5: DELTA = 0.25; MU = 1.; break;
