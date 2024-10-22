@@ -30,10 +30,12 @@ int NTRAJ = 100;
 int NSAMP = 10;
 int TMODULE = 100;
 
+// do we want to output every iteration (MCMC sample etc?)
 int _EVERYITERATION = 0;
 
+// (log)likelihood scaling -- usually won't be needed
 double lscale = 1;
-
+// tracking scale of numerical error
 double num_error = 0;
 
 // control output
@@ -43,6 +45,7 @@ int SUPERVERBOSE = 0;
 int APM_VERBOSE = 0;
 int POST_VERBOSE = 1;
 
+// calling exit() from code within R crashes the environment; this is a more robust approach
 void myexit(int code)
 {
 #ifndef _USE_CODE_FOR_R
@@ -87,6 +90,7 @@ double gsl_ran_gaussian(const double sigma)
   return sigma * y * sqrt (-2.0 * log (r2) / r2);
 }
 
+// quick 2^n
 int mypow2(int r)
 {
   int s = 1;
@@ -96,6 +100,7 @@ int mypow2(int r)
   return s;
 }
 
+// convert a binary string of length LEN to an integer
 int BinToDec(int *state, int LEN)
 {
   int v = 1;
@@ -110,6 +115,7 @@ int BinToDec(int *state, int LEN)
   return val;
 }
 
+// return the number of parameters of a model structure (not all these are independent; see paper)
 int nparams(int model, int LEN)
 {
   switch(model)
@@ -124,6 +130,8 @@ int nparams(int model, int LEN)
     }
 }
 
+// given an array of parameters (ntrans) and a model structure (model) for a number of features (LEN)
+// return the weight of the edge that corresponds to changing feature "locus" from state "state"
 double RetrieveEdge(int *state, int locus, double *ntrans, int LEN, int model)
 {
   double rate;
@@ -176,6 +184,7 @@ double RetrieveEdge(int *state, int locus, double *ntrans, int LEN, int model)
 // 111, 112, 113,      122, 123,           133,                     222, 223,           233,                                         333
 // 1     12   13        12  123            13                        2   23              23                                           3
 
+// set up a "null" (or random) initial parameter set for a given model
 void InitialMatrix(double *trans, int len, int model, int userandom)
 {
   int NVAL;
@@ -197,7 +206,7 @@ void InitialMatrix(double *trans, int len, int model, int userandom)
     }
 }
 
-
+// read a set of parameters from a file (e.g. for a previous inference run)
 void ReadMatrix(double *trans, int len, int model, char *fname)
 {
   int NVAL;
@@ -226,8 +235,8 @@ void ReadMatrix(double *trans, int len, int model, char *fname)
   fclose(fp);
 }
 
-
-
+// output detailed information from a fitted model (parameters in "ntrans"): state probabilities and individual transition rates for edges
+// won't be feasible for larger numbers of features
 void OutputStatesTrans(char *label, double *ntrans, int LEN, int model)
 {
   int i, j, k, a;
@@ -242,36 +251,39 @@ void OutputStatesTrans(char *label, double *ntrans, int LEN, int model)
   int found;
   char statefile[300], transfile[300];
   FILE *fp;
-  
+
+  // prepare output files
   sprintf(transfile, "%s-trans.csv", label);
   sprintf(statefile, "%s-states.csv", label);
   
   fp = fopen(transfile, "w");
   fprintf(fp, "From,To,Probability,Flux\n");
- 
+
+  // allocate and initialise data structures
   probs = (double*)malloc(sizeof(double)*mypow2(LEN));
   active = (int*)malloc(sizeof(int)*mypow2(LEN));
   newactive = (int*)malloc(sizeof(int)*mypow2(LEN));
 
+  // "probs" will store state probabilities; level the "level" of the hypercube we're currently at
+  // "active" tracks which paths are currently under active calculation
   for(i = 0; i < mypow2(LEN); i++)
     probs[i] = 0;
   level = 0;
-  
+
+  // start with probability in 0^L and a single active path
   probs[0] = 1;
-  
   active[0] = 0;
   nactive = 1;
-  
+
+  // while we haven't crossed the whole cube
   while(nactive > 0)
     {
       newnactive = 0;
-      /*      printf("%i active\n", nactive);
-	      for(a = 0; a < nactive; a++)
-	      printf("%i ", active[a]);
-	      printf("\n\n"); */
-	    
+
+      // go through active paths
       for(a = 0; a < nactive; a++)
 	{
+	  // pull the state of this active path
 	  src = active[a];
 	  statedec = src;
 	  for(j = LEN-1; j >= 0; j--)
@@ -285,6 +297,7 @@ void OutputStatesTrans(char *label, double *ntrans, int LEN, int model)
 		state[LEN-1-j] = 0;
 	    }
 
+	  // pull the transitions from this state
 	  totrate = 0;
 	  for(j = 0; j < LEN; j++)
 	    {
@@ -296,6 +309,8 @@ void OutputStatesTrans(char *label, double *ntrans, int LEN, int model)
 		}
 	    }
 
+	  // go through each outgoing edge, outputting its transition rate (and the probability flux at this point)
+	  // and spawning a new active path if the destination node doesn't already have one
 	  for(j = 0; j < LEN; j++)
 	    {
 	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
@@ -317,6 +332,7 @@ void OutputStatesTrans(char *label, double *ntrans, int LEN, int model)
 		}
 	    }
 	}
+      // update the list of active paths
       for(a = 0; a < newnactive; a++)
 	active[a] = newactive[a];
       nactive = newnactive;
@@ -324,6 +340,7 @@ void OutputStatesTrans(char *label, double *ntrans, int LEN, int model)
     }
   fclose(fp);
 
+  // output state probabilities
   fp = fopen(statefile, "w");
   fprintf(fp, "State,Probability\n");
   
@@ -336,10 +353,7 @@ void OutputStatesTrans(char *label, double *ntrans, int LEN, int model)
   free(active);
   free(newactive);
   free(probs);
-
 }
-
-
 
 // pick a new locus to change in state "state"; return it in "locus" and keep track of the on-course probability in "prob". "ntrans" is the transition matrix
 void PickLocus(int *state, double *ntrans, int *targ, int *locus, double *prob, double *beta, int LEN, int model)
@@ -876,6 +890,7 @@ double GetLikelihoodCoalescentChange(int *matrix, int len, int ntarg, double *nt
   return loglik;
 }
 
+// estimate gradients of likelihood from a given parameterisation
 void GetGradients(int *matrix, int len, int ntarg, double *trans, double *tau1s, double *tau2s, double *gradients, double scale, int model, int PLI)
 {
   double lik, newlik;
@@ -891,6 +906,7 @@ void GetGradients(int *matrix, int len, int ntarg, double *trans, double *tau1s,
     }
 }
 
+// stepwise regularise a parameter set by minimising likelihood loss as parameters are pruned
 void Regularise(int *matrix, int len, int ntarg, double *ntrans, double *tau1s, double *tau2s, int model, char *labelstr, int PLI, int outputtransitions)
 {
   int i, j;
@@ -908,7 +924,8 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, double *tau1s, 
 
   if(model == -1) normedval = -20;
   else normedval = 0;
-  
+
+  // initialise the setup and estimate initial likelihood and ICs
   NVAL = nparams(model, len);
   best = (double*)malloc(sizeof(double)*NVAL);
   
@@ -920,6 +937,7 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, double *tau1s, 
   for(i = 0; i < NVAL; i++)
     best[i] = ntrans[i];
 
+  // prepare output file
   sprintf(fstr, "%s-regularising.csv", labelstr);
   fp = fopen(fstr, "w");
   fprintf(fp, "nparam,removed,log.lik,AIC,BIC\n");
@@ -962,6 +980,7 @@ void Regularise(int *matrix, int len, int ntarg, double *ntrans, double *tau1s, 
 	    best[i] = ntrans[i];
 	}
     }
+  // output statistics of the process
   sprintf(fstr, "%s-regularised.txt", labelstr);
   fp = fopen(fstr, "w");
   for(i = 0; i < NVAL; i++)
@@ -1137,6 +1156,7 @@ void Label(char *names, int len, char *fname)
   free(tmp);
 }
 
+// read a prior specification from a file (in [min, max] * (number of parameters) form)
 void ReadPriors(char *priorfile, int NVAL, double *priormin, double *priormax)
 {
   int i;
@@ -1162,6 +1182,7 @@ void ReadPriors(char *priorfile, int NVAL, double *priormin, double *priormax)
   }
 }
 
+// output command-line options
 void helpandquit(int debug)
 {
   printf("Options [defaults]:\n\n--obs file.txt\t\tobservations file [NA]\n--transitionformat\tInterpet obs matrix as paired before-after observations [0]\n--initialstates file.txt\tinitial states file (if not in 'obs') [NA]\n--starttimes file.txt\tstart timings file for CT [NA]\n--endtimes file.txt\tend timings file for CT [NA]\n--priors file.txt\tspecify prior range for parameters\n--params file.txt\tuse parameterisation in file as initial guess\n--lscale X\t\tscale for observation counts\n--seed N\t\trandom seed [0]\n--length N\t\tchain length (10^N) [3]\n--kernel N\t\tkernel index [5]\n--walkers N\t\tnumber of walker samplers for HyperTraPS [200]\n--losses \t\tconsider losses (not gains) [OFF]\n--apm \t\t\tauxiliary pseudo-marginal sampler [OFF]\n--sgd\t\t\tuse gradient descent [OFF]\n--sgdscale X\t\tset jump size for SGD [0.01]\n--sa\t\t\tuse simulated annealing [OFF]\n--model N\t\tparameter structure (-1 full, 0-4 polynomial degree) [2]\n--pli\t\t\tuse phenotypic landscape inference [0]\n--regularise\t\tsimple stepwise regularisation [OFF]\n--penalty X\t\tpenalise likelihood by X per nonzero param [0]\n--label label\t\tset output file label [OBS FILE AND STATS OF RUN]\n--outputtransitions N\toutput transition matrix (0 no, 1 yes) [1]\n--help\t\t\t[show this message]\n--debug\t\t\t[show this message and detailed debugging options]\n\n");
@@ -1250,9 +1271,9 @@ int main(int argc, char *argv[])
   double penalty;
   int regterm;
   
-  printf("\nHyperTraPS-CT\n    https://github.com/StochasticBiology/HyperTraPS-CT\n\n");
+  printf("\nHyperTraPS-CT\n    https://github.com/StochasticBiology/HyperTraPS-CT\n    Please cite Aga et al., PLoS Comput Biol 20 e1012393 (2024)\n\n");
 
-  // default values
+  // default values for parameters
   spectrumtype = 0;
   lengthindex = 3;
   kernelindex = 5;
@@ -1594,11 +1615,8 @@ int main(int argc, char *argv[])
       sprintf(likstr, "%s-lik.csv", labelstr);
       fp = fopen(likstr, "w"); fprintf(fp, "Step,L,model,nparam,LogLikelihood1,LogLikelihood2\n"); fclose(fp);
   
-      //      sprintf(besttransstr, "%s-trans.csv", labelstr);
       sprintf(beststatesstr, "%s", labelstr);
   
-     
-     
       if(readparams == 1)
 	{
 	  // read parameters
@@ -1636,10 +1654,10 @@ int main(int argc, char *argv[])
       time(&end_t);
       gettimeofday(&t_stop, NULL);
       diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
-      //  diff_t = difftime(end_t, start_t);
       printf("One likelihood estimation took %e seconds.\nInitial likelihood is %e\n", diff_t, lik);
       lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, model, PLI) - regterm*penalty;
       printf("Second guess is %e\n", lik);
+      
       // MCMC or simulated annealing
       if(searchmethod == 0 || searchmethod == 2)
 	{
@@ -1874,8 +1892,11 @@ int main(int argc, char *argv[])
     {
       Regularise(matrix, len, ntarg, besttrans, tau1s, tau2s, model, labelstr, PLI, outputtransitions);
     }
+
+  // posterior analysis is the typical followup after the inference process
   if(posterior_analysis)
     {
+      // set up and check status
       printf("\nRunning posterior analysis...\n");
       if(inference == 1)
         sprintf(postfile, "%s", shotstr);

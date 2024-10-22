@@ -3,11 +3,13 @@ using namespace Rcpp;
 #define _USE_CODE_FOR_R 1
 #include "hypertraps.c"
 
+// function definitions -- for content see comments preceding each function
 List PosteriorAnalysis(List L,
 		       Nullable<CharacterVector> featurenames_arg,
 		       int use_regularised,
 		       int limited_output,
-		       int samples_per_row);
+		       int samples_per_row,
+		       int outputtransitions);
 List RegulariseR(int *matrix,
 		 int len, int ntarg, double *ntrans, double *tau1s, double *tau2s, int model, int PLI,
 		 int limited_output);
@@ -36,8 +38,9 @@ List HyperTraPS(NumericMatrix obs,
 		NumericVector output_transitions,
 		Nullable<CharacterVector> featurenames);
 
-
-
+// R version of detailed output
+// given a parameter set "ntrans" for a model of structure "model" and "LEN" features
+// return a named list containing (a) probabilities of occupancy of each state and (b) transition rates and fluxes for each edge
 List OutputStatesR(double *ntrans, int LEN, int model)
 {
   int i, j, k, a;
@@ -51,33 +54,35 @@ List OutputStatesR(double *ntrans, int LEN, int model)
   int level;
   int found;
   
-  //  fp = fopen(beststatesstr, "w");
-  //fprintf(fp, "State Probability\n");
+  // vectors for output
   NumericVector state_v, prob_v, prob_dt_v;
   NumericVector from_v, to_v, edgeprob_v, flux_v;
 
+  // allocate memory for statistics
   probs = (double*)malloc(sizeof(double)*mypow2(LEN));
   active = (int*)malloc(sizeof(int)*mypow2(LEN));
   newactive = (int*)malloc(sizeof(int)*mypow2(LEN));
+
+  // "probs" will store state probabilities; level the "level" of the hypercube we're currently at
+  // "active" tracks which paths are currently under active calculation
   for(i = 0; i < mypow2(LEN); i++)
     probs[i] = 0;
   level = 0;
-  
+
+  // start with probability in 0^L and a single active path
   probs[0] = 1;
-  
   active[0] = 0;
   nactive = 1;
-  
+
+  // while we haven't crossed the whole cube
   while(nactive > 0)
     {
       newnactive = 0;
-      /*      printf("%i active\n", nactive);
-	      for(a = 0; a < nactive; a++)
-	      printf("%i ", active[a]);
-	      printf("\n\n"); */
-	    
+
+      // go through active paths
       for(a = 0; a < nactive; a++)
 	{
+	  // pull the state of this active path
 	  src = active[a];
 	  statedec = src;
 	  for(j = LEN-1; j >= 0; j--)
@@ -91,6 +96,7 @@ List OutputStatesR(double *ntrans, int LEN, int model)
 		state[LEN-1-j] = 0;
 	    }
 
+	  // pull the transitions from this state
 	  totrate = 0;
 	  for(j = 0; j < LEN; j++)
 	    {
@@ -102,6 +108,8 @@ List OutputStatesR(double *ntrans, int LEN, int model)
 		}
 	    }
 
+     	  // go through each outgoing edge, outputting its transition rate (and the probability flux at this point)
+	  // and spawning a new active path if the destination node doesn't already have one
 	  for(j = 0; j < LEN; j++)
 	    {
 	      /* ntrans must be the transition matrix. ntrans[i+i*LEN] is the bare rate for i. then ntrans[j*LEN+i] is the modifier for i from j*/
@@ -114,7 +122,6 @@ List OutputStatesR(double *ntrans, int LEN, int model)
 		  to_v.push_back(dest);
 		  edgeprob_v.push_back(rate/totrate);
 		  flux_v.push_back(probs[src]*rate/totrate);
-		  //		  printf("%i: %i (from %i, %e): %e\n", level, dest, src, probs[src], probs[dest]);
 		
 		  found = 0;
 		  for(k = 0; k < newnactive; k++)
@@ -126,34 +133,37 @@ List OutputStatesR(double *ntrans, int LEN, int model)
 		}
 	    }
 	}
+      // update the list of active paths
       for(a = 0; a < newnactive; a++)
 	active[a] = newactive[a];
       nactive = newnactive;
       level++;
     }
-  
+
+  // record the list of state occupancy probabilities
   for(dest = 0; dest < mypow2(LEN); dest++)
     {
       state_v.push_back(dest);
       prob_v.push_back(probs[dest]);
       prob_dt_v.push_back(probs[dest]/(LEN+1));
     }
-  //    fprintf(fp, "%i %e\n", dest, probs[dest]);
 
+  // compile state occupancies into a named list
   List L = List::create(Named("State") = state_v,
 			Named("Probability") = prob_v,
 			Named("Probability.DT") = prob_dt_v);
   DataFrame Ldf(L);
 
+  // compile edge probabilities and fluxes into a named list
   List Lflux = List::create(Named("From") = from_v,
 			    Named("To") = to_v,
 			    Named("Probability") = edgeprob_v,
 			    Named("Flux") = flux_v);
   DataFrame Lfluxdf(Lflux);
 
+  // compile overall list of results
   List Lout = List::create(Named("states") = Ldf, Named("trans") = Lfluxdf);
   
-  //  fclose(fp);
   free(active);
   free(newactive);
   free(probs);
@@ -161,6 +171,8 @@ List OutputStatesR(double *ntrans, int LEN, int model)
   return Lout;
 }
 
+// R version of stepwise regularisation
+// stepwise regularise a parameter set by minimising likelihood loss as parameters are pruned
 List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, double *tau1s, double *tau2s, int model, int PLI, int limited_output)
 {
   int i, j;
@@ -176,7 +188,8 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, double *tau1s,
 
   if(model == -1) normedval = -20;
   else normedval = 0;
-  
+
+  // initialise the setup and estimate initial likelihood and ICs
   NVAL = nparams(model, len);
   best = (double*)malloc(sizeof(double)*NVAL);
   
@@ -188,13 +201,9 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, double *tau1s,
   for(i = 0; i < NVAL; i++)
     best[i] = ntrans[i];
 
+  // vectors for output of statistics
   NumericVector NVAL_v, removed_v, lik_v, AIC_v, BIC_v;
   
-  // sprintf(fstr, "%s-regularising.csv", labelstr);
-  //fp = fopen(fstr, "w");
-  //fprintf(fp, "nparam,log.lik,AIC,BIC\n");
-  //fprintf(fp, "%i,%e,%e,%e\n", NVAL, lik, AIC, BIC);
-
   NVAL_v.push_back(NVAL);
   removed_v.push_back(-1);
   lik_v.push_back(lik);
@@ -241,7 +250,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, double *tau1s,
       lik_v.push_back(biggest);
       AIC_v.push_back(AIC);
       BIC_v.push_back(BIC);
-      //fprintf(fp, "%i,%e,%e,%e\n", pcount, biggest, AIC, BIC);
+
       if(AIC < bestIC)
 	{
 	  bestIC = AIC;
@@ -250,6 +259,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, double *tau1s,
 	}
     }
 
+  // compile statistics of the process into a named list
   List Ldyn = List::create(Named("nparam") = NVAL_v,
 			   Named("removed") = removed_v,
 			   Named("lik") = lik_v,
@@ -259,13 +269,7 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, double *tau1s,
   DataFrame Ldyndf(Ldyn);
   
   NumericVector best_v(NVAL);
-  
-  //sprintf(fstr, "%s-regularised.txt", labelstr);
-  //fp = fopen(fstr, "w");
-  // for(i = 0; i < NVAL; i++)
-  //  fprintf(fp, "%e ", best[i]);
-  //fprintf(fp, "\n");
-  //fclose(fp);
+
   for(i = 0; i < NVAL; i++)
     {
     best_v[i] = best[i];
@@ -276,16 +280,6 @@ List RegulariseR(int *matrix, int len, int ntarg, double *ntrans, double *tau1s,
 			   Named("lik.1") = GetLikelihoodCoalescentChange(matrix, len, ntarg, best, tau1s, tau2s, model, PLI),
 			   Named("lik.2") = GetLikelihoodCoalescentChange(matrix, len, ntarg, best, tau1s, tau2s, model, PLI),
 			   Named("reg.process") = Ldyndf);
-			   
-  //  sprintf(fstr, "%s-regularised-lik.txt", labelstr);
-  //fp = fopen(fstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); 
-  // fprintf(fp, "0,%e,%e\n", 
-  // fclose(fp);
-
-  //  sprintf(fstr, "%s-regularised-trans.txt", labelstr);
-  //OutputTransitions(fstr, best, len, model);
-  //sprintf(fstr, "%s-regularised-states.txt", labelstr);
-  //OutputStates(fstr, best, len, model);
 
   free(best);
   return Lout;
@@ -506,7 +500,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 
   if(!_limited_output)
     {
-      Rprintf("\nHyperTraPS(-CT)\nSep 2023\n\nUnpublished code -- please do not circulate!\nPublished version available at:\n    https://github.com/StochasticBiology/HyperTraPS\nwith stripped-down version at:\n    https://github.com/StochasticBiology/hypertraps-simple\n\n");
+      Rprintf("\nHyperTraPS(-CT)\n\nPlease cite Aga et al., PLoS Comput Biol 20 e1012393 (2024)\n\n");
 
       if(_PLI == 1) {
 	Rprintf("Running Phenotype Landscape Inference with:\n[observations-file]: %s\n[start-timings-file]: %s\n[end-timings-file]: %s\n[random number seed]: %i\n[length index]: %i\n[kernel index]: %i\n[walkers]: %i\n[losses (1) or gains (0)]: %i\n[APM]: %i\n[model]: %i\n[penalty]: %.3e\n[lasso]: %i\n\n", obsfile, timefile, endtimefile, _seed, _lengthindex, _kernelindex, BANK, _losses, _apm_type, _model, _penalty, _lasso);
@@ -631,16 +625,6 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
     {
       sprintf(labelstr, "%s-%i-%i-%i-%i-%i-%i-%i", obsfile, spectrumtype, searchmethod, _seed, _lengthindex, _kernelindex, BANK, _apm_type);
     }
-  // prepare output files
-  /*  sprintf(shotstr, "%s-posterior.txt", labelstr);
-      fp = fopen(shotstr, "w"); fclose(fp);
-      sprintf(bestshotstr, "%s-best.txt", labelstr);
-      fp = fopen(bestshotstr, "w"); fclose(fp);
-      sprintf(likstr, "%s-lik.txt", labelstr);
-      fp = fopen(likstr, "w"); fprintf(fp, "Step,LogLikelihood1,LogLikelihood2\n"); fclose(fp);
-  
-      sprintf(besttransstr, "%s-trans.txt", labelstr);
-      sprintf(beststatesstr, "%s-states.txt", labelstr);*/
   
   // initialise with an agnostic transition matrix
   if(readparams == 1)
@@ -678,7 +662,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   time(&end_t);
   gettimeofday(&t_stop, NULL);
   diff_t = (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec-t_start.tv_usec)/1.e6;
-  //  diff_t = difftime(end_t, start_t);
+ 
   Rprintf("One likelihood estimation took %e seconds.\nInitial likelihood is %e\n", diff_t, lik);
   lik = GetLikelihoodCoalescentChange(matrix, len, ntarg, trans, tau1s, tau2s, _model, _PLI) - regterm*_penalty - lassoterm*_lasso;
   Rprintf("Second guess is %e\n", lik);
@@ -910,7 +894,6 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	    Rprintf("Iteration %i likelihood %f previous-likelihood %f\n", t, nlik, lik);
 	  lik = nlik;
 	}
-      //      if(t % SAMPLE == 0) printf("NaN count %i of %i\n", nancount, t);
 
       // output information periodically
       if(t % TMODULE == 0 && searchmethod != 1)
@@ -921,6 +904,7 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	}
     }
 
+  // compile named lists for output
   List Lts = List::create(Named("Step") = t_output,
 			  Named("L") = L_output,
   			  Named("model") = model_output,
@@ -953,9 +937,10 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
   if(full_analysis[0] == 0)
     return L;
   else
-    return PosteriorAnalysis(L, featurenames, _regularise, _limited_output, _samples_per_row);
+    return PosteriorAnalysis(L, featurenames, _regularise, _limited_output, _samples_per_row, _outputtransitions);
 }
 
+// R version of posterior analysis
 //' Extracts information from HyperTraPS-related posterior samples
 //'
 //' @param L List output from HyperTraPS, containing posterior samples
@@ -965,7 +950,8 @@ List PosteriorAnalysis(List L,
 		       Nullable<CharacterVector> featurenames = R_NilValue,
 		       int use_regularised = 0,
 		       int limited_output = 0,
-		       int samples_per_row = 10)
+		       int samples_per_row = 10,
+		       int outputtransitions = 0)
 {
   int *matrix;
   int len, ntarg;
@@ -1009,33 +995,6 @@ List PosteriorAnalysis(List L,
   if(!limited_output)
     Rprintf("\nHyperTraPS(-CT) posterior analysis\n\n");
 
-  // deal with command-line arguments
-  /*  for(i = 1; i < argc; i+=2)
-      {
-      if(strcmp(argv[i], "--posterior\0") == 0) strcpy(postfile, argv[i+1]);
-      else if(strcmp(argv[i], "--label\0") == 0) { filelabel = 1; strcpy(labelstr, argv[i+1]); }
-      else if(strcmp(argv[i], "--featurenames\0") == 0) { strcpy(labelfile, argv[i+1]); }
-      else if(strcmp(argv[i], "--seed\0") == 0) seed = atoi(argv[i+1]);
-      else if(strcmp(argv[i], "--model\0") == 0) model = atoi(argv[i+1]);
-      else if(strcmp(argv[i], "--sims\0") == 0) NSAMP = atoi(argv[i+1]);
-      else if(strcmp(argv[i], "--trajs\0") == 0) NTRAJ = atoi(argv[i+1]);
-      else if(strcmp(argv[i], "--burnin\0") == 0) burnin = atoi(argv[i+1]);
-      else if(strcmp(argv[i], "--period\0") == 0) sampleperiod = atoi(argv[i+1]);      
-      else if(strcmp(argv[i], "--binscale\0") == 0) BINSCALE = atof(argv[i+1]);
-      else if(strcmp(argv[i], "--verbose\0") == 0) { verbose = 1; i--; }
-      else if(strcmp(argv[i], "--help\0") == 0) helpandquit(0);
-      }
-
-      if(strcmp(postfile, "") == 0)
-      {
-      Rprintf("*** I need at least a file of posterior samples! ***\n\n");
-      helpandquit(0);
-      }
-      if(model == 0)
-      {
-      Rprintf("*** Posterior analysis isn't meaningful for a zero-parameter model ***\n\n");
-      return 0;
-      }*/
   if(!limited_output)
     {
       Rprintf("Verbose flag is %i\n", verbose);
@@ -1046,10 +1005,7 @@ List PosteriorAnalysis(List L,
   NumericMatrix posterior;
   if(use_regularised == 0)
     {
-      //      Rprintf("Pulling posterior sample\n");
-      //posterior = as<NumericMatrix>(L["posterior.samples"]);
       posterior = internal::convert_using_rfunction(L["posterior.samples"], "as.matrix");
-      //Rprintf("Pulled posterior sample\n");
       if(!limited_output)
 	Rprintf("Using posterior samples with %i x %i entries\n", posterior.nrow(), posterior.ncol());
     }
@@ -1061,7 +1017,7 @@ List PosteriorAnalysis(List L,
       NumericMatrix tmpM(1,tmpV.size());
       for(i = 0; i < tmpV.size(); i++)
 	tmpM(0,i) = tmpV[i];
-      posterior = internal::convert_using_rfunction(tmpM, "as.matrix"); //as<NumericMatrix>(tmpM);
+      posterior = internal::convert_using_rfunction(tmpM, "as.matrix");
       if(!limited_output)
 	Rprintf("Using best regularised params with %i x %i entries\n", posterior.nrow(), posterior.ncol());
     }
@@ -1149,25 +1105,32 @@ List PosteriorAnalysis(List L,
 
   if(!limited_output)
     Rprintf("Output label is %s\n", labelstr);
-  
-  // set up file outputs
-  if(verbose)
-    {
-      /*      sprintf(fstr, "%s-routes.txt", labelstr);
-	      fp1 = fopen(fstr, "w");
-	      sprintf(fstr, "%s-betas.txt", labelstr);
-	      fp2 = fopen(fstr, "w");
-	      sprintf(fstr, "%s-times.txt", labelstr);
-	      fp3 = fopen(fstr, "w");*/
-    }
-  
+    
   int NSAMPLES = ((posterior.nrow() - burnin)/(sampleperiod+1))*(samples_per_row);
   NumericMatrix route_out(NSAMPLES, len);
   NumericMatrix betas_out(NSAMPLES, len);
   NumericMatrix times_out(NSAMPLES, len);
   NumericMatrix timediffs_out(NSAMPLES, len);
+  List tmp_dynamics_output, tmplist;
+  int vecsize;
+  if(outputtransitions)
+    vecsize = mypow2(len)*len;
+  else
+    vecsize = 0;
+
+  NumericVector sum_probs(vecsize);
+  NumericVector sum_probs2(vecsize);
+  NumericVector tmpvec(vecsize);
+  NumericVector sum_fluxes(vecsize);
+  NumericVector sum_fluxes2(vecsize);
+  for(i = 0; i < vecsize; i++)
+    {
+      sum_probs[i] = sum_probs2[i] = 0;
+      sum_fluxes[i] = sum_fluxes2[i] = 0;
+    }
+    
   int sampleindex = 0;
-      
+
   for(count = 0; count < posterior.nrow(); count++)
     {
       // read in single posterior sample
@@ -1178,6 +1141,19 @@ List PosteriorAnalysis(List L,
       // if we want to include burn-in or subsampling, can put it here
       if(count >= burnin && count % (sampleperiod+1) == 0)
 	{
+	  if(outputtransitions) {
+  	    tmp_dynamics_output = OutputStatesR(ntrans, len, model);
+	    tmplist = tmp_dynamics_output["trans"];
+
+	    tmpvec = tmplist["Probability"];
+	    sum_probs = sum_probs + tmpvec;
+	    sum_probs2 = sum_probs2 + tmpvec*tmpvec;
+	    
+	    tmpvec = tmplist["Flux"];
+	    sum_fluxes = sum_fluxes + tmpvec;
+	    sum_fluxes2 = sum_fluxes2 + tmpvec*tmpvec;
+	  }
+	  
 	  // loop through iterations
 	  for(j = 0; j < samples_per_row; j++)
 	    {
@@ -1198,27 +1174,9 @@ List PosteriorAnalysis(List L,
 		  timediffs_out(sampleindex, i) = timediffs[i];
 		}
 	      sampleindex++;
-	      /*		  if(verbose)
-				  {
-				  for(i = 0; i < len; i++)
-				  fprintf(fp1, "%i ", route[i]);
-				  for(i = 0; i < len; i++)
-				  fprintf(fp2, "%.15f ", betas[i]);
-				  for(i = 0; i < len; i++)
-				  fprintf(fp3, "%.3e ", times[i]);
-				  fprintf(fp1, "\n");
-				  fprintf(fp2, "\n");
-				  fprintf(fp3, "\n");
-				  }*/
 	    }
 	}
     }
-  /*  if(verbose)
-      {
-      fclose(fp1);
-      fclose(fp2);
-      fclose(fp3);
-      } */
 
   if(!limited_output)
     {
@@ -1286,18 +1244,6 @@ List PosteriorAnalysis(List L,
 			      Named("Name") = name_col,
 			      Named("Probability") = prob_col);
 
-  /*
-    sprintf(str, "%s-bubbles.csv", labelstr);
-    fp = fopen(str, "w");
-    fprintf(fp, "Time,ReorderedIndex,OriginalIndex,Name,Probability\n");
-    for(t = 0; t < len; t++)
-    {
-    for(i = 0; i < len; i++)
-    fprintf(fp, "%i,%i,%i,%s,%.15f\n", t, i, order[i], &names[FLEN*order[i]], drec[t*len+order[i]]);
-    fprintf(fp, "\n");
-    }*/
-
-
   // this stores the time histograms associated with acquisition times for each feature
   // remember here that we've scaled by BINSCALE to store in an integer-referenced array (see GetRoutes())
 
@@ -1320,21 +1266,6 @@ List PosteriorAnalysis(List L,
   for(i = 0; i < len; i++)
     fns(i) = &names[FLEN*i];
 
-  /*  sprintf(str, "%s-timehists.csv", labelstr);
-      fp = fopen(str, "w");
-      fprintf(fp, "OriginalIndex,Time,Probability\n");
-      for(i = 0; i < len; i++)
-      {
-      tmp = 0;
-      for(j = 0; j < MAXCT; j++)
-      {
-      fprintf(fp, "%i,%f,%.6f\n", i, j/BINSCALE, ctrec[MAXCT*i+j]/ctnorm);
-      tmp += ctrec[MAXCT*i+j]*j;
-      }
-      Rprintf("%i %.4f\n", i, tmp/ctnorm);
-      fprintf(fp, "\n");
-      }*/
-
   DataFrame Bubbledf(BubbleL);
   DataFrame THistdf(THistL);
 
@@ -1347,6 +1278,28 @@ List PosteriorAnalysis(List L,
   OutputL["times"] = times_out;
   OutputL["timediffs"] = timediffs_out;
   OutputL["featurenames"] = fns;
+
+  if(outputtransitions)
+    {
+      /*      NumericVector probmean(vecsize);
+      NumericVector probvar(vecsize);
+      NumericVector fluxmean(vecsize);
+      NumericVector fluxvar(vecsize);*/
+      List tmp_list_output;
+      tmp_list_output = tmp_dynamics_output["trans"];
+      tmp_list_output["Probability"] = sum_probs / (sampleindex/samples_per_row);
+      tmp_list_output["Flux"] = sum_fluxes / (sampleindex/samples_per_row);
+      tmp_list_output["ProbVar"] = sum_probs2 / (sampleindex/samples_per_row) - (sum_probs / (sampleindex/samples_per_row))*(sum_probs / (sampleindex/samples_per_row));
+      tmp_list_output["FluxVar"] = sum_fluxes2 / (sampleindex/samples_per_row) - (sum_fluxes / (sampleindex/samples_per_row))*(sum_fluxes / (sampleindex/samples_per_row));
+      
+      /*      for(i = 0; i < vecsize; i++)
+	{
+	  tmp_dynamics_output["Probability"][i] = ;
+	  tmp_dynamics_output["XXX"][i] = XXX;
+	  }*/
+      DataFrame tmp_df_output(tmp_list_output);
+      OutputL["edges"] = tmp_df_output;
+    }
 
   return OutputL;
 }
