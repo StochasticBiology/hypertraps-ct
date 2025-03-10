@@ -920,8 +920,7 @@ curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
                                        to=paste0(my.data[d.row,2:ncol(new.data)], collapse=""),
                                        time=tree$edge.length[e.ref],
                                        from.node=this.label,
-                                       to.node=tree.labels[d.ref],
-                                       stringsAsFactors = FALSE))
+                                       to.node=tree.labels[d.ref]))
           }
           # we made a change, so keep the loop going
           change = T
@@ -929,8 +928,8 @@ curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
       }
     }
   }
-  srcs = matrix(as.numeric(unlist(lapply(changes$from, strsplit, split=""))), byrow=TRUE, ncol=ncol(new.data)-1)
-  dests = matrix(as.numeric(unlist(lapply(changes$to, strsplit, split=""))), byrow=TRUE, ncol=ncol(new.data)-1)
+  srcs = matrix(as.numeric(unlist(lapply(as.character(changes$from), strsplit, split=""))), byrow=TRUE, ncol=ncol(new.data)-1)
+  dests = matrix(as.numeric(unlist(lapply(as.character(changes$to), strsplit, split=""))), byrow=TRUE, ncol=ncol(new.data)-1)
   
   rL = list("tree" = tree,
             "data" = my.data,
@@ -943,8 +942,7 @@ curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
 
 plotHypercube.curated.tree = function(tree.set, 
                                       scale.fn = geom_treescale(y=20, linesize=3, width =0.01),
-                                      names = FALSE,
-                                      font.size=4) {
+                                      names = FALSE) {
   data.m = tree.set$data[,2:ncol(tree.set$data)]
   rownames(data.m) = tree.set$data[,1]
   data.m = tree.set$data[1:length(tree.set$tree$tip.label), 2:ncol(tree.set$data)]
@@ -956,7 +954,7 @@ plotHypercube.curated.tree = function(tree.set,
     ggtree(tree.set$tree) + scale.fn
   }
   this.plot = gheatmap(g.core, data.m, low="white", high="#AAAAAA",
-                       colnames_angle=90, hjust=0, font.size=font.size) +
+                       colnames_angle=90, hjust=0) +
     theme(legend.position="none")
   return(this.plot)
 }
