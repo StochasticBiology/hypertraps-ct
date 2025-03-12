@@ -877,6 +877,7 @@ curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
   
   # initialise "recursive" algorithm
   change = T
+  my.data[,1] = as.character(my.data[,1])
   new.row = my.data[1,]
   changes = data.frame()
   
@@ -891,7 +892,6 @@ curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
         # if not, check to see if its children are all characterised
         descendant.refs = Children(tree, tree.ref)
         if(all(tree.labels[descendant.refs] %in% my.data$label)) {
-          
           ## ancestral state reconstruction
           # pull the rows in our barcode dataset corresponding to children of this node
           descendant.rows = which(my.data$label %in% tree.labels[descendant.refs])
@@ -907,7 +907,7 @@ curate.tree = function(tree.src, data.src, losses = FALSE, data.header=TRUE) {
           new.data$label[1] = this.label
           new.data[1,2:ncol(new.data)] = new.barcode
           my.data = rbind(my.data, new.data)
-          
+                  
           ## adding transitions to our observation set
           # loop through children
           for(d.ref in descendant.refs) {
