@@ -1993,12 +1993,14 @@ List HyperTraPS(NumericMatrix obs, //NumericVector len_arg, NumericVector ntarg_
 	  regterm = lassoterm = 0;
 	  // if we're burnt in, periodically sample the current parameterisation to an output file
 	  // most appropriate for Bayesian MCMC but useful for all
-	  for(i = 0; i < NVAL; i++)
-	    {
-	      posterior_output(sampleref, i) = trans[i];
-	      regterm += (trans[i] != 0);
-	      lassoterm += fabs(trans[i]);
-	    }
+	  if(sampleref < NSAMPLES) {
+  	    for(i = 0; i < NVAL; i++)
+	      {
+	        posterior_output(sampleref, i) = trans[i];
+	        regterm += (trans[i] != 0);
+	        lassoterm += fabs(trans[i]);
+	      }
+	  }
 	  
 	  // if MCMC, store a set of samples, otherwise the single best
 	  if(searchmethod == 0)
