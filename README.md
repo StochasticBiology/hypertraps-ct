@@ -2,6 +2,8 @@
 
 Hypercubic transition path sampling: Flexible inference of accumulation pathways, in discrete or continuous time, under different model structures, using combinations of longitudinal, cross-sectional, and phylogenetically-linked observations.
 
+**This is the repository associated with the Aga et al. 2024 paper. If you just want the HyperTraPS-CT R package, you can find it here https://github.com/StochasticBiology/hypertrapsct**
+
 ![image](https://github.com/StochasticBiology/hypertraps-ct/assets/50171196/2c0fac84-76bf-41a6-9688-a4e429efed20)
 An example inferred hypercubic transition graph (right) showing probable transitions during the evolution of multidrug resistance in tuberculosis, using phylogenetically-embedded original data (left) (Casali et al. 2014).
 
@@ -266,6 +268,8 @@ References
 =====
 
 Data sources:
+
+Aga, O.N., Brun, M., Dauda, K.A., Diaz-Uriarte, R., Giannakis, K. and Johnston, I.G., 2024. HyperTraPS-CT: Inference and prediction for accumulation pathways with flexible data and model structures. PLOS Computational Biology, 20(9), p.e1012393.
 
 Casali, N., Nikolayevskyy, V., Balabanova, Y., Harris, S.R., Ignatyeva, O., Kontsevaya, I., Corander, J., Bryant, J., Parkhill, J., Nejentsev, S. and Horstmann, R.D., 2014. Evolution and transmission of drug-resistant tuberculosis in a Russian population. Nature genetics, 46(3), pp.279-286.
 
